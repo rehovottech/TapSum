@@ -36,7 +36,7 @@ export default class Boot extends BaseScene {
         this.fpsView = new FPS(this);
 
         // Kick off service initializations in the background.
-        Firebase.init().catch(() => {});
+        Firebase.signInAnonymous().catch(() => {});
         AdInitialize().catch(() => {});
     }
 
