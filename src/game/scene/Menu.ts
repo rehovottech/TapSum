@@ -6,7 +6,7 @@ import { COLORS } from '../constants/Colors';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
 import { AdManager } from '../managers/AdManager';
-import { LeaderboardManager } from '../managers/LeaderboardManager';
+import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 import FPS from '../model/FPS';
 
 export default class Menu extends BaseScene {
@@ -178,7 +178,7 @@ export default class Menu extends BaseScene {
             COLORS.BUTTON_SECONDARY, COLORS.BUTTON_SECONDARY_DARK,
             () => {
                 AudioManager.play('snd_click');
-                LeaderboardManager.showLeaderboard();
+                new LeaderboardPanel(this);
             },
         );
     }

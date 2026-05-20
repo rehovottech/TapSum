@@ -5,6 +5,8 @@ import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
 import { AdManager } from '../managers/AdManager';
+import { Firebase } from '../../services/Firebase';
+import { GameIds } from '../../constants/GameIds';
 import FPS from '../model/FPS';
 
 interface EndData {
@@ -19,6 +21,7 @@ export default class End extends BaseScene {
     private bestScore  = 0;
     private isNewBest  = false;
     private adBusy     = false;
+    private rankText?: Phaser.GameObjects.Text;
 
     constructor() {
         super({ key: SCENES.End });
@@ -45,6 +48,8 @@ export default class End extends BaseScene {
         this.cameras.main.fadeIn(350);
         this.celebrationBurst();
         AdManager.showBanner();
+
+        this.fetchAndShowRank();
     }
 
     update(): void {
@@ -136,6 +141,14 @@ export default class End extends BaseScene {
         }).setOrigin(0.5);
         container.add(bestTxt);
 
+        // Rank row (filled async after Firestore responds)
+        this.rankText = this.add.text(midX, cardH * 0.46, '', {
+            fontFamily: 'Coiny',
+            fontSize:   `${Math.floor(this.H * 0.024)}px`,
+            color:      COLORS.TEXT_NEON,
+        }).setOrigin(0.5).setAlpha(0);
+        container.add(this.rankText);
+
         // Pop-in animation for the whole card
         this.tweens.add({
             targets: container,
@@ -160,6 +173,19 @@ export default class End extends BaseScene {
                 });
             });
         }
+    }
+
+    // ── Rank fetch ───────────────────────────────────────────────────────────
+
+    private async fetchAndShowRank(): Promise<void> {
+        try {
+            const rank = await Firebase.getPlayerRank(GameIds.TAP_SUM);
+            if (!this.rankText || !this.scene.isActive()) return;
+            if (rank > 0) {
+                this.rankText.setText(`Global rank: #${rank}`);
+                this.tweens.add({ targets: this.rankText, alpha: 1, duration: 400, ease: 'Power2' });
+            }
+        } catch (_) {}
     }
 
     // ── Buttons ─────────────────────────────────────────────────────────────
