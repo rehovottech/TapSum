@@ -1,0 +1,7 @@
+{
+  "name": "template-portrait",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
