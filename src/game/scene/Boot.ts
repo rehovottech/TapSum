@@ -26,18 +26,20 @@ export default class Boot extends BaseScene {
     preload(): void {
         this.load.path = 'assets/sprite/';
         this.load
-            .atlas('logo', `logo${GlobVar.suffix}.png`, `logo${GlobVar.suffix}.json`)
-            .once(Phaser.Loader.Events.COMPLETE, () => this.showLogo());
+            .atlas('logo', `logo${GlobVar.suffix}.png`, `logo${GlobVar.suffix}.json`);
 
         // Load Bitmap
-        this.load.bitmapFont('coiny', 'assets/font/coiny.png', 'assets/font/coiny.xml');
-        this.load.bitmapFont('krungthep', 'assets/font/krungthep.png', 'assets/font/krungthep.xml');
+        this.load.path = 'assets/font/';
+        this.load.bitmapFont('coiny-bmp', 'coiny.png', 'coiny.xml');
+        this.load.bitmapFont('krungthep-bmp', 'krungthep.png', 'krungthep.xml');
     }
 
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.Boot}`);
 
         this.fpsView = new FPS(this);
+
+        this.showLogo();
 
         // Kick off service initializations in the background.
         Firebase.signInAnonymous().catch(() => {});
@@ -94,10 +96,7 @@ export default class Boot extends BaseScene {
         this.logoContiner!.add(title);
 
         this.tweens.add({ targets: logo,  alpha: 1, delay: 150, duration: 500, ease: 'Cubic.InOut' });
-        this.tweens.add({ targets: title, alpha: 1, delay: 250, duration: 500, ease: 'Cubic.InOut', onComplete: () => {
-            if (this.preloadBar && this.preloadBar.progressValue >= 100) {
-                this.time.delayedCall(2000, () => this.fadeToScene(SCENES.Preload));
-            }
-        }});
+        this.tweens.add({ targets: title, alpha: 1, delay: 250, duration: 500, ease: 'Cubic.InOut' });
+        this.time.delayedCall(2000, () => this.fadeToScene(SCENES.Preload));
     }
 }
