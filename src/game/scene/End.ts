@@ -21,7 +21,7 @@ export default class End extends BaseScene {
     private bestScore  = 0;
     private isNewBest  = false;
     private adBusy     = false;
-    private rankText?: Phaser.GameObjects.Text;
+    private rankText?: Phaser.GameObjects.BitmapText;
 
     constructor() {
         super({ key: SCENES.End });
@@ -97,56 +97,34 @@ export default class End extends BaseScene {
         container.add(card);
 
         // "GAME OVER" header
-        const header = this.add.text(midX, -cardH * 0.38, 'GAME OVER', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.050)}px`,
-            color: COLORS.TEXT_ACCENT,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const header = this.add.bitmapText(midX, -cardH * 0.38, 'coiny-bmp', 'GAME OVER', Math.floor(this.H * 0.050), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
         container.add(header);
 
         // SCORE label
-        const scoreLabel = this.add.text(midX, -cardH * 0.17, 'SCORE', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.025)}px`,
-            color: COLORS.TEXT_NEON,
-        }).setOrigin(0.5);
+        const scoreLabel = this.add.bitmapText(midX, -cardH * 0.17, 'coiny-bmp', 'SCORE', Math.floor(this.H * 0.025), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
         container.add(scoreLabel);
 
         // Score number
-        const scoreNum = this.add.text(midX, cardH * 0.04, `${this.finalScore}`, {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.11)}px`,
-            color: COLORS.TEXT_WHITE,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const scoreNum = this.add.bitmapText(midX, cardH * 0.04, 'coiny-bmp', `${this.finalScore}`, Math.floor(this.H * 0.11), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
         container.add(scoreNum);
 
         // Rounds survived
-        const roundsTxt = this.add.text(midX, cardH * 0.24, `Rounds survived: ${Math.max(0, this.finalRound - 1)}`, {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.026)}px`,
-            color: '#cccccc',
-        }).setOrigin(0.5);
+        const roundsTxt = this.add.bitmapText(midX, cardH * 0.24, 'coiny-bmp', `Rounds survived: ${Math.max(0, this.finalRound - 1)}`, Math.floor(this.H * 0.026), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor('#cccccc').color);
         container.add(roundsTxt);
 
         // Best score
         const bestLabel = this.isNewBest ? '★ NEW BEST!' : 'BEST';
         const bestColor = this.isNewBest ? COLORS.TEXT_GOLD : COLORS.TEXT_ACCENT;
-        const bestTxt = this.add.text(midX, cardH * 0.35, `${bestLabel}  ${this.bestScore}`, {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.030)}px`,
-            color: bestColor,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const bestTxt = this.add.bitmapText(midX, cardH * 0.35, 'coiny-bmp', `${bestLabel}  ${this.bestScore}`, Math.floor(this.H * 0.030), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(bestColor).color);
         container.add(bestTxt);
 
         // Rank row (filled async after Firestore responds)
-        this.rankText = this.add.text(midX, cardH * 0.46, '', {
-            fontFamily: 'Coiny',
-            fontSize:   `${Math.floor(this.H * 0.024)}px`,
-            color:      COLORS.TEXT_NEON,
-        }).setOrigin(0.5).setAlpha(0);
+        this.rankText = this.add.bitmapText(midX, cardH * 0.46, 'coiny-bmp', '', Math.floor(this.H * 0.024), 0).setOrigin(0.5).setAlpha(0);
         container.add(this.rankText);
 
         // Pop-in animation for the whole card
@@ -219,7 +197,7 @@ export default class End extends BaseScene {
             () => {
                 AudioManager.play('snd_click');
                 AdManager.hideBanner();
-                this.fadeToScene(SCENES.Game);
+                AdManager.showInterstitial(() => this.fadeToScene(SCENES.Game));
             },
         );
 
@@ -257,11 +235,8 @@ export default class End extends BaseScene {
     }
 
     private showAdUnavailable(): void {
-        const msg = this.add.text(this.CX, this.H * 0.625, 'Ad not available — try again later.', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.025)}px`,
-            color: COLORS.TEXT_ACCENT,
-        }).setOrigin(0.5).setDepth(30);
+        const msg = this.add.bitmapText(this.CX, this.H * 0.625, 'coiny-bmp', 'Ad not available — try again later.', Math.floor(this.H * 0.025), 0)
+        .setOrigin(0.5).setDepth(30);
 
         this.tweens.add({
             targets: msg,

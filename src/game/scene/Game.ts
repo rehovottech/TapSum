@@ -29,11 +29,11 @@ export default class Game extends BaseScene {
     private gameOver       = false;
 
     // ── UI refs ─────────────────────────────────────────────────────────────
-    private numberText!:   Phaser.GameObjects.Text;
-    private scoreText!:    Phaser.GameObjects.Text;
-    private roundText!:    Phaser.GameObjects.Text;
-    private tapCountText!: Phaser.GameObjects.Text;
-    private hintText!:     Phaser.GameObjects.Text;
+    private numberText!:   Phaser.GameObjects.BitmapText;
+    private scoreText!:    Phaser.GameObjects.BitmapText;
+    private roundText!:    Phaser.GameObjects.BitmapText;
+    private tapCountText!: Phaser.GameObjects.BitmapText;
+    private hintText!:     Phaser.GameObjects.BitmapText;
     private timerFill!:    Phaser.GameObjects.Graphics;
     private tapButton!:    Phaser.GameObjects.Container;
     private tapBtnFace!:   Phaser.GameObjects.Graphics;
@@ -104,11 +104,7 @@ export default class Game extends BaseScene {
         const fs    = Math.floor(this.H * 0.032);
 
         // ← back button
-        const back = this.add.text(this.W * 0.08, topY, '←', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.05)}px`,
-            color: COLORS.TEXT_WHITE,
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const back = this.add.bitmapText(this.W * 0.08, topY, 'coiny-bmp', '<-', Math.floor(this.H * 0.042), 0).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         back.on('pointerdown', () => {
             AudioManager.play('snd_click');
@@ -116,19 +112,12 @@ export default class Game extends BaseScene {
         });
 
         // Round label (top-center)
-        this.roundText = this.add.text(this.CX, topY, 'Round 1', {
-            fontFamily: 'Coiny',
-            fontSize: `${fs}px`,
-            color: COLORS.TEXT_NEON,
-        }).setOrigin(0.5);
+        this.roundText = this.add.bitmapText(this.CX, topY, 'coiny-bmp', 'Round 1', fs, 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
 
         // Score (top-right)
-        this.scoreText = this.add.text(this.W * 0.92, topY, '0', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.042)}px`,
-            color: COLORS.TEXT_GOLD,
-            fontStyle: 'bold',
-        }).setOrigin(1, 0.5);
+        this.scoreText = this.add.bitmapText(this.W * 0.92, topY, 'coiny-bmp', '0', Math.floor(this.H * 0.042), 0).setOrigin(1, 0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color);
 
         // Timer bar geometry
         this.barW = Math.floor(this.W * 0.72);
@@ -145,27 +134,16 @@ export default class Game extends BaseScene {
         this.redrawTimerBar();
 
         // Big round number
-        this.numberText = this.add.text(this.CX, numY, '?', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.22)}px`,
-            color: COLORS.TEXT_WHITE,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        this.numberText = this.add.bitmapText(this.CX, numY, 'coiny-bmp', '?', Math.floor(this.H * 0.22), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
 
         // Hint: "tap N times"
-        this.hintText = this.add.text(this.CX, this.H * 0.465, '', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.028)}px`,
-            color: COLORS.TEXT_ACCENT,
-        }).setOrigin(0.5);
+        this.hintText = this.add.bitmapText(this.CX, this.H * 0.465, 'coiny-bmp', '', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
         // Current tap count
-        this.tapCountText = this.add.text(this.CX, this.H * 0.50, 'Taps: 0', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.038)}px`,
-            color: COLORS.TEXT_NEON,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        this.tapCountText = this.add.bitmapText(this.CX, this.H * 0.50, 'coiny-bmp', 'Taps: 0', Math.floor(this.H * 0.038), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
     }
 
     // ── Tap button (bottom half) ────────────────────────────────────────────

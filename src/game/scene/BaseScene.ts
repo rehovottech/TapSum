@@ -24,7 +24,7 @@ export default abstract class BaseScene extends Phaser.Scene {
     }
 
     protected onSceneDestroy(): void {}
-    protected onSceneShutdown(): void { this.scene.remove(); }
+    protected onSceneShutdown(): void {}
     protected onScenePause(): void {}
     protected onSceneResume(): void {}
 
