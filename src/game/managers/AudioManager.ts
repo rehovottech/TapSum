@@ -12,7 +12,7 @@ export const SOUND_KEYS = {
 };
 
 const MUSIC_KEY   = 'snd_bg_music';
-const MUSIC_VOL   = 0.5;
+const MUSIC_VOL   = 0.2;
 
 class AudioManagerClass {
     private scene: Phaser.Scene | null = null;

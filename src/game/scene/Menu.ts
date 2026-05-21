@@ -97,28 +97,28 @@ export default class Menu extends BaseScene {
 
     private createTitle(): void {
         // Glow shadow layer
-        this.add.bitmapText(this.CX + 3, this.H * 0.18 + 3, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5).setAlpha(0.45)
+        this.add.bitmapText(this.CX + 3, this.H * 0.22 + 3, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5).setAlpha(0.45)
         .setTint(Phaser.Display.Color.ValueToColor("#0044ff").color);
 
-        const title = this.add.bitmapText(this.CX, this.H * 0.18, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5);
+        const title = this.add.bitmapText(this.CX, this.H * 0.22, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5);
 
         // Gentle float
         this.tweens.add({
             targets: title,
-            y: this.H * 0.18 - 12,
+            y: this.H * 0.22 - 12,
             duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
         });
 
-        this.add.bitmapText(this.CX, this.H * 0.29, 'coiny-bmp', 'Remember. Count. Tap!', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
+        this.add.bitmapText(this.CX, this.H * 0.32, 'coiny-bmp', 'Remember. Count. Tap!', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
         .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
     }
 
     private createBestScore(): void {
         const best = SaveManager.getBestScore();
-        this.add.bitmapText(this.CX, this.H * 0.36, 'coiny-bmp', 'BEST SCORE', Math.floor(this.H * 0.024), 0).setOrigin(0.5)
+        this.add.bitmapText(this.CX, this.H * 0.42, 'coiny-bmp', 'BEST SCORE', Math.floor(this.H * 0.024), 0).setOrigin(0.5)
         .setTint(Phaser.Display.Color.ValueToColor(COLORS.ACCENT).color);
 
-        this.add.bitmapText(this.CX, this.H * 0.42, 'coiny-bmp', `${best}`, Math.floor(this.H * 0.062), 0).setOrigin(0.5)
+        this.add.bitmapText(this.CX, this.H * 0.48, 'coiny-bmp', `${best}`, Math.floor(this.H * 0.062), 0).setOrigin(0.5)
         .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color);
     }
 
@@ -129,7 +129,7 @@ export default class Menu extends BaseScene {
 
         // PLAY button
         const playBtn = this.createButton(
-            this.CX, this.H * 0.54,
+            this.CX, this.H * 0.60,
             bw, bh,
             'PLAY',
             fs,
@@ -149,7 +149,7 @@ export default class Menu extends BaseScene {
 
         // Leaderboard button
         this.createButton(
-            this.CX, this.H * 0.66,
+            this.CX, this.H * 0.72,
             Math.floor(bw * 0.75), Math.floor(bh * 0.78),
             'LEADERBOARD',
             Math.floor(fs * 0.5),
