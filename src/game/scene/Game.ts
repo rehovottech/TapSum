@@ -23,7 +23,7 @@ export default class Game extends BaseScene {
     private requiredTaps   = 1;
     private currentNumber  = 1;   // number shown this round
     private cumulativeSum  = 0;   // running total — defines required taps
-    private timeLeft       = GAME_CONFIG.BASE_TIMER;
+    private timeLeft       = 0;
     private timerDuration  = GAME_CONFIG.BASE_TIMER;
     private roundActive    = false;
     private gameOver       = false;
@@ -55,6 +55,8 @@ export default class Game extends BaseScene {
         this.cumulativeSum = 0;
         this.gameOver      = false;
         this.roundActive   = false;
+        this.timeLeft      = GAME_CONFIG.BASE_TIMER;
+        this.timerDuration = GAME_CONFIG.BASE_TIMER;
     }
 
     create(): void {
@@ -213,12 +215,7 @@ export default class Game extends BaseScene {
         this.cumulativeSum += this.currentNumber;
         this.requiredTaps   = this.cumulativeSum;
         this.tapCount       = 0;
-        this.timerDuration = Math.max(
-            GAME_CONFIG.MIN_TIMER,
-            GAME_CONFIG.BASE_TIMER -
-                Math.floor((this.round - 1) / GAME_CONFIG.DIFFICULTY_STEP) * GAME_CONFIG.TIMER_REDUCTION,
-        );
-        this.timeLeft = this.timerDuration;
+        // timeLeft and timerDuration carry over; bar was adjusted after the previous round's bonus
 
         this.roundText.setText(`Round ${this.round}`);
         this.scoreText.setText(`${this.score}`);
@@ -282,11 +279,12 @@ export default class Game extends BaseScene {
         this.score += GAME_CONFIG.SCORE_PER_ROUND;
         AudioManager.play('snd_success');
 
-        // Time bonus: 2x after milestone rounds completed
-        const bonus = this.round >= GAME_CONFIG.TIME_BONUS_MILESTONE
-            ? GAME_CONFIG.TIME_BONUS_BASE * 2
-            : GAME_CONFIG.TIME_BONUS_BASE;
-        this.timeLeft = Math.min(this.timeLeft + bonus, this.timerDuration);
+        // +requiredTaps × 1.5s; every 10th success gives ×2 instead
+        const multiplier = this.round % GAME_CONFIG.TIME_BONUS_MILESTONE === 0
+            ? GAME_CONFIG.TIME_BONUS_DOUBLE_MULTIPLIER
+            : GAME_CONFIG.TIME_BONUS_MULTIPLIER;
+        this.timeLeft     += this.requiredTaps * multiplier * 1000;
+        this.timerDuration = this.timeLeft; // bar rescales to the new total
 
         // Score fly to counter
         this.spawnScoreLabel(
