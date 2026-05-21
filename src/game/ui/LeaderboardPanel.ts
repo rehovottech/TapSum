@@ -12,7 +12,7 @@ export class LeaderboardPanel {
     private root: Phaser.GameObjects.Container;
     private listContainer!: Phaser.GameObjects.Container;
     private maskShape!: Phaser.GameObjects.Graphics;
-    private loadingText!: Phaser.GameObjects.Text;
+    private loadingText!: Phaser.GameObjects.BitmapText;
 
     // Scroll state
     private listAreaTop  = 0;
@@ -63,12 +63,8 @@ export class LeaderboardPanel {
         // Title
         const titleY = py - panelH / 2 + 52;
         this.root.add(
-            this.scene.add.text(px, titleY, 'LEADERBOARD', {
-                fontFamily: 'Coiny',
-                fontSize:   `${Math.floor(H * 0.042)}px`,
-                color:      COLORS.TEXT_NEON,
-                fontStyle:  'bold',
-            }).setOrigin(0.5),
+            this.scene.add.bitmapText(px, titleY, 'coiny-bmp', 'LEADERBOARD', Math.floor(H * 0.030), 0).setOrigin(0.5)
+            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color),
         );
 
         // Divider
@@ -83,10 +79,10 @@ export class LeaderboardPanel {
         const colRank  = px - panelW / 2 + PANEL_PAD + 28;
         const colName  = px - panelW / 2 + PANEL_PAD + 90;
         const colScore = px + panelW / 2 - PANEL_PAD - 10;
-        const hStyle   = { fontFamily: 'Coiny', fontSize: `${Math.floor(H * 0.022)}px`, color: '#8899bb' };
-        this.root.add(this.scene.add.text(colRank,  headerY, '#',      hStyle).setOrigin(0.5));
-        this.root.add(this.scene.add.text(colName,  headerY, 'PLAYER', { ...hStyle }).setOrigin(0, 0.5));
-        this.root.add(this.scene.add.text(colScore, headerY, 'BEST',   hStyle).setOrigin(1, 0.5));
+
+        this.root.add(this.scene.add.bitmapText(colRank,  headerY, 'coiny-bmp', '#', Math.floor(H * 0.02), 0).setOrigin(0.5));
+        this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5));
+        this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5));
 
         // Scrollable list area
         this.listAreaTop = headerY + 28;
@@ -106,11 +102,7 @@ export class LeaderboardPanel {
         this.listContainer.setMask(this.maskShape.createGeometryMask());
 
         // Loading text
-        this.loadingText = this.scene.add.text(px, this.listAreaTop + this.listAreaH / 2, 'Loading…', {
-            fontFamily: 'Coiny',
-            fontSize:   `${Math.floor(H * 0.03)}px`,
-            color:      '#667799',
-        }).setOrigin(0.5).setDepth(51);
+        this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51);
         this.root.add(this.loadingText);
 
         // Drag zone for scrolling
@@ -129,11 +121,8 @@ export class LeaderboardPanel {
         const closeBg = this.scene.add.graphics();
         closeBg.fillStyle(0xff1744, 0.85);
         closeBg.fillCircle(closeX, closeY, 22);
-        const closeTxt = this.scene.add.text(closeX, closeY, '✕', {
-            fontFamily: 'Akt-SemiBold',
-            fontSize:   `${Math.floor(H * 0.025)}px`,
-            color:      '#ffffff',
-        }).setOrigin(0.5);
+        
+        const closeTxt = this.scene.add.bitmapText(closeX, closeY-3, 'krungthep-bmp', 'x', Math.floor(H * 0.020), 0).setOrigin(0.5);
         this.root.add(closeBg);
         this.root.add(closeTxt);
 
