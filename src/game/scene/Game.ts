@@ -142,7 +142,7 @@ export default class Game extends BaseScene {
         .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
 
         // Hint: "tap N times"
-        this.hintText = this.add.bitmapText(this.CX, this.H * 0.465, 'coiny-bmp', '', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
+        this.hintText = this.add.bitmapText(this.CX, this.H * 0.465, 'coiny-bmp', '', Math.floor(this.H * 0.028), 0).setOrigin(0.5).setVisible(false)
         .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
         // Current tap count
