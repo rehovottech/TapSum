@@ -1,5 +1,5 @@
 export const GlobVar: any = {
-    debug: true,
+    debug: false,
     platformData: {},
     scaleRatio: 1,
     gameData: {},

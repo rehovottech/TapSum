@@ -22,7 +22,7 @@ class FlatPreloadBar extends Phaser.GameObjects.Container{
         outline.setPosition(0,0);
 
         this.fillbar = this.scene.add.rectangle(0,0,rectangleWidth,rectangleHeight).setOrigin(0,0.5);
-        this.fillbar.setFillStyle(0x000000);
+        this.fillbar.setFillStyle(0xffffff);
         this.fillbar.setStrokeStyle(1,0xffffff);
         this.fillbar.setPosition(outline.x - outline.displayWidth * 0.5, outline.y);
 

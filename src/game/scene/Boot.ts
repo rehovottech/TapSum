@@ -28,6 +28,10 @@ export default class Boot extends BaseScene {
         this.load
             .atlas('logo', `logo${GlobVar.suffix}.png`, `logo${GlobVar.suffix}.json`)
             .once(Phaser.Loader.Events.COMPLETE, () => this.showLogo());
+
+        // Load Bitmap
+        this.load.bitmapFont('coiny', 'assets/font/coiny.png', 'assets/font/coiny.xml');
+        this.load.bitmapFont('krungthep', 'assets/font/krungthep.png', 'assets/font/krungthep.xml');
     }
 
     create(): void {
@@ -73,7 +77,7 @@ export default class Boot extends BaseScene {
     }
 
     private showLogo(): void {
-        let scale = this.H * 0.2 * GlobVar.imageRatio;
+        let scale = this.H * 0.13;
 
         this.logoContiner = this.add.container();
             const logo = this.add.sprite(this.CX, this.H * 0.4, 'logo', 'r_logo.png')
@@ -92,7 +96,7 @@ export default class Boot extends BaseScene {
         this.tweens.add({ targets: logo,  alpha: 1, delay: 150, duration: 500, ease: 'Cubic.InOut' });
         this.tweens.add({ targets: title, alpha: 1, delay: 250, duration: 500, ease: 'Cubic.InOut', onComplete: () => {
             if (this.preloadBar && this.preloadBar.progressValue >= 100) {
-                this.time.delayedCall(1200, () => this.fadeToScene(SCENES.Preload));
+                this.time.delayedCall(2000, () => this.fadeToScene(SCENES.Preload));
             }
         }});
     }
