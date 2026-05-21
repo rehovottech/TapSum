@@ -77,8 +77,8 @@ export default abstract class BaseScene extends Phaser.Scene {
         faceColor: number, sideColor: number,
         callback: () => void,
     ): Phaser.GameObjects.Container {
-        const radius = height * 0.35;
-        const sideH  = Math.round(height * 0.18);
+        const radius = height * 0.2;
+        const sideH  = Math.round(height * 0.10);
 
         const container = this.add.container(x, y);
 
@@ -94,12 +94,7 @@ export default abstract class BaseScene extends Phaser.Scene {
         face.fillStyle(faceColor, 1);
         face.fillRoundedRect(-width / 2, -height / 2, width, height - sideH, radius);
 
-        const txt = this.add.text(0, -Math.round(sideH * 0.3), label, {
-            fontFamily: 'Akt-SemiBold',
-            fontSize: `${fontSize}px`,
-            color: '#ffffff',
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const txt = this.add.bitmapText(0, -Math.round(sideH * 0.3), 'krungthep-bmp', label, Math.floor(fontSize), 0).setOrigin(0.5);
 
         container.add([shadow, side, face, txt]);
         container.setSize(width, height);
