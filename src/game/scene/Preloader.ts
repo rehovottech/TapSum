@@ -67,7 +67,7 @@ export default class Preload extends BaseScene {
 
     private createLoadingUI(): void {
         // Title
-        const title = this.add.bitmapText(this.CX, this.H * 0.32, 'coiny-bmp', 'TapSum', 140, 0).setOrigin(0.5);
+        const title = this.add.bitmapText(this.CX, this.H * 0.32, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5);
         this.tweens.add({
             targets: title,
             y: this.H * 0.32 - 18,
@@ -81,11 +81,11 @@ export default class Preload extends BaseScene {
             repeat: -1,
         });
 
-        this.add.bitmapText(this.CX, this.H * 0.44, 'coiny-bmp', 'Remember. Count. Tap!', 40, 0).setOrigin(0.5)
+        this.add.bitmapText(this.CX, this.H * 0.44, 'coiny-bmp', 'Remember. Count. Tap!', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
         .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
 
         // Dots loading animation
-        const dots1 = this.add.bitmapText(this.CX, this.H * 0.52, 'coiny-bmp', '• • •', 90, 0).setOrigin(0.5);
+        const dots1 = this.add.bitmapText(this.CX, this.H * 0.52, 'coiny-bmp', '• • •', Math.floor(this.H * 0.06), 0).setOrigin(0.5);
         dots1.setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
         this.tweens.add({

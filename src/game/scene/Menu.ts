@@ -97,20 +97,10 @@ export default class Menu extends BaseScene {
 
     private createTitle(): void {
         // Glow shadow layer
-        this.add.text(this.CX + 3, this.H * 0.18 + 3, 'TapSum', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.115)}px`,
-            color: '#0044ff',
-            fontStyle: 'bold',
-            alpha: 0.5,
-        } as any).setOrigin(0.5).setAlpha(0.45);
+        this.add.bitmapText(this.CX + 3, this.H * 0.18 + 3, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5).setAlpha(0.45)
+        .setTint(Phaser.Display.Color.ValueToColor("#0044ff").color);
 
-        const title = this.add.text(this.CX, this.H * 0.18, 'TapSum', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.115)}px`,
-            color: COLORS.TEXT_WHITE,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const title = this.add.bitmapText(this.CX, this.H * 0.18, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5);
 
         // Gentle float
         this.tweens.add({
@@ -119,29 +109,17 @@ export default class Menu extends BaseScene {
             duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
         });
 
-        this.add.text(this.CX, this.H * 0.29, 'Remember · Count · Tap', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.028)}px`,
-            color: COLORS.TEXT_NEON,
-        }).setOrigin(0.5);
+        this.add.bitmapText(this.CX, this.H * 0.29, 'coiny-bmp', 'Remember. Count. Tap!', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
     }
 
     private createBestScore(): void {
         const best = SaveManager.getBestScore();
+        this.add.bitmapText(this.CX, this.H * 0.36, 'coiny-bmp', 'BEST SCORE', Math.floor(this.H * 0.024), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.ACCENT).color);
 
-        this.add.text(this.CX, this.H * 0.36, 'BEST SCORE', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.024)}px`,
-            color: COLORS.TEXT_ACCENT,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
-
-        this.add.text(this.CX, this.H * 0.40, `${best}`, {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.062)}px`,
-            color: COLORS.TEXT_GOLD,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        this.add.bitmapText(this.CX, this.H * 0.42, 'coiny-bmp', `${best}`, Math.floor(this.H * 0.062), 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color);
     }
 
     private createButtons(): void {
@@ -174,7 +152,7 @@ export default class Menu extends BaseScene {
             this.CX, this.H * 0.66,
             Math.floor(bw * 0.75), Math.floor(bh * 0.78),
             'LEADERBOARD',
-            Math.floor(fs * 0.72),
+            Math.floor(fs * 0.5),
             COLORS.BUTTON_SECONDARY, COLORS.BUTTON_SECONDARY_DARK,
             () => {
                 AudioManager.play('snd_click');
@@ -184,8 +162,8 @@ export default class Menu extends BaseScene {
     }
 
     private createSoundToggle(): void {
-        const x = this.W * 0.85;
-        const y = this.H * 0.075;
+        const x = this.W * 0.90;
+        const y = this.H * 0.05;
         const size = Math.floor(this.H * 0.06);
 
         this.soundBtn = this.add.container(x, y);
@@ -193,11 +171,7 @@ export default class Menu extends BaseScene {
         const bg = this.add.graphics();
         this.soundBtn.add(bg);
 
-        const label = this.add.text(0, 0, '', {
-            fontFamily: 'Akt-SemiBold',
-            fontSize: `${Math.floor(size * 0.55)}px`,
-            color: COLORS.TEXT_WHITE,
-        }).setOrigin(0.5);
+        const label = this.add.bitmapText(0, 0, 'krungthep-bmp', '', 25, 0).setOrigin(0.5);
         this.soundBtn.add(label);
 
         const refresh = () => {
