@@ -116,8 +116,8 @@ export class LeaderboardPanel {
         this.bindScrollEvents();
 
         // Close button
-        const closeX = px + panelW / 2 - 30;
-        const closeY = py - panelH / 2 + 30;
+        const closeX = px + panelW / 2 - 35;
+        const closeY = py - panelH / 2 + 35;
         const closeBg = this.scene.add.graphics();
         closeBg.fillStyle(0xff1744, 0.85);
         closeBg.fillCircle(closeX, closeY, 22);
