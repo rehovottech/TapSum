@@ -1,11 +1,11 @@
 <?xml version='1.0'?>
    <font>
        <info aa='1' size='150' smooth='1' stretchH='100' bold='0' padding='0,0,0,0' spacing='0,0' charset='' italic='0' unicode='0' face='Coiny'/>
-       <common scaleW='960' packed='0' pages='1' lineHeight='152' scaleH='896' base='115'/>
+       <common scaleW='960' packed='0' pages='1' lineHeight='150' scaleH='896' base='113'/>
        <pages>
             <page id='0' file='coiny.png'/>
        </pages>
-        <chars count='95'>
+        <chars count='96'>
             <char xadvance='41' x='150' chnl='0' yoffset='113' y='132' xoffset='0' id='32' page='0' height='0' width='0'/>
             <char xadvance='53' x='902' chnl='0' yoffset='8' y='404' xoffset='9' id='33' page='0' height='108' width='38'/>
             <char xadvance='89' x='414' chnl='0' yoffset='10' y='836' xoffset='8' id='34' page='0' height='48' width='78'/>
@@ -101,5 +101,6 @@
             <char xadvance='51' x='112' chnl='0' yoffset='3' y='132' xoffset='10' id='124' page='0' height='122' width='36'/>
             <char xadvance='84' x='258' chnl='0' yoffset='-8' y='220' xoffset='11' id='125' page='0' height='146' width='66'/>
             <char xadvance='72' x='774' chnl='0' yoffset='65' y='670' xoffset='-6' id='126' page='0' height='44' width='88'/>
+            <char xadvance='50' x='892' chnl='0' yoffset='59' y='716' xoffset='7' id='8226' page='0' height='34' width='38'/>
        </chars>
    </font>

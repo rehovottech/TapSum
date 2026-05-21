@@ -8,7 +8,7 @@ import FPS from '../model/FPS';
 export default class Preload extends BaseScene {
     private barFill!: Phaser.GameObjects.Graphics;
     private barBg!:   Phaser.GameObjects.Graphics;
-    private pctText!: Phaser.GameObjects.Text;
+    private pctText!: Phaser.GameObjects.BitmapText;
     private barW!: number;
     private barH!: number;
     private barX!: number;
@@ -23,9 +23,6 @@ export default class Preload extends BaseScene {
     }
 
     preload(): void {
-        this.load.font('Coiny', 'assets/font/Coiny-Regular.ttf');
-        this.load.font('Akt-SemiBold', 'assets/font/Akt-SemiBold.ttf');
-
         // Place audio files here when available, e.g.:
         this.load.audio('snd_tap',      'assets/audio/tap.mp3');
         this.load.audio('snd_success',  'assets/audio/success.mp3');
@@ -53,7 +50,7 @@ export default class Preload extends BaseScene {
             ease: 'Sine.easeIn',
             onUpdate: () => this.setProgress(prog.v),
             onComplete: () => {
-                this.time.delayedCall(400, () => this.fadeToScene(SCENES.Menu));
+                this.time.delayedCall(1500, () => this.fadeToScene(SCENES.Menu));
             },
         });
     }
@@ -70,28 +67,29 @@ export default class Preload extends BaseScene {
 
     private createLoadingUI(): void {
         // Title
-        this.add.text(this.CX, this.H * 0.32, 'TapSum', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.1)}px`,
-            color: COLORS.TEXT_WHITE,
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const title = this.add.bitmapText(this.CX, this.H * 0.32, 'coiny-bmp', 'TapSum', 140, 0).setOrigin(0.5);
+        this.tweens.add({
+            targets: title,
+            y: this.H * 0.32 - 18,
+            scaleX: 1.02,
+            scaleY: 1.04,
+            duration: 800,
+            delay: 200,
+            repeatDelay: 200,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1,
+        });
 
-        this.add.text(this.CX, this.H * 0.44, 'Remember. Count. Tap!', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.03)}px`,
-            color: COLORS.TEXT_NEON,
-        }).setOrigin(0.5);
+        this.add.bitmapText(this.CX, this.H * 0.44, 'coiny-bmp', 'Remember. Count. Tap!', 40, 0).setOrigin(0.5)
+        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
 
         // Dots loading animation
-        const dots = this.add.text(this.CX, this.H * 0.52, '• • •', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.04)}px`,
-            color: COLORS.TEXT_ACCENT,
-        }).setOrigin(0.5);
+        const dots1 = this.add.bitmapText(this.CX, this.H * 0.52, 'coiny-bmp', '• • •', 90, 0).setOrigin(0.5);
+        dots1.setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
         this.tweens.add({
-            targets: dots,
+            targets: dots1,
             alpha: 0.2,
             duration: 500,
             yoyo: true,
@@ -117,11 +115,7 @@ export default class Preload extends BaseScene {
         this.barFill = this.add.graphics();
 
         // Percentage text
-        this.pctText = this.add.text(this.CX, this.barY + this.barH + Math.floor(this.H * 0.03), '0%', {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.028)}px`,
-            color: COLORS.TEXT_WHITE,
-        }).setOrigin(0.5);
+        this.pctText = this.add.bitmapText(this.CX, this.barY + this.barH + Math.floor(this.H * 0.03), 'coiny-bmp', '0%', 40, 0).setOrigin(0.5);
 
         this.setProgress(0);
     }
