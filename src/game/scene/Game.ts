@@ -17,14 +17,16 @@ interface GameData {
 
 export default class Game extends BaseScene {
     // ── State ───────────────────────────────────────────────────────────────
-    private score         = 0;
-    private round         = 1;
-    private tapCount      = 0;
-    private requiredTaps  = 1;
-    private timeLeft      = GAME_CONFIG.BASE_TIMER;
-    private timerDuration = GAME_CONFIG.BASE_TIMER;
-    private roundActive   = false;
-    private gameOver      = false;
+    private score          = 0;
+    private round          = 1;
+    private tapCount       = 0;
+    private requiredTaps   = 1;
+    private currentNumber  = 1;   // number shown this round
+    private cumulativeSum  = 0;   // running total — defines required taps
+    private timeLeft       = GAME_CONFIG.BASE_TIMER;
+    private timerDuration  = GAME_CONFIG.BASE_TIMER;
+    private roundActive    = false;
+    private gameOver       = false;
 
     // ── UI refs ─────────────────────────────────────────────────────────────
     private numberText!:   Phaser.GameObjects.Text;
@@ -48,10 +50,11 @@ export default class Game extends BaseScene {
 
     init(data: GameData): void {
         this.initScene();
-        this.score    = data?.resumeScore ?? 0;
-        this.round    = data?.resumeRound ?? 1;
-        this.gameOver  = false;
-        this.roundActive = false;
+        this.score         = data?.resumeScore ?? 0;
+        this.round         = data?.resumeRound ?? 1;
+        this.cumulativeSum = 0;
+        this.gameOver      = false;
+        this.roundActive   = false;
     }
 
     create(): void {
@@ -224,9 +227,14 @@ export default class Game extends BaseScene {
     private startRound(): void {
         if (this.gameOver) return;
 
-        // T(n) = n*(n+1)/2  –  the total cumulative taps required after round n
-        this.requiredTaps  = (this.round * (this.round + 1)) / 2;
-        this.tapCount      = 0;
+        // Pick a random number for this round and add to the running sum
+        const maxNum = this.round >= GAME_CONFIG.RANGE_HARD_ROUND ? 10
+                     : this.round >= GAME_CONFIG.RANGE_MID_ROUND  ? 5
+                     : 3;
+        this.currentNumber  = Phaser.Math.Between(1, maxNum);
+        this.cumulativeSum += this.currentNumber;
+        this.requiredTaps   = this.cumulativeSum;
+        this.tapCount       = 0;
         this.timerDuration = Math.max(
             GAME_CONFIG.MIN_TIMER,
             GAME_CONFIG.BASE_TIMER -
@@ -239,8 +247,8 @@ export default class Game extends BaseScene {
         this.hintText.setText(`Tap ${this.requiredTaps} times`);
         this.tapCountText.setText('Taps: 0');
 
-        // Number pop-in
-        this.numberText.setText(`${this.round}`).setScale(2.2);
+        // Number pop-in — show only this round's number, not the cumulative total
+        this.numberText.setText(`${this.currentNumber}`).setScale(2.2);
         this.tweens.add({
             targets: this.numberText,
             scaleX: 1, scaleY: 1,
@@ -295,6 +303,12 @@ export default class Game extends BaseScene {
         this.roundActive = false;
         this.score += GAME_CONFIG.SCORE_PER_ROUND;
         AudioManager.play('snd_success');
+
+        // Time bonus: 2x after milestone rounds completed
+        const bonus = this.round >= GAME_CONFIG.TIME_BONUS_MILESTONE
+            ? GAME_CONFIG.TIME_BONUS_BASE * 2
+            : GAME_CONFIG.TIME_BONUS_BASE;
+        this.timeLeft = Math.min(this.timeLeft + bonus, this.timerDuration);
 
         // Score fly to counter
         this.spawnScoreLabel(
