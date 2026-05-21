@@ -5,8 +5,8 @@ export const GAME_CONFIG = {
     INTERSTITIAL_COOLDOWN: 120_000, // 2 minutes
 
     // Time bonus on success: requiredTaps × multiplier seconds
-    TIME_BONUS_MULTIPLIER:        1,  // normal rounds
-    TIME_BONUS_DOUBLE_MULTIPLIER: 2,    // every 10th round
+    TIME_BONUS_MULTIPLIER:        0.5,  // normal rounds
+    TIME_BONUS_DOUBLE_MULTIPLIER: 1.5,    // every 10th round
     TIME_BONUS_MILESTONE:         10,   // every Nth success triggers 2x
 
     // Number range thresholds

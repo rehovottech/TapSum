@@ -27,6 +27,8 @@ export default class Game extends BaseScene {
     private timerDuration  = GAME_CONFIG.BASE_TIMER;
     private roundActive    = false;
     private gameOver       = false;
+    private isHolding      = false;
+    private holdTimer?:    Phaser.Time.TimerEvent;
 
     // ── UI refs ─────────────────────────────────────────────────────────────
     private numberText!:   Phaser.GameObjects.BitmapText;
@@ -106,8 +108,8 @@ export default class Game extends BaseScene {
         const fs    = Math.floor(this.H * 0.032);
 
         // ← back button
-        const back = this.add.bitmapText(this.W * 0.08, topY, 'coiny-bmp', '<-', Math.floor(this.H * 0.042), 0).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
+        const back = this.add.bitmapText(this.W * 0.08, topY, 'coiny-bmp', '<-', Math.floor(this.H * 0.042), 0).setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
         back.on('pointerdown', () => {
             AudioManager.play('snd_click');
             this.triggerGameOver(true);
@@ -200,6 +202,8 @@ export default class Game extends BaseScene {
         });
 
         this.tapButton.on('pointerdown', () => this.onTap());
+        this.tapButton.on('pointerup',   () => this.onRelease());
+        this.tapButton.on('pointerout',  () => this.onRelease());
     }
 
     // ── Round logic ─────────────────────────────────────────────────────────
@@ -234,42 +238,67 @@ export default class Game extends BaseScene {
         AudioManager.play('snd_click');
     }
 
-    // ── Tap handler ─────────────────────────────────────────────────────────
+    // ── Tap / hold handler ──────────────────────────────────────────────────
 
     private onTap(): void {
         if (!this.roundActive || this.gameOver) return;
 
+        this.isHolding = true;
+        this.doTapIncrement();
+
+        if (this.tapCount > this.requiredTaps) return; // already failed
+
+        // Hold: after 300 ms starts repeating every 300 ms
+        this.holdTimer = this.time.addEvent({
+            delay: 300,
+            loop: true,
+            callback: () => {
+                if (!this.roundActive || this.gameOver) { this.stopHold(); return; }
+                this.doTapIncrement();
+            },
+        });
+    }
+
+    private onRelease(): void {
+        if (!this.isHolding) return;
+        this.stopHold();
+        if (!this.roundActive || this.gameOver) return;
+        if (this.tapCount === this.requiredTaps) this.onRoundSuccess();
+    }
+
+    private doTapIncrement(): void {
         this.tapCount++;
         AudioManager.play('snd_tap');
 
-        // Button squash-stretch
         this.tweens.add({
             targets: this.tapButton,
             scaleX: 0.86, scaleY: 0.86,
             duration: 65, yoyo: true, ease: 'Power2',
         });
 
-        // Camera micro-shake on higher rounds
         if (this.round >= GAME_CONFIG.DIFFICULTY_STEP) {
-            this.cameras.main.shake(35, 0.005 + (this.round * 0.0005));
+            this.cameras.main.shake(35, 0.005 + this.round * 0.0005);
         }
 
-        // Small tap-burst on the button
         this.spawnBurst(
             this.tapButton.x, this.tapButton.y,
             [COLORS.NEON_BLUE, COLORS.ACCENT, 0xffffff],
             6, 60, 140,
         );
 
-        // Update tap count
         this.tapCountText.setText(`Taps: ${this.tapCount}`);
         this.popObject(this.tapCountText);
 
         if (this.tapCount > this.requiredTaps) {
+            this.stopHold();
             this.triggerGameOver();
-        } else if (this.tapCount === this.requiredTaps) {
-            this.onRoundSuccess();
         }
+    }
+
+    private stopHold(): void {
+        this.isHolding = false;
+        this.holdTimer?.remove(false);
+        this.holdTimer = undefined;
     }
 
     // ── Round success ───────────────────────────────────────────────────────
@@ -344,8 +373,9 @@ export default class Game extends BaseScene {
 
     private triggerGameOver(voluntary = false): void {
         if (this.gameOver) return;
-        this.gameOver   = true;
+        this.gameOver    = true;
         this.roundActive = false;
+        this.stopHold();
 
         if (!voluntary) {
             AudioManager.play('snd_fail');
