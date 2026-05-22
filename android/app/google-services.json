@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "947127481548",
+        "project_id": "rehovotgames",
+        "storage_bucket": "rehovotgames.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:947127481548:android:91caf08c179f4b3b76be69",
+                "android_client_info": {
+                    "package_name": "com.rehovot.game.tapsum"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
