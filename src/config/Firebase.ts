@@ -1,9 +1,9 @@
 export const FirebaseConfig = {
-    apiKey: "AIzaSyAscrrFxwNF-uB6jGAKUhI37bhYbaeSGOI",
-    authDomain: "word-tamil-multiplayer.firebaseapp.com",
-    projectId: "word-tamil-multiplayer",
-    storageBucket: "word-tamil-multiplayer.firebasestorage.app",
-    messagingSenderId: "493720435635",
-    appId: "1:493720435635:web:b4dce062af9a3e3d00a9c6",
-    measurementId: "G-7C2HX6M5NL"
+    apiKey: "AIzaSyBHv5cLgIAqEaBVnWX3IWAMMFrwr6ZLtUY",
+    authDomain: "rehovotgames.firebaseapp.com",
+    projectId: "rehovotgames",
+    storageBucket: "rehovotgames.firebasestorage.app",
+    messagingSenderId: "947127481548",
+    appId: "1:947127481548:web:bf312c2f0402caac76be69",
+    measurementId: "G-9CZ2C319HG"
 };
