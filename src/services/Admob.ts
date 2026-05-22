@@ -7,7 +7,6 @@ import { AdmobConfig } from "../config/Admob";
 import { GlobVar } from "../utils/Global";
 
 
-
 export async function AdInitialize(): Promise<void> {
 
     if(!Capacitor.isNativePlatform()){
@@ -15,8 +14,7 @@ export async function AdInitialize(): Promise<void> {
     }
 
     //Init admob
-    const ADID = AdmobConfig[`Admob-ID-${(GlobVar.platformData.type).toUpperCase()}`];
-    await AdMob.initialize(ADID);
+    await AdMob.initialize({ testingDevices: [], initializeForTesting: false });
 
     const [trackingInfo, consentInfo] = await Promise.all([
         AdMob.trackingAuthorizationStatus(),
