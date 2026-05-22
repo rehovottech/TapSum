@@ -13,6 +13,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         scale: {
             parent: 'phaser-game',
             mode: Phaser.Scale.NONE,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
             width: window.innerWidth,
             height: window.innerHeight
         },
