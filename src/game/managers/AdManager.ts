@@ -4,7 +4,9 @@ import { GAME_CONFIG } from '../constants/GameConstants';
 
 class AdManagerClass {
     async showBanner(): Promise<void> {
-        try { await ShowBannerAd(); } catch (_) {}
+        setTimeout(async () => {
+            try { await ShowBannerAd(); } catch (_) {}
+        }, 1500);
     }
 
     async hideBanner(): Promise<void> {

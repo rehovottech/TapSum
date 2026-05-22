@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">tap-sum</string>
+    <string name="app_name">Tap Sum</string>
     <string name="title_activity_main">tap-sum</string>
     <string name="package_name">com.rehovot.game.tapsum</string>
     <string name="custom_url_scheme">com.rehovot.game.tapsum</string>
