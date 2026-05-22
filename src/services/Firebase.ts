@@ -1,32 +1,9 @@
 import { FirebaseApp, initializeApp } from "firebase/app";
-import {
-    Analytics,
-    AnalyticsCallOptions,
-    getAnalytics,
-    isSupported,
-    logEvent as firebaseLogEvent,
-} from "firebase/analytics";
-import {
-    Auth,
-    getAuth,
-    signInAnonymously,
-    onAuthStateChanged,
-    User,
-} from "firebase/auth";
-import {
-    Firestore,
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    collection,
-    query,
-    orderBy,
-    limit,
-    getDocs,
-    increment,
-} from "firebase/firestore";
+import { Analytics,AnalyticsCallOptions,
+getAnalytics,isSupported,logEvent as firebaseLogEvent,} from "firebase/analytics";
+import { Auth,getAuth,signInAnonymously,onAuthStateChanged,User} from "firebase/auth";
+import { Firestore,getFirestore,doc,getDoc,setDoc,updateDoc,
+    collection,query,orderBy,limit,getDocs,increment,} from "firebase/firestore";
 import { FirebaseConfig } from "../config/Firebase";
 
 type AnalyticsEventParams = Record<string, string | number | boolean | null | undefined>;
