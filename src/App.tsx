@@ -32,22 +32,53 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import { useEffect } from 'react';
+
+import { Firebase } from './services/Firebase';
+import { AdInitialize } from './services/Admob';
+import { StatusBar } from '@capacitor/status-bar';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
+import { Capacitor } from '@capacitor/core';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-    <IonApp>
-        <IonReactRouter>
-            <IonRouterOutlet>
-                <Route exact path="/home">
-                    <Home />
-                </Route>
-                <Route exact path="/">
-                    <Redirect to="/home" />
-                </Route>
-            </IonRouterOutlet>
-        </IonReactRouter>
-    </IonApp>
-);
+const App: React.FC = () => {
+
+    useEffect(()=>{
+        // Hide Status bar
+        if(Capacitor.isNativePlatform()){
+            StatusBar.hide().catch(() => {});
+        }
+
+        // Init Firebase
+        Firebase.init();
+
+        // Init Admob
+        AdInitialize().catch(() => {});
+
+        // Lock orientation to portrait
+        if(Capacitor.isNativePlatform()){
+            const lockOrientation = async () => {
+                await ScreenOrientation.lock({ orientation: 'portrait' });
+            };
+            lockOrientation().catch(() => {});
+        }
+    },[]);
+
+    return (
+        <IonApp>
+            <IonReactRouter>
+                <IonRouterOutlet>
+                    <Route exact path="/home">
+                        <Home />
+                    </Route>
+                    <Route exact path="/">
+                        <Redirect to="/home" />
+                    </Route>
+                </IonRouterOutlet>
+            </IonReactRouter>
+        </IonApp>
+    );
+}
 
 export default App;

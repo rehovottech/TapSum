@@ -5,17 +5,11 @@ import { useEffect } from 'react';
 import { ResizePhaserGame } from '../game/utils/Resize';
 import { GlobVar } from '../utils/Global';
 import { Capacitor } from '@capacitor/core';
-import { Firebase } from '../services/Firebase';
-import { AdInitialize } from '../services/Admob';
 
 const Home: React.FC = () => {
 
     useEffect(()=>{
 
-        // Init Firebase
-        Firebase.init();
-        AdInitialize().catch(() => {});
-        
         const initializeGame = ()=>{
             GlobVar.platformData.type = Capacitor.getPlatform();
             GlobVar.isDesktop = ((Capacitor.isNativePlatform() === false) && (isPlatform("desktop") === true));
