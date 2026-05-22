@@ -42,7 +42,7 @@ export default class Boot extends BaseScene {
         this.showLogo();
 
         // Kick off service initializations in the background.
-        //Firebase.signInAnonymous().catch(() => {});
+        Firebase.signInAnonymous().catch(() => {});
     }
 
     update(): void {
