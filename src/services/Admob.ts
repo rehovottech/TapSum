@@ -14,7 +14,7 @@ export async function AdInitialize(): Promise<void> {
     }
 
     //Init admob
-    await AdMob.initialize({ testingDevices: [], initializeForTesting: false });
+    await AdMob.initialize({ initializeForTesting: false });
 
     const [trackingInfo, consentInfo] = await Promise.all([
         AdMob.trackingAuthorizationStatus(),
@@ -70,7 +70,7 @@ export async function ShowBannerAd(): Promise<void> {
         isTesting: AdmobConfig.debug
         // npa: true
     };
-    AdMob.showBanner(options);
+    await AdMob.showBanner(options);
 }
 
 export async function ShowInterstitialAd(closeListener:any=null): Promise<void> {
@@ -94,8 +94,14 @@ export async function ShowInterstitialAd(closeListener:any=null): Promise<void> 
         isTesting: AdmobConfig.debug
         // npa: true
     };
-    await AdMob.prepareInterstitial(options);
-    await AdMob.showInterstitial();
+
+    try {
+        await AdMob.prepareInterstitial(options);
+        await AdMob.showInterstitial();
+    } finally {
+        loadHandle.remove();
+        dismissHandle.remove();
+    }
 }
 
 
@@ -124,9 +130,15 @@ export async function ShowRewardVideoAd(): Promise<void> {
         //   customData: JSON.stringify({ ...MyCustomData })
         //}
     };
-    await AdMob.prepareRewardVideoAd(options);
-    const rewardItem = await AdMob.showRewardVideoAd();
-    console.log(rewardItem);
+    
+    try {
+        await AdMob.prepareRewardVideoAd(options);
+        const rewardItem = await AdMob.showRewardVideoAd();
+        console.log(rewardItem);
+    } finally {
+        loadHandle.remove();
+        dismissHandle.remove();
+    }
 }
 
 export async function HideBannerAd(): Promise<void> {
