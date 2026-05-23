@@ -9,15 +9,13 @@ import { Capacitor } from "@capacitor/core";
 export const ConfigPhaserGame = (): Phaser.Game => {
     let gameWidth = window.innerWidth * window.devicePixelRatio;
     let gameHeight = window.innerHeight * window.devicePixelRatio;
-    let disableWebAudio = true;
     let renderType = Phaser.AUTO;
     let mode = Phaser.Scale.FIT;
     if (!Capacitor.isNativePlatform()){
-        gameWidth = window.innerWidth
-        gameHeight = window.innerHeight
-        renderType = Phaser.CANVAS
-        disableWebAudio = false;
-        mode = Phaser.Scale.NONE
+        gameWidth = window.innerWidth;
+        gameHeight = window.innerHeight;
+        renderType = Phaser.CANVAS;
+        mode = Phaser.Scale.NONE;
     }
 
     const config: Phaser.Types.Core.GameConfig = {
@@ -39,7 +37,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
             End
         ],
         audio: {
-            disableWebAudio: disableWebAudio
+            noAudio: true
         },
         disableContextMenu: true,
         title: "Tamil Word",
