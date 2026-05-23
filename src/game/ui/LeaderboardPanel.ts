@@ -184,7 +184,7 @@ export class LeaderboardPanel {
             this.listContainer.add(rowBg);
 
             // Rank / crown
-            const rankLabel = i < 3 ? CROWN_ICONS[i] : `${i + 1}`;
+            const rankLabel = `${i + 1}`; //i < 3 ? CROWN_ICONS[i] : `${i + 1}`;
             const rankColor = i === 0 ? COLORS.TEXT_GOLD : i === 1 ? '#cccccc' : i === 2 ? '#cd7f32' : '#8899bb';
             this.listContainer.add(
                 this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankLabel, fs, 0).setOrigin(0.5)
