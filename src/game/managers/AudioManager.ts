@@ -21,8 +21,8 @@ const AUDIO_SRCS: Record<string, string> = {
 };
 
 const MUSIC_SRC = 'assets/audio/background-music.mp3';
-const MUSIC_VOL = 0.2;
-const SFX_VOL   = 0.7;
+const MUSIC_VOL = 0.4;
+const SFX_VOL   = 0.9;
 
 class AudioManagerClass {
     private sounds        = new Map<string, Howl>();
