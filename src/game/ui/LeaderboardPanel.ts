@@ -163,9 +163,8 @@ export class LeaderboardPanel {
 
         if (players.length === 0) {
             this.listContainer.add(
-                this.scene.add.text(px, this.listAreaTop + 60, 'No scores yet — be the first!', {
-                    fontFamily: 'Coiny', fontSize: `${fs}px`, color: '#667799',
-                }).setOrigin(0.5),
+                this.scene.add.bitmapText(px, this.listAreaTop + 60, 'coiny-bmp', 'No scores yet — be the first!', fs, 0).setOrigin(0.5)
+                .setTint(Phaser.Display.Color.ValueToColor('#667799').color),
             );
             return;
         }
@@ -188,27 +187,24 @@ export class LeaderboardPanel {
             const rankLabel = i < 3 ? CROWN_ICONS[i] : `${i + 1}`;
             const rankColor = i === 0 ? COLORS.TEXT_GOLD : i === 1 ? '#cccccc' : i === 2 ? '#cd7f32' : '#8899bb';
             this.listContainer.add(
-                this.scene.add.text(colRank, rowY, rankLabel, {
-                    fontFamily: 'Coiny', fontSize: `${fs}px`, color: rankColor,
-                }).setOrigin(0.5),
+                this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankLabel, fs, 0).setOrigin(0.5)
+                .setTint(Phaser.Display.Color.ValueToColor(rankColor).color)
             );
 
             // Name
             const nameColor = isMe ? COLORS.TEXT_NEON : COLORS.TEXT_WHITE;
-            const nameTxt   = (p.name ?? 'Player').substring(0, 18);
-            const meTag     = isMe ? ' ◀' : '';
+            const nameTxt   = isMe ? "Me" : `Player ${i}`; //(p.name ?? `Player ${i}`).substring(0, 8);
+            const meTag     = isMe ? ' <' : '';
             this.listContainer.add(
-                this.scene.add.text(colName, rowY, nameTxt + meTag, {
-                    fontFamily: 'Coiny', fontSize: `${fs}px`, color: nameColor,
-                }).setOrigin(0, 0.5),
+                this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt + meTag, fs, 0).setOrigin(0, 0.5)
+                .setTint(Phaser.Display.Color.ValueToColor(nameColor).color)
             );
 
             // Score
             const scoreColor = isMe ? COLORS.TEXT_GOLD : COLORS.TEXT_WHITE;
             this.listContainer.add(
-                this.scene.add.text(colScore, rowY, `${p.bestScore}`, {
-                    fontFamily: 'Coiny', fontSize: `${fs}px`, color: scoreColor,
-                }).setOrigin(1, 0.5),
+                this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${p.bestScore}`, fs, 0).setOrigin(1, 0.5)
+                .setTint(Phaser.Display.Color.ValueToColor(scoreColor).color)
             );
         });
 
