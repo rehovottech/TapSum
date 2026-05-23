@@ -23,14 +23,7 @@ export default class Preload extends BaseScene {
     }
 
     preload(): void {
-        // Place audio files here when available, e.g.:
-        this.load.audio('snd_tap',      'assets/audio/tap.mp3');
-        this.load.audio('snd_success',  'assets/audio/success.mp3');
-        this.load.audio('snd_fail',     'assets/audio/fail.mp3');
-        this.load.audio('snd_click',    'assets/audio/click.mp3');
-        this.load.audio('snd_reward',   'assets/audio/reward.mp3');
-        this.load.audio('snd_bg_music', 'assets/audio/background-music.mp3');
-
+        // Audio is managed by Howler.js (AudioManager) — no Phaser audio loads needed.
         this.load.on('progress', (v: number) => this.setProgress(v));
     }
 

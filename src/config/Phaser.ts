@@ -9,12 +9,10 @@ import { Capacitor } from "@capacitor/core";
 export const ConfigPhaserGame = (): Phaser.Game => {
     let gameWidth = window.innerWidth * window.devicePixelRatio;
     let gameHeight = window.innerHeight * window.devicePixelRatio;
-    let renderType = Phaser.AUTO;
     let mode = Phaser.Scale.FIT;
     if (!Capacitor.isNativePlatform()){
         gameWidth = window.innerWidth;
         gameHeight = window.innerHeight;
-        renderType = Phaser.CANVAS;
         mode = Phaser.Scale.NONE;
     }
 
@@ -24,7 +22,6 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         seed: [ (Date.now() * Math.random()).toString() ],
         scale: {
             parent: 'phaser-game',
-            autoCenter: Phaser.Scale.CENTER_BOTH,
             mode: mode,
             width: gameWidth,
             height: gameHeight
@@ -36,11 +33,8 @@ export const ConfigPhaserGame = (): Phaser.Game => {
             Game,
             End
         ],
-        audio: {
-            noAudio: true
-        },
         disableContextMenu: true,
-        title: "Tamil Word",
+        title: "Tap Sum",
         version: '1.0.0',
         powerPreference: "high-performance",
         autoRound: true,
