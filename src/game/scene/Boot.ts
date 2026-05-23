@@ -5,6 +5,7 @@ import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
 import { AdInitialize } from '../../services/Admob';
 import { Firebase } from '../../services/Firebase';
+import { AudioManager } from '../managers/AudioManager';
 import { FlatPreloadBar } from '../model/Preloader';
 import FPS from '../model/FPS';
 
@@ -38,6 +39,9 @@ export default class Boot extends BaseScene {
         GlobVar.consolelog(`Scene: ${SCENES.Boot}`);
 
         this.fpsView = new FPS(this);
+
+        // Initialize Howler audio early so Howl instances are created before Menu loads.
+        AudioManager.init();
 
         this.showLogo();
 

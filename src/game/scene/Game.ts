@@ -63,7 +63,7 @@ export default class Game extends BaseScene {
 
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.Game}`);
-        AudioManager.init(this);
+        AudioManager.init();
 
         this.createBackground();
         this.createHUD();

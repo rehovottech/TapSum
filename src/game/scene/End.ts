@@ -38,7 +38,7 @@ export default class End extends BaseScene {
 
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.End}`);
-        AudioManager.init(this);
+        AudioManager.init();
 
         this.createBackground();
         this.createCard();

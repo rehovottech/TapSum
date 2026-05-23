@@ -22,7 +22,7 @@ export default class Menu extends BaseScene {
 
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.Menu}`);
-        AudioManager.init(this);
+        AudioManager.init();
         AudioManager.playMusic();
 
         this.createBackground();
