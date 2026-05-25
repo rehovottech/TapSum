@@ -25,11 +25,9 @@ export default class Game extends BaseScene {
     private cumulativeSum   = 0;   // running total — defines required taps
     private consecutiveNegs = 0;   // streak of negative rounds
     private timeLeft        = 0;
-    private timerDuration   = GAME_CONFIG.BASE_TIMER;
+    private timerDuration   = GAME_CONFIG.TIMER_BASE_SEC * 1000;
     private roundActive     = false;
     private gameOver        = false;
-    private isHolding       = false;
-    private holdTimer?:     Phaser.Time.TimerEvent;
 
     // ── UI refs ─────────────────────────────────────────────────────────────
     private numberText!:   Phaser.GameObjects.BitmapText;
@@ -39,13 +37,16 @@ export default class Game extends BaseScene {
     private hintText!:     Phaser.GameObjects.BitmapText;
     private timerFill!:    Phaser.GameObjects.Graphics;
     private tapButton!:    Phaser.GameObjects.Container;
-    private tapBtnFace!:   Phaser.GameObjects.Graphics;
+    private plusOneFace!:  Phaser.GameObjects.Graphics;
+    private plusTenFace!:  Phaser.GameObjects.Graphics;
 
     // ── Timer bar geometry ───────────────────────────────────────────────────
     private barW = 0;
     private barX = 0;
     private barY = 0;
     private barH = 0;
+
+    private get btnRadius(): number { return Math.floor(this.W * 0.27); }
 
     constructor() {
         super({ key: SCENES.Game });
@@ -60,8 +61,8 @@ export default class Game extends BaseScene {
         this.consecutiveNegs = 0;
         this.gameOver        = false;
         this.roundActive     = false;
-        this.timeLeft        = GAME_CONFIG.BASE_TIMER;
-        this.timerDuration   = GAME_CONFIG.BASE_TIMER;
+        this.timeLeft        = 0;
+        this.timerDuration   = GAME_CONFIG.TIMER_BASE_SEC * 1000;
     }
 
     create(): void {
@@ -70,7 +71,7 @@ export default class Game extends BaseScene {
 
         this.createBackground();
         this.createHUD();
-        this.createTapButton();
+        this.createSplitCircleButtons();
         this.fpsView = new FPS(this);
 
         AdManager.hideBanner();
@@ -96,7 +97,6 @@ export default class Game extends BaseScene {
     private createBackground(): void {
         this.createGradientBg(COLORS.BG_TOP, COLORS.BG_BOTTOM);
 
-        // Horizontal split line
         const midY = this.H * 0.52;
         const line = this.add.graphics();
         line.lineStyle(1, COLORS.NEON_BLUE, 0.2);
@@ -106,33 +106,28 @@ export default class Game extends BaseScene {
     // ── HUD (top half) ──────────────────────────────────────────────────────
 
     private createHUD(): void {
-        const topY  = this.H * 0.065;
-        const numY  = this.H * 0.30;
-        const fs    = Math.floor(this.H * 0.032);
+        const topY = this.H * 0.065;
+        const numY = this.H * 0.30;
+        const fs   = Math.floor(this.H * 0.032);
 
-        // ← back button
         const back = this.add.bitmapText(this.W * 0.08, topY, 'coiny-bmp', '<-', Math.floor(this.H * 0.042), 0).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true });
         back.on('pointerdown', () => {
             AudioManager.play('snd_click');
             this.triggerGameOver(true);
         });
 
-        // Round label (top-center)
         this.roundText = this.add.bitmapText(this.CX, topY, 'coiny-bmp', 'Round 1', fs, 0).setOrigin(0.5)
-        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
+            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
 
-        // Score (top-right)
         this.scoreText = this.add.bitmapText(this.W * 0.92, topY, 'coiny-bmp', '0', Math.floor(this.H * 0.042), 0).setOrigin(1, 0.5)
-        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color);
+            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color);
 
-        // Timer bar geometry
         this.barW = Math.floor(this.W * 0.72);
         this.barH = Math.floor(this.H * 0.014);
         this.barX = this.CX - this.barW / 2;
         this.barY = this.H * 0.115;
 
-        // Bar track
         const barTrack = this.add.graphics();
         barTrack.fillStyle(0x222244, 1);
         barTrack.fillRoundedRect(this.barX, this.barY, this.barW, this.barH, this.barH / 2);
@@ -140,73 +135,115 @@ export default class Game extends BaseScene {
         this.timerFill = this.add.graphics();
         this.redrawTimerBar();
 
-        // Big round number
         this.numberText = this.add.bitmapText(this.CX, numY, 'coiny-bmp', '?', Math.floor(this.H * 0.22), 0).setOrigin(0.5)
-        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
+            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
 
-        // Hint: "tap N times"
-        this.hintText = this.add.bitmapText(this.CX, this.H * 0.465, 'coiny-bmp', '', Math.floor(this.H * 0.028), 0).setOrigin(0.5).setVisible(false)
-        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
+        // Target label (replaces old "Tap N times")
+        this.hintText = this.add.bitmapText(this.CX, this.H * 0.460, 'coiny-bmp', '', Math.floor(this.H * 0.028), 0).setOrigin(0.5).setVisible(false)
+            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
-        // Current tap count
-        this.tapCountText = this.add.bitmapText(this.CX, this.H * 0.50, 'coiny-bmp', 'Taps: 0', Math.floor(this.H * 0.038), 0).setOrigin(0.5)
-        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
+        // Live tap progress
+        this.tapCountText = this.add.bitmapText(this.CX, this.H * 0.498, 'coiny-bmp', 'Current: 0', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
+            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
     }
 
-    // ── Tap button (bottom half) ────────────────────────────────────────────
+    // ── Split circle buttons (bottom half) ──────────────────────────────────
 
-    private createTapButton(): void {
-        const btnY   = this.H * 0.74;
-        const radius = Math.floor(this.W * 0.27);
+    private createSplitCircleButtons(): void {
+        const r = this.btnRadius;
+        this.tapButton = this.add.container(this.CX, this.H * 0.74);
 
-        this.tapButton = this.add.container(this.CX, btnY);
+        // Shadow (full circle, offset)
+        const shadow = this.add.graphics();
+        shadow.fillStyle(0x000000, 0.4);
+        shadow.fillCircle(6, 10, r);
+
+        // 3D depth ring (full circle, slightly lower)
+        const side = this.add.graphics();
+        side.fillStyle(0x111122, 1);
+        side.fillCircle(0, 8, r);
 
         // Glow ring
         const glow = this.add.graphics();
-        glow.lineStyle(8, COLORS.NEON_BLUE, 0.45);
-        glow.strokeCircle(0, 0, radius + 14);
+        glow.lineStyle(10, COLORS.NEON_BLUE, 0.5);
+        glow.strokeCircle(0, 0, r + 16);
 
-        // Shadow
-        const shadow = this.add.graphics();
-        shadow.fillStyle(0x000000, 0.4);
-        shadow.fillCircle(6, 10, radius);
+        // Faces
+        this.plusOneFace = this.add.graphics();
+        this.plusTenFace = this.add.graphics();
+        this.redrawPlusOneFace(COLORS.BUTTON_SECONDARY);
+        this.redrawPlusTenFace(COLORS.BUTTON_PRIMARY);
 
-        // Side (3-D depth)
-        const side = this.add.graphics();
-        side.fillStyle(COLORS.BUTTON_PRIMARY_DARK, 1);
-        side.fillCircle(0, 10, radius);
+        // Top highlight
+        const hlTop = this.add.graphics();
+        hlTop.fillStyle(0xffffff, 0.14);
+        hlTop.beginPath();
+        hlTop.moveTo(-r * 0.65, -r * 0.05);
+        hlTop.arc(0, -r * 0.05, r * 0.65, Math.PI, Math.PI * 2, false);
+        hlTop.closePath();
+        hlTop.fillPath();
 
-        // Face
-        this.tapBtnFace = this.add.graphics();
-        this.tapBtnFace.fillStyle(COLORS.BUTTON_PRIMARY, 1);
-        this.tapBtnFace.fillCircle(0, 0, radius);
+        // Extra glow arc on bottom half (+10 has stronger glow)
+        const botGlow = this.add.graphics();
+        botGlow.lineStyle(6, COLORS.ACCENT, 0.40);
+        botGlow.beginPath();
+        botGlow.moveTo(r, 0);
+        botGlow.arc(0, 0, r, 0, Math.PI, false);
+        botGlow.strokePath();
 
-        // Highlight
-        const hl = this.add.graphics();
-        hl.fillStyle(0xffffff, 0.18);
-        hl.fillEllipse(0, -radius * 0.32, radius * 1.3, radius * 0.45);
+        // Divider line between the two halves
+        const divider = this.add.graphics();
+        divider.lineStyle(3, 0x000000, 0.7);
+        divider.lineBetween(-r, 0, r, 0);
 
-        // Label
-        const lbl = this.add.text(0, 0, 'TAP', {
-            fontFamily: 'Akt-SemiBold',
-            fontSize: `${Math.floor(this.H * 0.065)}px`,
-            color: '#ffffff',
-            fontStyle: 'bold',
-        }).setOrigin(0.5);
+        // Labels
+        const lblOne = this.add.bitmapText(0, -Math.floor(r * 0.44), 'coiny-bmp', '+1',
+            Math.floor(this.H * 0.065), 0).setOrigin(0.5);
+        const lblTen = this.add.bitmapText(0, Math.floor(r * 0.44), 'coiny-bmp', '+10',
+            Math.floor(this.H * 0.060), 0).setOrigin(0.5);
 
-        this.tapButton.add([glow, shadow, side, this.tapBtnFace, hl, lbl]);
-        this.tapButton.setSize(radius * 2, radius * 2);
+        this.tapButton.add([shadow, side, glow, this.plusOneFace, this.plusTenFace,
+                            hlTop, botGlow, divider, lblOne, lblTen]);
+        this.tapButton.setSize(r * 2, r * 2);
         this.tapButton.setInteractive({ useHandCursor: true });
 
-        // Pulsing glow
         this.tweens.add({
             targets: glow, alpha: 0.15,
             duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
         });
+        this.tweens.add({
+            targets: botGlow, alpha: 0.08,
+            duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        });
 
-        this.tapButton.on('pointerdown', () => this.onTap());
-        this.tapButton.on('pointerup',   () => this.onRelease());
-        this.tapButton.on('pointerout',  () => this.onRelease());
+        this.tapButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            if (!this.roundActive || this.gameOver) return;
+            const localY = pointer.y - this.tapButton.y;
+            if (localY < 0) this.handlePlusOneTap();
+            else             this.handlePlusTenTap();
+        });
+    }
+
+    private redrawPlusOneFace(color: number): void {
+        const r = this.btnRadius;
+        this.plusOneFace.clear();
+        this.plusOneFace.fillStyle(color, 1);
+        this.plusOneFace.beginPath();
+        this.plusOneFace.moveTo(-r, 0);
+        this.plusOneFace.arc(0, 0, r, Math.PI, Math.PI * 2, false);
+        this.plusOneFace.closePath();
+        this.plusOneFace.fillPath();
+    }
+
+    private redrawPlusTenFace(color: number): void {
+        const r = this.btnRadius;
+        this.plusTenFace.clear();
+        this.plusTenFace.fillStyle(color, 1);
+        this.plusTenFace.beginPath();
+        this.plusTenFace.moveTo(r, 0);
+        this.plusTenFace.arc(0, 0, r, 0, Math.PI, false);
+        this.plusTenFace.closePath();
+        this.plusTenFace.fillPath();
     }
 
     // ── Round logic ─────────────────────────────────────────────────────────
@@ -220,7 +257,6 @@ export default class Game extends BaseScene {
                      : this.round >= GAME_CONFIG.RANGE_MID_ROUND  ? 5
                      : 3;
 
-        // Force positive if we have too many consecutive negatives or the total is already at floor
         const forcePositive = this.consecutiveNegs >= GAME_CONFIG.MAX_CONSECUTIVE_NEG
                            || this.cumulativeSum <= 1;
 
@@ -234,6 +270,16 @@ export default class Game extends BaseScene {
 
         this.consecutiveNegs = 0;
         return Phaser.Math.Between(1, maxPos);
+    }
+
+    private calculateTaskTime(): number {
+        const extra = Math.floor(this.round / GAME_CONFIG.TIMER_STEP_ROUNDS) * GAME_CONFIG.TIMER_STEP_SEC;
+        return Math.min(GAME_CONFIG.TIMER_MAX_SEC, GAME_CONFIG.TIMER_BASE_SEC + extra) * 1000;
+    }
+
+    private startTaskTimer(): void {
+        this.timeLeft      = this.calculateTaskTime();
+        this.timerDuration = this.timeLeft;
     }
 
     private startRound(): void {
@@ -250,12 +296,13 @@ export default class Game extends BaseScene {
         this.requiredTaps  = clamped;
         this.tapCount      = 0;
 
+        this.startTaskTimer();
+
         this.roundText.setText(`Round ${this.round}`);
         this.scoreText.setText(`${this.score}`);
-        this.tapCountText.setText('Taps: 0');
         this.animateRequiredTapsCounter(oldRequired, this.requiredTaps);
+        this.updateCurrentTapProgress();
 
-        // Number display with sign and color
         const isNeg  = this.currentNumber < 0;
         const prefix = isNeg ? '' : '+';
         this.numberText
@@ -263,7 +310,6 @@ export default class Game extends BaseScene {
             .setScale(2.2)
             .setTint(isNeg ? COLORS.FAIL : COLORS.NEON_GREEN);
 
-        // Pop-in tween; shake follows for negative numbers
         this.tweens.add({
             targets: this.numberText,
             scaleX: 1, scaleY: 1,
@@ -286,7 +332,7 @@ export default class Game extends BaseScene {
     private animateRequiredTapsCounter(from: number, to: number): void {
         this.hintText.setVisible(true);
         if (from <= 0) {
-            this.hintText.setText(`Tap ${to} times`);
+            this.hintText.setText(`Target: ${to}`);
             return;
         }
         const obj = { val: from };
@@ -295,8 +341,8 @@ export default class Game extends BaseScene {
             val: to,
             duration: 350,
             ease: 'Power2',
-            onUpdate: () => this.hintText.setText(`Tap ${Math.round(obj.val)} times`),
-            onComplete: () => this.hintText.setText(`Tap ${to} times`),
+            onUpdate: () => this.hintText.setText(`Target: ${Math.round(obj.val)}`),
+            onComplete: () => this.hintText.setText(`Target: ${to}`),
         });
         this.popObject(this.hintText);
     }
@@ -337,67 +383,76 @@ export default class Game extends BaseScene {
         AudioManager.play('snd_tap');
     }
 
-    // ── Tap / hold handler ──────────────────────────────────────────────────
+    // ── Button tap handlers ─────────────────────────────────────────────────
 
-    private onTap(): void {
-        if (!this.roundActive || this.gameOver) return;
-
-        this.isHolding = true;
-        this.doTapIncrement();
-
-        if (this.tapCount > this.requiredTaps) return; // already failed
-
-        // Hold: after 300 ms starts repeating every 300 ms
-        this.holdTimer = this.time.addEvent({
-            delay: 300,
-            loop: true,
-            callback: () => {
-                if (!this.roundActive || this.gameOver) { this.stopHold(); return; }
-                this.doTapIncrement();
-            },
-        });
-    }
-
-    private onRelease(): void {
-        if (!this.isHolding) return;
-        this.stopHold();
-        if (!this.roundActive || this.gameOver) return;
-        if (this.tapCount === this.requiredTaps) this.onRoundSuccess();
-    }
-
-    private doTapIncrement(): void {
-        this.tapCount++;
+    private handlePlusOneTap(): void {
+        this.tapCount += 1;
+        this.updateCurrentTapProgress();
         AudioManager.play('snd_tap');
+        this.animateButtonPress(true);
+        this.spawnBurst(
+            this.tapButton.x, this.tapButton.y - this.btnRadius * 0.5,
+            [COLORS.NEON_BLUE, COLORS.BUTTON_SECONDARY, 0x99ccff],
+            5, 40, 100,
+        );
+        this.validateTapProgress();
+    }
 
+    private handlePlusTenTap(): void {
+        this.tapCount += 10;
+        this.updateCurrentTapProgress();
+        AudioManager.play('snd_click');
+        this.animateButtonPress(false);
+        this.cameras.main.shake(30, 0.004);
+        this.spawnBurst(
+            this.tapButton.x, this.tapButton.y + this.btnRadius * 0.5,
+            [COLORS.ACCENT, COLORS.BUTTON_PRIMARY, 0xff9900],
+            10, 60, 160,
+        );
+        this.validateTapProgress();
+    }
+
+    private animateButtonPress(isTop: boolean): void {
+        const face = isTop ? this.plusOneFace : this.plusTenFace;
+        this.tweens.add({
+            targets: face,
+            scaleX: 0.88, scaleY: 0.88,
+            duration: 60, yoyo: true, ease: 'Power2',
+        });
         this.tweens.add({
             targets: this.tapButton,
-            scaleX: 0.86, scaleY: 0.86,
+            scaleX: 0.94, scaleY: 0.94,
             duration: 65, yoyo: true, ease: 'Power2',
         });
+    }
 
-        if (this.round >= GAME_CONFIG.DIFFICULTY_STEP) {
-            this.cameras.main.shake(35, 0.005 + this.round * 0.0005);
-        }
-
-        this.spawnBurst(
-            this.tapButton.x, this.tapButton.y,
-            [COLORS.NEON_BLUE, COLORS.ACCENT, 0xffffff],
-            6, 60, 140,
-        );
-
-        this.tapCountText.setText(`Taps: ${this.tapCount}`);
+    private updateCurrentTapProgress(): void {
+        this.tapCountText.setText(`Current: ${this.tapCount}`);
         this.popObject(this.tapCountText);
+    }
 
+    private validateTapProgress(): void {
         if (this.tapCount > this.requiredTaps) {
-            this.stopHold();
+            this.showOvershootFailure();
             this.triggerGameOver();
+        } else if (this.tapCount === this.requiredTaps) {
+            this.onRoundSuccess();
         }
     }
 
-    private stopHold(): void {
-        this.isHolding = false;
-        this.holdTimer?.remove(false);
-        this.holdTimer = undefined;
+    private showOvershootFailure(): void {
+        const txt = this.add.bitmapText(this.CX, this.H * 0.50, 'coiny-bmp', 'TOO MANY!',
+            Math.floor(this.H * 0.040), 0)
+            .setOrigin(0.5)
+            .setDepth(20)
+            .setTint(COLORS.FAIL);
+
+        this.tweens.add({
+            targets: txt,
+            scaleX: 1.3, scaleY: 1.3, alpha: 0, y: txt.y - 50,
+            duration: 550, ease: 'Power2',
+            onComplete: () => txt.destroy(),
+        });
     }
 
     // ── Round success ───────────────────────────────────────────────────────
@@ -407,23 +462,12 @@ export default class Game extends BaseScene {
         this.score += GAME_CONFIG.SCORE_PER_ROUND;
         AudioManager.play('snd_success');
 
-        // +requiredTaps × 1.5s; every 10th success gives ×2 instead
-        const multiplier = this.round % GAME_CONFIG.TIME_BONUS_MILESTONE === 0
-            ? GAME_CONFIG.TIME_BONUS_DOUBLE_MULTIPLIER
-            : GAME_CONFIG.TIME_BONUS_MULTIPLIER;
-        const cap          = this.requiredTaps * 1.25 * 1000;
-        this.timeLeft      = Math.min(this.timeLeft + this.requiredTaps * 1000, cap);
-        this.timeLeft      = Math.floor(this.timeLeft * multiplier);
-        this.timerDuration = this.timeLeft; // bar rescales to the new total
-
-        // Score fly to counter
         this.spawnScoreLabel(
             this.tapButton.x, this.tapButton.y,
             this.W * 0.87, this.H * 0.065,
             `+${GAME_CONFIG.SCORE_PER_ROUND}`,
         );
 
-        // Celebration burst
         this.spawnBurst(
             this.tapButton.x, this.tapButton.y,
             [COLORS.SUCCESS, COLORS.NEON_GREEN, COLORS.NEON_BLUE, COLORS.ACCENT],
@@ -434,16 +478,12 @@ export default class Game extends BaseScene {
         this.scoreText.setText(`${this.score}`);
         this.popObject(this.scoreText);
 
-        // Button flash green briefly
-        this.tapBtnFace.clear();
-        this.tapBtnFace.fillStyle(COLORS.SUCCESS, 1);
-        this.tapBtnFace.fillCircle(0, 0, Math.floor(this.W * 0.27));
+        // Both faces flash green then restore original colors
+        this.redrawPlusOneFace(COLORS.SUCCESS);
+        this.redrawPlusTenFace(COLORS.SUCCESS);
         this.time.delayedCall(250, () => {
-            if (this.tapBtnFace?.active) {
-                this.tapBtnFace.clear();
-                this.tapBtnFace.fillStyle(COLORS.BUTTON_PRIMARY, 1);
-                this.tapBtnFace.fillCircle(0, 0, Math.floor(this.W * 0.27));
-            }
+            if (this.plusOneFace?.active) this.redrawPlusOneFace(COLORS.BUTTON_SECONDARY);
+            if (this.plusTenFace?.active) this.redrawPlusTenFace(COLORS.BUTTON_PRIMARY);
         });
 
         this.round++;
@@ -476,17 +516,15 @@ export default class Game extends BaseScene {
         if (this.gameOver) return;
         this.gameOver    = true;
         this.roundActive = false;
-        this.stopHold();
 
         if (!voluntary) {
             AudioManager.play('snd_fail');
             this.cameras.main.shake(320, 0.018);
             this.cameras.main.flash(280, 255, 40, 40, false);
 
-            // Button flash red
-            this.tapBtnFace.clear();
-            this.tapBtnFace.fillStyle(COLORS.FAIL, 1);
-            this.tapBtnFace.fillCircle(0, 0, Math.floor(this.W * 0.27));
+            // Both faces flash red
+            this.redrawPlusOneFace(COLORS.FAIL);
+            this.redrawPlusTenFace(COLORS.FAIL);
         }
 
         LeaderboardManager.submitScore(this.score);
