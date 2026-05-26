@@ -7,15 +7,17 @@ import End from "../game/scene/End";
 import { Capacitor } from "@capacitor/core";
 
 export const ConfigPhaserGame = (): Phaser.Game => {
-    
-    let gameWidth = window.innerWidth * window.devicePixelRatio;
-    let gameHeight = window.innerHeight * window.devicePixelRatio;
-    let mode = Phaser.Scale.FIT;
+
+    const dpr = window.devicePixelRatio || 1;
+    const vw  = window.innerWidth  || screen.width;
+    const vh  = window.innerHeight || screen.height;
+
+    let gameWidth  = vw * dpr;
+    let gameHeight = vh * dpr;
 
     if (!Capacitor.isNativePlatform()){
-        gameWidth = window.innerWidth;
-        gameHeight = window.innerHeight;
-        mode = Phaser.Scale.NONE;
+        gameWidth  = vw;
+        gameHeight = vh;
     }
 
     const config: Phaser.Types.Core.GameConfig = {
@@ -24,7 +26,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         seed: [ (Date.now() * Math.random()).toString() ],
         scale: {
             parent: 'phaser-game',
-            mode: mode,
+            mode: Phaser.Scale.NONE,
             width: gameWidth,
             height: gameHeight
         },
