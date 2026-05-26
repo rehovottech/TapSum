@@ -1,5 +1,5 @@
 export const AdmobConfig:any = {
-    debug: true, // set false before production release
+    debug: false, // set false before production release
     //Android
     'Admob-ID-ANDROID': 'ca-app-pub-6565358340023179~7956554247',
     'Admob-Banner-ANDROID': 'ca-app-pub-6565358340023179/4101069716',
