@@ -10,14 +10,16 @@ export const COLORS = {
     ACCENT:      0xff6b35,
 
     // Buttons
-    BUTTON_PRIMARY:      0xff6b35,
-    BUTTON_PRIMARY_DARK: 0xaa3311,
-    BUTTON_SECONDARY:    0x3366ff,
+    BUTTON_PRIMARY:        0xff6b35,
+    BUTTON_PRIMARY_DARK:   0xaa3311,
+    BUTTON_SECONDARY:      0x3366ff,
     BUTTON_SECONDARY_DARK: 0x1133aa,
-    BUTTON_DANGER:       0xff1744,
-    BUTTON_DANGER_DARK:  0xaa0022,
-    BUTTON_SUCCESS:      0x00c853,
-    BUTTON_SUCCESS_DARK: 0x007733,
+    BUTTON_DANGER:         0xff1744,
+    BUTTON_DANGER_DARK:    0xaa0022,
+    BUTTON_SUCCESS:        0x00c853,
+    BUTTON_SUCCESS_DARK:   0x007733,
+    BUTTON_PURPLE:         0xb44bff,
+    BUTTON_PURPLE_DARK:    0x6600aa,
 
     // Status
     SUCCESS: 0x39ff14,
