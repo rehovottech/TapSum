@@ -36,6 +36,7 @@ import { useEffect } from 'react';
 
 import { Firebase } from './services/Firebase';
 import { AdInitialize } from './services/Admob';
+import { AudioManager } from './game/managers/AudioManager';
 import { StatusBar } from '@capacitor/status-bar';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
@@ -55,6 +56,9 @@ const App: React.FC = () => {
 
         // Init Admob
         AdInitialize().catch(() => {});
+
+        // Pause/resume background music on tab hide and Android app suspend
+        AudioManager.registerAppLifecycle();
 
         // Lock orientation to portrait
         if(Capacitor.isNativePlatform()){
