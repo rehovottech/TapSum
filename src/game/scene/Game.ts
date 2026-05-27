@@ -152,11 +152,11 @@ export default class Game extends BaseScene {
         this.redrawTimerBar();
 
         // TARGET label + big number
-        this.add.bitmapText(this.CX, this.H * 0.175, 'coiny-bmp', 'TARGET', Math.floor(this.H * 0.024), 0)
+        this.add.bitmapText(this.CX, this.H * 0.225, 'coiny-bmp', 'TARGET', Math.floor(this.H * 0.024), 0)
             .setOrigin(0.5)
             .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
-        this.targetText = this.add.bitmapText(this.CX, this.H * 0.28, 'coiny-bmp', '?', Math.floor(this.H * 0.18), 0)
+        this.targetText = this.add.bitmapText(this.CX, this.H * 0.36, 'coiny-bmp', '?', Math.floor(this.H * 0.18), 0)
             .setOrigin(0.5)
             .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
 
