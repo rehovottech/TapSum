@@ -152,11 +152,11 @@ export default class Game extends BaseScene {
         this.redrawTimerBar();
 
         // TARGET label + big number
-        this.add.bitmapText(this.CX, this.H * 0.225, 'coiny-bmp', 'TARGET', Math.floor(this.H * 0.024), 0)
+        this.add.bitmapText(this.CX, this.H * 0.175, 'coiny-bmp', 'TARGET', Math.floor(this.H * 0.024), 0)
             .setOrigin(0.5)
             .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
 
-        this.targetText = this.add.bitmapText(this.CX, this.H * 0.36, 'coiny-bmp', '?', Math.floor(this.H * 0.18), 0)
+        this.targetText = this.add.bitmapText(this.CX, this.H * 0.28, 'coiny-bmp', '?', Math.floor(this.H * 0.18), 0)
             .setOrigin(0.5)
             .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
 
@@ -397,29 +397,52 @@ export default class Game extends BaseScene {
     // ── Round logic ──────────────────────────────────────────────────────────
 
     private generateBalancedTarget(): number {
-        if (this.round <= 9) {
-            return Phaser.Math.Between(1, 9) * 10 + Phaser.Math.Between(1, 9);
-        } else if (this.round <= 19) {
-            return (
-                Phaser.Math.Between(1, 9) * 100 +
-                Phaser.Math.Between(0, 9) * 10 +
-                Phaser.Math.Between(1, 9)
-            );
-        } else if (this.round <= 29) {
-            return (
-                Phaser.Math.Between(1, 3) * 1000 +
-                Phaser.Math.Between(0, 9) * 100 +
-                Phaser.Math.Between(0, 9) * 10 +
-                Phaser.Math.Between(1, 9)
-            );
+        let min = 1;
+        let max = 10;
+
+        // Difficulty scaling
+        if (this.round <= 10) {
+            min = 1;
+            max = 10;
+        } else if (this.round <= 20) {
+            min = 1;
+            max = 15;
+        } else if (this.round <= 40) {
+            min = 5;
+            max = 25;
+        } else if (this.round <= 80) {
+            min = 15;
+            max = 50;
         } else {
-            return (
-                Phaser.Math.Between(2, 9) * 1000 +
-                Phaser.Math.Between(0, 9) * 100 +
-                Phaser.Math.Between(0, 9) * 10 +
-                Phaser.Math.Between(1, 9)
-            );
+            min = 50;
+            max = 100;
         }
+
+        let value = Phaser.Math.Between(min, max);
+
+        // Negative chance based on round
+        let negativeChance = 0;
+
+        if (this.round <= 15) {
+            negativeChance = 25;
+        } else if (this.round <= 30) {
+            negativeChance = 35;
+        } else {
+            negativeChance = 50;
+        }
+
+        // Current cumulative total
+        const currentTotal = this.targetTotal || 0;
+
+        // Apply negative randomly
+        const shouldBeNegative =
+            Phaser.Math.Between(1, 100) <= negativeChance;
+
+        if (shouldBeNegative && currentTotal > value) {
+            value = -value;
+        }
+
+        return value;
     }
 
     private calculateTaskTime(): number {
@@ -431,7 +454,8 @@ export default class Game extends BaseScene {
         if (this.gameOver) return;
 
         this.currentTotal      = 0;
-        this.targetTotal       = this.generateBalancedTarget();
+        const balancedValue    = this.generateBalancedTarget();
+        this.targetTotal       += balancedValue;
         this.timeLeft          = this.calculateTaskTime();
         this.timerDuration     = this.timeLeft;
         this.lastHintRemaining = -1;
@@ -441,10 +465,10 @@ export default class Game extends BaseScene {
 
         // Reset progress display
         this.currentText.setText('0');
-        this.remainingText.setText(`${this.targetTotal}`);
+        this.remainingText.setText(`${balancedValue}`);
 
         // Pop-in target number
-        this.targetText.setText(`${this.targetTotal}`).setScale(2.4);
+        this.targetText.setText(`${balancedValue}`).setScale(2.4);
         this.tweens.add({
             targets: this.targetText,
             scaleX: 1, scaleY: 1,
