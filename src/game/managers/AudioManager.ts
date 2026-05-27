@@ -2,6 +2,8 @@
 // integration fails silently inside Capacitor Android/iOS WebViews — sounds either
 // never play or cause crashes on low-end devices.
 import { Howl, Howler } from 'howler';
+import { App as CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { SaveManager } from './SaveManager';
 
 export const SOUND_KEYS = {
@@ -25,10 +27,12 @@ const MUSIC_VOL = 0.5;
 const SFX_VOL   = 1;
 
 class AudioManagerClass {
-    private sounds        = new Map<string, Howl>();
-    private bgMusic:        Howl | null = null;
-    private _ready        = false;
-    private _pendingMusic = false;
+    private sounds               = new Map<string, Howl>();
+    private bgMusic:               Howl | null = null;
+    private _ready               = false;
+    private _pendingMusic        = false;
+    private _pausedByLifecycle   = false;
+    private _lifecycleRegistered = false;
 
     /** Call once at app startup (idempotent). */
     init(): void {
@@ -102,12 +106,41 @@ class AudioManagerClass {
         return SaveManager.isSoundEnabled();
     }
 
-    /** Call from Capacitor's App.addListener('resume', ...) to restore audio after backgrounding. */
-    onResume(): void {
-        try {
-            const ctx = (Howler as any).ctx as (AudioContext | undefined);
-            ctx?.resume().catch(() => {});
-        } catch (_) {}
+    pauseMusic(): void {
+        if (this.bgMusic?.playing()) {
+            this._pausedByLifecycle = true;
+            try { this.bgMusic.pause(); } catch (_) {}
+        }
+    }
+
+    resumeMusic(): void {
+        if (!this._pausedByLifecycle) return;
+        this._pausedByLifecycle = false;
+        const ctx = (Howler as any).ctx as (AudioContext | undefined);
+        const doResume = () => { try { this.bgMusic?.play(); } catch (_) {} };
+        if (ctx && ctx.state !== 'running') {
+            ctx.resume().then(doResume).catch(() => {});
+        } else {
+            doResume();
+        }
+    }
+
+    /** Wire up tab-visibility and Capacitor app-suspend events. Call once at app startup. */
+    registerAppLifecycle(): void {
+        if (this._lifecycleRegistered) return;
+        this._lifecycleRegistered = true;
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) this.pauseMusic();
+            else                  this.resumeMusic();
+        });
+
+        if (Capacitor.isNativePlatform()) {
+            CapApp.addListener('appStateChange', ({ isActive }) => {
+                if (!isActive) this.pauseMusic();
+                else           this.resumeMusic();
+            });
+        }
     }
 
     private _doPlayMusic(): void {
