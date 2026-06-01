@@ -17,12 +17,8 @@ class PhaserGame extends React.Component<{canvas:string}>{
     render(){
         return(
             <div 
+                className="gamediv" 
                 id={this.props.canvas}
-                style={{
-                    width: "100vw",
-                    height: "100vh",
-                    overflow: "hidden"
-                }}
             />
         );   
     }
