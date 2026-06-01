@@ -19,18 +19,6 @@ export const ResizePhaserGame = () => {
         GlobVar.heightI  = h;
         GlobVar.centerIX = w * 0.5;
         GlobVar.centerIY = h * 0.5;
-
-        // Scale.NONE keeps the canvas at its logical pixel size; set CSS dimensions
-        // so the high-DPR canvas visually fills the viewport on all Android devices.
-        if (window.game) {
-            window.game.scale.resize(GlobVar.width, GlobVar.height);
-            const canvas = window.game.canvas;
-            canvas.style.width    = `${w}px`;
-            canvas.style.height   = `${h}px`;
-            canvas.style.position = 'absolute';
-            canvas.style.left     = '0';
-            canvas.style.top      = '0';
-        }
     }else{
         const RATIO_16_9 = { w: 720, h: 1280 };   // classic
         const RATIO_TALL = { w: 720, h: 1440 };   // 18:9+
