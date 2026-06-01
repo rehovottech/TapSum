@@ -2,25 +2,21 @@
 http://ionicframework.com/docs/theming/ */
 html,
 body,
-#root,
-ion-app,
-ion-router-outlet,
-.ion-page,
-#phaser-game {
+canvas{
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #000000;
+    background: #1a1a1a;
 }
 
-canvas {
+.gamediv{
+    width: 100%;
+    height: 100%;
     display: block;
-}
-
-body {
     margin: 0;
-    background: #1a1a1a; /* side bars */
-    overflow: hidden;
+    position: absolute;
+    padding: 0;
+    overflow: 'hidden';
 }
