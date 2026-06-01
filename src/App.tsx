@@ -1,5 +1,5 @@
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import { IonApp, IonPage, IonRouterOutlet, isPlatform, setupIonicReact, useIonViewDidEnter } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import Home from './pages/Home';
 
@@ -32,7 +32,7 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 import { Firebase } from './services/Firebase';
 import { AdInitialize } from './services/Admob';
@@ -40,12 +40,21 @@ import { AudioManager } from './game/managers/AudioManager';
 import { StatusBar } from '@capacitor/status-bar';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
+import PhaserGame from './components/Phaser';
+import { ResizePhaserGame } from './game/utils/Resize';
+import { GlobVar } from './utils/Global';
 
 setupIonicReact();
 
-const App: React.FC = () => {
+class App extends React.Component{
 
-    useEffect(()=>{
+    constructor(props:any){
+        super(props);
+        this.initServices();
+        this.initializeGame();
+    }
+
+    initServices(): void{
         // Hide Status bar
         if(Capacitor.isNativePlatform()){
             StatusBar.hide().catch(() => {});
@@ -67,22 +76,27 @@ const App: React.FC = () => {
             };
             lockOrientation().catch(() => {});
         }
-    },[]);
+    };
 
-    return (
-        <IonApp>
-            <IonReactRouter>
-                <IonRouterOutlet>
-                    <Route exact path="/home">
-                        <Home />
-                    </Route>
-                    <Route exact path="/">
-                        <Redirect to="/home" />
-                    </Route>
-                </IonRouterOutlet>
-            </IonReactRouter>
-        </IonApp>
-    );
+    initializeGame(): void{
+        GlobVar.platformData.type = Capacitor.getPlatform();
+        GlobVar.isDesktop = ((Capacitor.isNativePlatform() === false) && (isPlatform("desktop") === true));
+        GlobVar.isMobileWeb = ((Capacitor.isNativePlatform() === false) && (isPlatform("mobileweb") === true));
+        GlobVar.platformData.isNative = Capacitor.isNativePlatform();
+
+        GlobVar.orientation = "landscape"; //Check orientation type
+        if(window.innerHeight > window.innerWidth && window.outerHeight > 400) {
+            GlobVar.orientation = "portrait";
+        }
+    }
+
+    render(){
+        return(
+            <IonPage>
+                <PhaserGame canvas="phaser-game"/>
+            </IonPage>
+        );
+    }
 }
 
 export default App;

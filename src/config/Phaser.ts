@@ -14,10 +14,11 @@ export const ConfigPhaserGame = (): Phaser.Game => {
 
     let gameWidth  = vw * dpr;
     let gameHeight = vh * dpr;
-
+    let mode = Phaser.Scale.FIT;
     if (!Capacitor.isNativePlatform()){
         gameWidth  = vw;
         gameHeight = vh;
+        mode = Phaser.Scale.NONE
     }
 
     const config: Phaser.Types.Core.GameConfig = {
@@ -26,7 +27,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         seed: [ (Date.now() * Math.random()).toString() ],
         scale: {
             parent: 'phaser-game',
-            mode: Phaser.Scale.NONE,
+            mode: mode,
             width: gameWidth,
             height: gameHeight
         },
