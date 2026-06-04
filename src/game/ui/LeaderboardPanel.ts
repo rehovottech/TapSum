@@ -11,12 +11,14 @@ export class LeaderboardPanel {
     private scene: Phaser.Scene;
     private root: Phaser.GameObjects.Container;
     private listContainer!: Phaser.GameObjects.Container;
+    private pinnedContainer!: Phaser.GameObjects.Container;
     private maskShape!: Phaser.GameObjects.Graphics;
     private loadingText!: Phaser.GameObjects.BitmapText;
 
     // Scroll state
     private listAreaTop  = 0;
     private listAreaH    = 0;
+    private pinnedAreaY  = 0;
     private listTotalH   = 0;
     private scrollY      = 0;
     private pointerDown  = false;
@@ -84,14 +86,16 @@ export class LeaderboardPanel {
         this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5));
         this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5));
 
-        // Scrollable list area
-        this.listAreaTop = headerY + 28;
-        this.listAreaH   = panelH - (this.listAreaTop - (py - panelH / 2)) - PANEL_PAD - 60;
+        // Scrollable list area — shortened to leave room for the pinned "you" row
+        const pinnedRowH     = ROW_H + 20;
+        this.listAreaTop     = headerY + 28;
+        this.listAreaH       = panelH - (this.listAreaTop - (py - panelH / 2)) - PANEL_PAD - 60 - pinnedRowH;
+        this.pinnedAreaY     = this.listAreaTop + this.listAreaH + 90;
 
         this.listContainer = this.scene.add.container(0, 0);
         this.root.add(this.listContainer);
 
-        // Geometry mask for clipping
+        // Geometry mask for clipping — only covers the scrollable list
         this.maskShape = this.scene.add.graphics();
         this.maskShape.fillRect(
             px - panelW / 2 + 4,
@@ -100,6 +104,16 @@ export class LeaderboardPanel {
             this.listAreaH,
         );
         this.listContainer.setMask(this.maskShape.createGeometryMask());
+
+        // Divider above pinned row
+        const pinDivG = this.scene.add.graphics();
+        pinDivG.lineStyle(1, 0xffd700, 0.35);
+        pinDivG.lineBetween(px - panelW / 2 + PANEL_PAD, this.pinnedAreaY - 4, px + panelW / 2 - PANEL_PAD, this.pinnedAreaY - 4);
+        this.root.add(pinDivG);
+
+        // Pinned container (not masked — always visible)
+        this.pinnedContainer = this.scene.add.container(0, 0);
+        this.root.add(this.pinnedContainer);
 
         // Loading text
         this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51);
@@ -141,17 +155,21 @@ export class LeaderboardPanel {
     // ── Load data ────────────────────────────────────────────────────────────
 
     private async load(): Promise<void> {
-        const players = await Firebase.getTopPlayers('tapsum');
-        const rank    = await Firebase.getPlayerRank('tapsum');
-        const uid     = Firebase.getUid();
+        const [players, rank, profile] = await Promise.all([
+            Firebase.getTopPlayers('tapsum', 10),
+            Firebase.getPlayerRank('tapsum'),
+            Firebase.getPlayerProfile('tapsum'),
+        ]);
+        const uid = Firebase.getUid();
 
         this.loadingText.destroy();
-        this.renderList(players, uid, rank);
+        alert(players.length)
+        this.renderList(players, uid, rank, profile);
     }
 
     // ── Render rows ──────────────────────────────────────────────────────────
 
-    private renderList(players: LeaderboardEntry[], myUid: string | null, myRank: number): void {
+    private renderList(players: LeaderboardEntry[], myUid: string | null, myRank: number, myProfile: LeaderboardEntry | null): void {
         const { W, H } = this.dims();
         const panelW   = Math.floor(W * 0.88);
         const px       = W / 2;
@@ -166,55 +184,74 @@ export class LeaderboardPanel {
                 this.scene.add.bitmapText(px, this.listAreaTop + 60, 'coiny-bmp', 'No scores yet — be the first!', fs, 0).setOrigin(0.5)
                 .setTint(Phaser.Display.Color.ValueToColor('#667799').color),
             );
-            return;
+        } else {
+            players.forEach((p, i) => {
+                const rowY  = this.listAreaTop + i * ROW_H + ROW_H / 2;
+                const isMe  = p.uid === myUid;
+                const rowBg = this.scene.add.graphics();
+
+                if (isMe) {
+                    rowBg.fillStyle(COLORS.NEON_BLUE, 0.12);
+                    rowBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
+                } else if (i % 2 === 0) {
+                    rowBg.fillStyle(0xffffff, 0.03);
+                    rowBg.fillRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8);
+                }
+                this.listContainer.add(rowBg);
+
+                const rankLabel = i < 3 ? CROWN_ICONS[i] : `${i + 1}`;
+                const rankColor = i === 0 ? COLORS.TEXT_GOLD : i === 1 ? '#cccccc' : i === 2 ? '#cd7f32' : '#8899bb';
+                this.listContainer.add(
+                    this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankLabel, fs, 0).setOrigin(0.5)
+                    .setTint(Phaser.Display.Color.ValueToColor(rankColor).color)
+                );
+
+                const nameColor = isMe ? COLORS.TEXT_NEON : COLORS.TEXT_WHITE;
+                const nameTxt   = isMe ? 'You' : (p.name ?? `Player ${i + 1}`).substring(0, 10);
+                this.listContainer.add(
+                    this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt, fs, 0).setOrigin(0, 0.5)
+                    .setTint(Phaser.Display.Color.ValueToColor(nameColor).color)
+                );
+
+                const scoreColor = isMe ? COLORS.TEXT_GOLD : COLORS.TEXT_WHITE;
+                this.listContainer.add(
+                    this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${p.bestScore}`, fs, 0).setOrigin(1, 0.5)
+                    .setTint(Phaser.Display.Color.ValueToColor(scoreColor).color)
+                );
+            });
+
+            this.listTotalH = players.length * ROW_H;
         }
 
-        players.forEach((p, i) => {
-            const rowY   = this.listAreaTop + i * ROW_H + ROW_H / 2;
-            const isMe   = p.uid === myUid;
-            const rowBg  = this.scene.add.graphics();
+        // ── Pinned "you" row ─────────────────────────────────────────────────
+        const rowY = this.pinnedAreaY + ROW_H / 2;
 
-            if (isMe) {
-                rowBg.fillStyle(COLORS.NEON_BLUE, 0.12);
-                rowBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
-            } else if (i % 2 === 0) {
-                rowBg.fillStyle(0xffffff, 0.03);
-                rowBg.fillRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8);
-            }
-            this.listContainer.add(rowBg);
+        const pinBg = this.scene.add.graphics();
+        pinBg.fillStyle(0xffa500, 0.18);
+        pinBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
+        pinBg.lineStyle(1, 0xffa500, 0.5);
+        pinBg.strokeRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
+        this.pinnedContainer.add(pinBg);
 
-            // Rank / crown
-            const rankLabel = `${i + 1}`; //i < 3 ? CROWN_ICONS[i] : `${i + 1}`;
-            const rankColor = i === 0 ? COLORS.TEXT_GOLD : i === 1 ? '#cccccc' : i === 2 ? '#cd7f32' : '#8899bb';
-            this.listContainer.add(
-                this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankLabel, fs, 0).setOrigin(0.5)
-                .setTint(Phaser.Display.Color.ValueToColor(rankColor).color)
+        const goldTint = Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color;
+
+        if (myRank > 0 && myProfile) {
+            const rankStr = myRank <= 999 ? `${myRank}` : '999+';
+            this.pinnedContainer.add(
+                this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankStr, fs, 0).setOrigin(0.5).setTint(goldTint)
             );
-
-            // Name
-            const nameColor = isMe ? COLORS.TEXT_NEON : COLORS.TEXT_WHITE;
-            const nameTxt   = isMe ? "Me" : `Player ${i}`; //(p.name ?? `Player ${i}`).substring(0, 8);
-            const meTag     = isMe ? ' <' : '';
-            this.listContainer.add(
-                this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt + meTag, fs, 0).setOrigin(0, 0.5)
-                .setTint(Phaser.Display.Color.ValueToColor(nameColor).color)
+            this.pinnedContainer.add(
+                this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', 'YOU', fs, 0).setOrigin(0, 0.5)
+                .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color)
             );
-
-            // Score
-            const scoreColor = isMe ? COLORS.TEXT_GOLD : COLORS.TEXT_WHITE;
-            this.listContainer.add(
-                this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${p.bestScore}`, fs, 0).setOrigin(1, 0.5)
-                .setTint(Phaser.Display.Color.ValueToColor(scoreColor).color)
+            this.pinnedContainer.add(
+                this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${myProfile.bestScore}`, fs, 0).setOrigin(1, 0.5).setTint(goldTint)
             );
-        });
-
-        this.listTotalH = players.length * ROW_H;
-
-        // Auto-scroll to current player rank
-        if (myRank > 0) {
-            const targetY = (myRank - 1) * ROW_H - this.listAreaH / 2 + ROW_H / 2;
-            this.scrollY   = Phaser.Math.Clamp(targetY, 0, Math.max(0, this.listTotalH - this.listAreaH));
-            this.listContainer.y = -this.scrollY;
+        } else {
+            this.pinnedContainer.add(
+                this.scene.add.bitmapText(px, rowY, 'coiny-bmp', 'Play a game to appear here!', Math.floor(H * 0.022), 0).setOrigin(0.5)
+                .setTint(Phaser.Display.Color.ValueToColor('#8899bb').color)
+            );
         }
     }
 
