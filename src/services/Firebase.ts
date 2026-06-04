@@ -163,7 +163,8 @@ class FireBaseService {
     public async getTopPlayers(gameId: string, count = 50): Promise<LeaderboardEntry[]> {
         await this.init();
 
-        const cached = this.leaderboardCache.get(gameId);
+        const cacheKey = `${gameId}:${count}`;
+        const cached = this.leaderboardCache.get(cacheKey);
         if (cached && Date.now() - cached.ts < LEADERBOARD_CACHE_TTL) {
             return cached.data;
         }
@@ -179,7 +180,7 @@ class FireBaseService {
                 ...(d.data() as LeaderboardEntry),
                 rank: i + 1,
             }));
-            this.leaderboardCache.set(gameId, { data: players, ts: Date.now() });
+            this.leaderboardCache.set(cacheKey, { data: players, ts: Date.now() });
             return players;
         } catch (e) {
             console.warn('Firebase: getTopPlayers failed', e);
