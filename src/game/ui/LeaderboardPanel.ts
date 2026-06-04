@@ -3,9 +3,9 @@ import { COLORS } from '../constants/Colors';
 import { LeaderboardEntry } from '../../services/Firebase';
 import { Firebase } from '../../services/Firebase';
 
-const ROW_H       = 72;
-const PANEL_PAD   = 28;
-const CROWN_ICONS = ['👑', '🥈', '🥉'];
+const ROW_H        = 72;
+const PANEL_PAD    = 28;
+const MEDAL_KEYS   = ['medal-gold', 'medal-silver', 'medal-bronze'];
 
 export class LeaderboardPanel {
     private scene: Phaser.Scene;
@@ -198,12 +198,18 @@ export class LeaderboardPanel {
                 }
                 this.listContainer.add(rowBg);
 
-                const rankLabel = i < 3 ? CROWN_ICONS[i] : `${i + 1}`;
-                const rankColor = i === 0 ? COLORS.TEXT_GOLD : i === 1 ? '#cccccc' : i === 2 ? '#cd7f32' : '#8899bb';
-                this.listContainer.add(
-                    this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankLabel, fs, 0).setOrigin(0.5)
-                    .setTint(Phaser.Display.Color.ValueToColor(rankColor).color)
-                );
+                if (i < 3) {
+                    const iconSize = ROW_H * 0.62;
+                    this.listContainer.add(
+                        this.scene.add.image(colRank, rowY, MEDAL_KEYS[i]).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
+                    );
+                } else {
+                    const rankColor = '#8899bb';
+                    this.listContainer.add(
+                        this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', `${i + 1}`, fs, 0).setOrigin(0.5)
+                        .setTint(Phaser.Display.Color.ValueToColor(rankColor).color)
+                    );
+                }
 
                 const nameColor = isMe ? COLORS.TEXT_NEON : COLORS.TEXT_WHITE;
                 const nameTxt   = isMe ? 'You' : (p.name ?? `Player ${i + 1}`).substring(0, 10);
