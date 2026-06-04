@@ -33,6 +33,12 @@ export default class Boot extends BaseScene {
         this.load.path = 'assets/font/';
         this.load.bitmapFont('coiny-bmp', 'coiny.png', 'coiny.xml');
         this.load.bitmapFont('krungthep-bmp', 'krungthep.png', 'krungthep.xml');
+
+        // Medal icons
+        this.load.path = 'assets/medal/';
+        this.load.svg('medal-gold',   '1-gold.svg',   { width: 64, height: 64 });
+        this.load.svg('medal-silver', '2-silver.svg', { width: 64, height: 64 });
+        this.load.svg('medal-bronze', '3-bronze.svg', { width: 64, height: 64 });
     }
 
     create(): void {
