@@ -163,7 +163,6 @@ export class LeaderboardPanel {
         const uid = Firebase.getUid();
 
         this.loadingText.destroy();
-        alert(players.length)
         this.renderList(players, uid, rank, profile);
     }
 
