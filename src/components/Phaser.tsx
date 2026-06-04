@@ -2,15 +2,20 @@ import React from "react";
 import { GlobVar } from "../utils/Global";
 import { ConfigPhaserGame } from "../config/Phaser";
 import { ResizePhaserGame } from "../game/utils/Resize";
+import { StatusBar } from "@capacitor/status-bar";
+import { Capacitor } from "@capacitor/core";
 
 class PhaserGame extends React.Component<{canvas:string}>{
     constructor(props:any){
         super(props);
     }
 
-    componentDidMount(): void {
+    async componentDidMount(): Promise<void> {
+        if (Capacitor.isNativePlatform()) {
+            await StatusBar.hide().catch(() => {});
+        }
         window.game = ConfigPhaserGame();
-        GlobVar.isSafariBrowser = (window.game!.device.browser.safari || window.game!.device.browser.mobileSafari); //Check safari browser
+        GlobVar.isSafariBrowser = (window.game!.device.browser.safari || window.game!.device.browser.mobileSafari);
         ResizePhaserGame();
     }
 

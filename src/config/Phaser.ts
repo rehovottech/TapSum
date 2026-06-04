@@ -18,7 +18,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
     if (!Capacitor.isNativePlatform()){
         gameWidth  = vw;
         gameHeight = vh;
-        mode = Phaser.Scale.NONE
+        mode = Phaser.Scale.NONE;
     }
 
     const config: Phaser.Types.Core.GameConfig = {
@@ -27,6 +27,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         seed: [ (Date.now() * Math.random()).toString() ],
         scale: {
             parent: 'phaser-game',
+            autoCenter: Phaser.Scale.CENTER_BOTH,
             mode: mode,
             width: gameWidth,
             height: gameHeight

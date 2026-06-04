@@ -77,7 +77,7 @@ export const ResizePhaserGame = () => {
 
         // Centering
         canvas.style.position = 'absolute';
-        canvas.style.left = `${(w - displayWidth) / 2}px`;
+        //canvas.style.left = `${(w - displayWidth) / 2}px`;
         canvas.style.top = `${(h - displayHeight) / 2}px`;
     }
 };

@@ -1,7 +1,4 @@
-import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonPage, IonRouterOutlet, isPlatform, setupIonicReact, useIonViewDidEnter } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
-import Home from './pages/Home';
+import { IonApp, IonPage, isPlatform, setupIonicReact } from '@ionic/react';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -32,16 +29,14 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { Firebase } from './services/Firebase';
 import { AdInitialize } from './services/Admob';
 import { AudioManager } from './game/managers/AudioManager';
-import { StatusBar } from '@capacitor/status-bar';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
 import PhaserGame from './components/Phaser';
-import { ResizePhaserGame } from './game/utils/Resize';
 import { GlobVar } from './utils/Global';
 
 setupIonicReact();
@@ -55,10 +50,6 @@ class App extends React.Component{
     }
 
     initServices(): void{
-        // Hide Status bar
-        if(Capacitor.isNativePlatform()){
-            StatusBar.hide().catch(() => {});
-        }
 
         // Init Firebase
         Firebase.init();
@@ -92,9 +83,11 @@ class App extends React.Component{
 
     render(){
         return(
-            <IonPage>
-                <PhaserGame canvas="phaser-game"/>
-            </IonPage>
+            <IonApp>
+                <IonPage>
+                    <PhaserGame canvas="phaser-game"/>
+                </IonPage>
+            </IonApp>
         );
     }
 }
