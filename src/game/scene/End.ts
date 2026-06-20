@@ -4,7 +4,7 @@ import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
-import { AdManager } from '../managers/AdManager';
+import { AdManager } from '../../services/AdManager';
 import { Firebase } from '../../services/Firebase';
 import { GameIds } from '../../constants/GameIds';
 import FPS from '../model/FPS';
@@ -210,28 +210,32 @@ export default class End extends BaseScene {
                 AdManager.showInterstitial(() => this.fadeToScene(SCENES.Menu));
             },
         );
+
     }
 
     // ── Reward ad (continue) ─────────────────────────────────────────────────
 
     private onContinue(): void {
         if (this.adBusy) return;
-        this.adBusy = true;
         AudioManager.play('snd_click');
 
-        AdManager.showRewardVideo().then((rewarded) => {
-            if (rewarded) {
-                AudioManager.play('snd_reward');
-                AdManager.hideBanner();
-                this.fadeToScene(SCENES.Game, {
-                    resumeScore: this.finalScore,
-                    resumeRound: this.finalRound,
-                });
-            } else {
-                this.adBusy = false;
-                this.showAdUnavailable();
-            }
+        if (!AdManager.isRewardedReady()) {
+            this.showAdUnavailable();
+            return;
+        }
+
+        this.adBusy = true;
+        AdManager.showRewarded(() => {
+            AudioManager.play('snd_reward');
+            AdManager.hideBanner();
+            this.fadeToScene(SCENES.Game, {
+                resumeScore: this.finalScore,
+                resumeRound: this.finalRound,
+            });
         });
+        // Reset after the native ad has had time to appear so the button is
+        // pressable again if the user skips without earning the reward.
+        this.time.delayedCall(500, () => { this.adBusy = false; });
     }
 
     private showAdUnavailable(): void {

@@ -32,7 +32,7 @@ import './theme/variables.css';
 import React from 'react';
 
 import { Firebase } from './services/Firebase';
-import { AdInitialize } from './services/Admob';
+import { AdManager } from './services/AdManager';
 import { AudioManager } from './game/managers/AudioManager';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
@@ -54,8 +54,8 @@ class App extends React.Component{
         // Init Firebase
         Firebase.init();
 
-        // Init Admob
-        AdInitialize().catch(() => {});
+        // Init Unity LevelPlay
+        AdManager.initialize().catch(() => {});
 
         // Pause/resume background music on tab hide and Android app suspend
         AudioManager.registerAppLifecycle();

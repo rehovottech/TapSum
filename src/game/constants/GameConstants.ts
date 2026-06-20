@@ -1,6 +1,5 @@
 export const GAME_CONFIG = {
-    SCORE_PER_ROUND:       10,
-    INTERSTITIAL_COOLDOWN: 120_000, // 2 minutes
+    SCORE_PER_ROUND: 10,
 
     // Per-round timer (scales with round count)
     // rounds  1–9: 7s | 10–19: 9s | 20–29: 11s | 30+: 15s

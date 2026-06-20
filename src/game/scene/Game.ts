@@ -6,7 +6,7 @@ import { COLORS } from '../constants/Colors';
 import { GAME_CONFIG } from '../constants/GameConstants';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
-import { AdManager } from '../managers/AdManager';
+import { AdManager } from '../../services/AdManager';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
 import FPS from '../model/FPS';
 

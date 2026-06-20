@@ -1,3 +1,15 @@
+# Unity LevelPlay (IronSource) SDK — keep all SDK classes from being stripped/obfuscated.
+-keep class com.ironsource.** { *; }
+-keep interface com.ironsource.** { *; }
+-keep class com.unity3d.mediation.** { *; }
+-keep interface com.unity3d.mediation.** { *; }
+-keepattributes JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-dontwarn com.ironsource.**
+-dontwarn com.unity3d.mediation.**
+
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
