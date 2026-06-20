@@ -7,7 +7,7 @@ android {
         applicationId "com.rehovot.game.tapsum"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
+        versionCode 9
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -43,7 +43,7 @@ dependencies {
 
     // Unity LevelPlay SDK — check https://developers.is.com/ironsource-mobile/android/sdk-change-log
     // for the latest version and update the version number below.
-    implementation 'com.ironsource.sdk:mediationsdk:8.4.0'
+    implementation 'com.unity3d.ads-mediation:mediation-sdk:8.7.0'
 }
 
 apply from: 'capacitor.build.gradle'
