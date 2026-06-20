@@ -40,6 +40,10 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // Unity LevelPlay SDK — check https://developers.is.com/ironsource-mobile/android/sdk-change-log
+    // for the latest version and update the version number below.
+    implementation 'com.ironsource.sdk:mediationsdk:8.4.0'
 }
 
 apply from: 'capacitor.build.gradle'

@@ -3,7 +3,6 @@ import BaseScene from './BaseScene';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
-import { AdInitialize } from '../../services/Admob';
 import { Firebase } from '../../services/Firebase';
 import { AudioManager } from '../managers/AudioManager';
 import { FlatPreloadBar } from '../model/Preloader';

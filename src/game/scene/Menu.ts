@@ -5,7 +5,7 @@ import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
-import { AdManager } from '../managers/AdManager';
+import { AdManager } from '../../services/AdManager';
 import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 import FPS from '../model/FPS';
 
