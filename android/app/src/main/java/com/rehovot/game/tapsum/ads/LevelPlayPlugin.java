@@ -18,17 +18,18 @@ import com.unity3d.mediation.LevelPlay;
 import com.unity3d.mediation.LevelPlayAdError;
 import com.unity3d.mediation.LevelPlayAdInfo;
 import com.unity3d.mediation.LevelPlayAdSize;
-import com.unity3d.mediation.LevelPlayBannerAdView;
-import com.unity3d.mediation.LevelPlayBannerAdViewListener;
 import com.unity3d.mediation.LevelPlayConfiguration;
 import com.unity3d.mediation.LevelPlayInitError;
 import com.unity3d.mediation.LevelPlayInitListener;
 import com.unity3d.mediation.LevelPlayInitRequest;
-import com.unity3d.mediation.LevelPlayInterstitialAd;
-import com.unity3d.mediation.LevelPlayInterstitialAdListener;
-import com.unity3d.mediation.LevelPlayReward;
-import com.unity3d.mediation.LevelPlayRewardedAd;
-import com.unity3d.mediation.LevelPlayRewardedAdListener;
+
+import com.unity3d.mediation.banner.LevelPlayBannerAdView;
+import com.unity3d.mediation.banner.LevelPlayBannerAdViewListener;
+import com.unity3d.mediation.interstitial.LevelPlayInterstitialAd;
+import com.unity3d.mediation.interstitial.LevelPlayInterstitialAdListener;
+import com.unity3d.mediation.rewarded.LevelPlayRewardedAd;
+import com.unity3d.mediation.rewarded.LevelPlayRewardedAdListener;
+import com.unity3d.mediation.rewarded.LevelPlayReward;
 
 @CapacitorPlugin(name = "LevelPlay")
 public class LevelPlayPlugin extends Plugin {
@@ -64,7 +65,7 @@ public class LevelPlayPlugin extends Plugin {
 
                 LevelPlay.init(activity, initRequest, new LevelPlayInitListener() {
                     @Override
-                    public void onInitSuccess(LevelPlayConfiguration configuration) {
+                    public void onInitSuccess(@NonNull LevelPlayConfiguration configuration) {
                         call.setKeepAlive(false);
                         JSObject data = new JSObject();
                         data.put("success", true);
@@ -73,7 +74,7 @@ public class LevelPlayPlugin extends Plugin {
                     }
 
                     @Override
-                    public void onInitFailed(LevelPlayInitError error) {
+                    public void onInitFailed(@NonNull LevelPlayInitError error) {
                         call.setKeepAlive(false);
                         JSObject data = new JSObject();
                         data.put("errorCode", error.getErrorCode());
@@ -144,11 +145,12 @@ public class LevelPlayPlugin extends Plugin {
                     }
 
                     @Override
-                    public void onAdDisplayFailed(@NonNull LevelPlayAdError error,
-                                                  @NonNull LevelPlayAdInfo adInfo) {
+                    public void onAdDisplayFailed(@NonNull LevelPlayAdInfo adInfo,
+                                                  @NonNull LevelPlayAdError error) {
                         JSObject data = new JSObject();
                         data.put("errorCode", error.getErrorCode());
                         data.put("errorMessage", error.getErrorMessage());
+                        data.put("adUnitId", adInfo.getAdUnitId());
                         notifyListeners("onBannerLoadFailed", data);
                     }
 
@@ -416,8 +418,8 @@ public class LevelPlayPlugin extends Plugin {
                 public void onAdRewarded(@NonNull LevelPlayReward reward,
                                          @NonNull LevelPlayAdInfo adInfo) {
                     JSObject data = new JSObject();
-                    data.put("rewardType", reward.getRewardName());
-                    data.put("rewardAmount", reward.getRewardAmount());
+                    data.put("rewardType", reward.getName());
+                    data.put("rewardAmount", reward.getAmount());
                     data.put("adUnitId", adInfo.getAdUnitId());
                     notifyListeners("onRewardedRewarded", data);
                 }

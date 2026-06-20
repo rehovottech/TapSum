@@ -13,7 +13,7 @@ export interface AdsConfigType {
 
 export const AdsConfig: AdsConfigType = {
     android: {
-        appKey: '26cfa1495',
+        appKey: '26cfa1495', //'1b07754ad' test mode
         bannerId: '1re4dlx4zvsl03zy',
         interstitialId: 'jg6cqm3ixehkp3fg',
         rewardedId: '2vammmaj6w5z1ect',
