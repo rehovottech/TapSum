@@ -34,6 +34,7 @@ import React from 'react';
 import { Firebase } from './services/Firebase';
 import { AdManager } from './services/AdManager';
 import { AudioManager } from './game/managers/AudioManager';
+import { NotificationManager } from './services/Notification';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
 import PhaserGame from './components/Phaser';
@@ -56,6 +57,10 @@ class App extends React.Component{
 
         // Init Unity LevelPlay
         AdManager.initialize().catch(() => {});
+
+        // Init notifications and schedule 3-day play reminder
+        NotificationManager.initialize().catch(() => {});
+        NotificationManager.schedulePlayReminder().catch(() => {});
 
         // Pause/resume background music on tab hide and Android app suspend
         AudioManager.registerAppLifecycle();
