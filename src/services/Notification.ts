@@ -2,10 +2,9 @@ import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } fro
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
-const FRIDAY_NOTIF_ID = 1001;
 const PLAY_REMINDER_ID = 1002;
-
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+//const FRIDAY_NOTIF_ID = 1001;
 
 export class NotificationManager {
 
@@ -13,7 +12,7 @@ export class NotificationManager {
         if (!Capacitor.isNativePlatform()) return;
         await NotificationManager.requestPermissions();
         await NotificationManager.setupPushNotifications();
-        await NotificationManager.scheduleFridayNightNotification();
+        await NotificationManager.schedulePlayReminder();
     }
 
     // Call when the user starts or resumes a game session.
@@ -102,6 +101,7 @@ export class NotificationManager {
     }
 
     // Schedules a repeating local notification every Friday at 8:00 PM
+    /*
     private static async scheduleFridayNightNotification(): Promise<void> {
         try {
             const status = await LocalNotifications.checkPermissions();
@@ -140,4 +140,5 @@ export class NotificationManager {
             console.error('Local notification scheduling error:', e);
         }
     }
+    */
 }

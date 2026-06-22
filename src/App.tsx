@@ -60,7 +60,6 @@ class App extends React.Component{
 
         // Init notifications and schedule 3-day play reminder
         NotificationManager.initialize().catch(() => {});
-        NotificationManager.schedulePlayReminder().catch(() => {});
 
         // Pause/resume background music on tab hide and Android app suspend
         AudioManager.registerAppLifecycle();
