@@ -1,0 +1,30 @@
+1. Add to .gitignore
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Sublime Text
+*.sublime-workspace
+
+**/.DS_Store ensures .DS_Store files in subdirectories are also ignored.
+
+2. Remove existing .DS_Store files from Git
+
+If they are already tracked, run:
+
+find . -name .DS_Store -print0 | xargs -0 git rm -f --cached
+
+Or remove them all from the Git index:
+
+git rm -r --cached .
+git add .
+git commit -m "Remove .DS_Store files and update .gitignore"
+
+3. Delete .DS_Store files from your Mac (optional)
+
+If you want to remove them from your working directory as well:
+
+find . -name ".DS_Store" -type f -delete
+
+4. Verify
+git status
