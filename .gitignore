@@ -431,3 +431,10 @@ FodyWeavers.xsd
 
 dist/
 node_modules/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Sublime Text
+*.sublime-workspace
