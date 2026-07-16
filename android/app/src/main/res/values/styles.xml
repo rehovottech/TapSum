@@ -21,5 +21,4 @@
         <item name="android:background">@drawable/splash</item>
     </style>
 
-    <string name="admob_app_id">ca-app-pub-6565358340023179~7956554247</string>
 </resources>

@@ -32,7 +32,7 @@ import './theme/variables.css';
 import React from 'react';
 
 import { Firebase } from './services/Firebase';
-import { AdManager } from './services/AdManager';
+import { PurchasesManager } from './services/Purchases';
 import { AudioManager } from './game/managers/AudioManager';
 import { NotificationManager } from './services/Notification';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
@@ -55,8 +55,8 @@ class App extends React.Component{
         // Init Firebase
         Firebase.init();
 
-        // Init Unity LevelPlay
-        AdManager.initialize().catch(() => {});
+        // Init purchases/donations (also evaluates the 2-day auto donate popup)
+        PurchasesManager.initialize().catch(() => {});
 
         // Init notifications and schedule 3-day play reminder
         NotificationManager.initialize().catch(() => {});

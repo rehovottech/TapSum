@@ -21,8 +21,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Unity LevelPlay (IronSource) SDK
-        maven { url 'https://android-sdk.is.com/' }
     }
 }
 
