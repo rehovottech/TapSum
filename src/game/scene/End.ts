@@ -4,7 +4,6 @@ import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
-import { AdManager } from '../../services/AdManager';
 import { Firebase } from '../../services/Firebase';
 import { GameIds } from '../../constants/GameIds';
 import FPS from '../model/FPS';
@@ -20,7 +19,6 @@ export default class End extends BaseScene {
     private finalRound = 1;
     private bestScore  = 0;
     private isNewBest  = false;
-    private adBusy     = false;
     private rankText?: Phaser.GameObjects.BitmapText;
 
     constructor() {
@@ -33,7 +31,6 @@ export default class End extends BaseScene {
         this.finalRound = data?.round     ?? 1;
         this.bestScore  = data?.bestScore ?? 0;
         this.isNewBest  = this.finalScore > 0 && this.finalScore >= this.bestScore;
-        this.adBusy     = false;
     }
 
     create(): void {
@@ -47,7 +44,6 @@ export default class End extends BaseScene {
 
         this.cameras.main.fadeIn(350);
         this.celebrationBurst();
-        AdManager.showBanner();
 
         this.fetchAndShowRank();
     }
@@ -169,35 +165,19 @@ export default class End extends BaseScene {
     // ── Buttons ─────────────────────────────────────────────────────────────
 
     private createButtons(): void {
-        const btnW   = Math.floor(this.W * 0.55);
-        const btnH   = Math.floor(this.H * 0.082);
-        const fs     = Math.floor(this.H * 0.036);
         const smW    = Math.floor(this.W * 0.37);
         const smH    = Math.floor(this.H * 0.068);
         const smFs   = Math.floor(this.H * 0.028);
-        const topBtn = this.H * 0.665;
-        const gap    = btnH + Math.floor(this.H * 0.018);
-
-        // CONTINUE (reward ad)
-        this.createButton(
-            this.CX, topBtn,
-            btnW, btnH,
-            '▶  CONTINUE  (Ad)',
-            Math.floor(fs * 0.78),
-            COLORS.BUTTON_SUCCESS, COLORS.BUTTON_SUCCESS_DARK,
-            () => this.onContinue(),
-        );
+        const rowY   = this.H * 0.665;
 
         // RETRY + HOME side by side
-        const rowY = topBtn + gap;
         this.createButton(
             this.CX - smW * 0.57, rowY,
             smW, smH, 'RETRY', smFs,
             COLORS.BUTTON_SECONDARY, COLORS.BUTTON_SECONDARY_DARK,
             () => {
                 AudioManager.play('snd_click');
-                AdManager.hideBanner();
-                AdManager.showInterstitial(() => this.fadeToScene(SCENES.Game));
+                this.fadeToScene(SCENES.Game);
             },
         );
 
@@ -207,46 +187,10 @@ export default class End extends BaseScene {
             COLORS.BUTTON_DANGER, COLORS.BUTTON_DANGER_DARK,
             () => {
                 AudioManager.play('snd_click');
-                AdManager.showInterstitial(() => this.fadeToScene(SCENES.Menu));
+                this.fadeToScene(SCENES.Menu);
             },
         );
 
-    }
-
-    // ── Reward ad (continue) ─────────────────────────────────────────────────
-
-    private onContinue(): void {
-        if (this.adBusy) return;
-        AudioManager.play('snd_click');
-
-        if (!AdManager.isRewardedReady()) {
-            this.showAdUnavailable();
-            return;
-        }
-
-        this.adBusy = true;
-        AdManager.showRewarded(() => {
-            AudioManager.play('snd_reward');
-            AdManager.hideBanner();
-            this.fadeToScene(SCENES.Game, {
-                resumeScore: this.finalScore,
-                resumeRound: this.finalRound,
-            });
-        });
-        // Reset after the native ad has had time to appear so the button is
-        // pressable again if the user skips without earning the reward.
-        this.time.delayedCall(500, () => { this.adBusy = false; });
-    }
-
-    private showAdUnavailable(): void {
-        const msg = this.add.bitmapText(this.CX, this.H * 0.625, 'coiny-bmp', 'Ad not available — try again later.', Math.floor(this.H * 0.025), 0)
-        .setOrigin(0.5).setDepth(30);
-
-        this.tweens.add({
-            targets: msg,
-            alpha: 0, delay: 2200, duration: 400,
-            onComplete: () => msg.destroy(),
-        });
     }
 
     // ── Celebration burst ────────────────────────────────────────────────────

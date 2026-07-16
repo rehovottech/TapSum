@@ -5,7 +5,7 @@ import { GlobVar } from '../../utils/Global';
 import { COLORS } from '../constants/Colors';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
-import { AdManager } from '../../services/AdManager';
+import { PurchasesManager } from '../../services/Purchases';
 import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 import FPS from '../model/FPS';
 
@@ -31,11 +31,11 @@ export default class Menu extends BaseScene {
         this.createBestScore();
         this.createButtons();
         this.createSoundToggle();
+        this.createDonateButton();
 
         this.fpsView = new FPS(this);
 
         this.cameras.main.fadeIn(400);
-        AdManager.showBanner();
     }
 
     update(): void {
@@ -136,7 +136,6 @@ export default class Menu extends BaseScene {
             COLORS.BUTTON_PRIMARY, COLORS.BUTTON_PRIMARY_DARK,
             () => {
                 AudioManager.play('snd_click');
-                AdManager.hideBanner();
                 this.fadeToScene(SCENES.Game);
             },
         );
@@ -193,6 +192,58 @@ export default class Menu extends BaseScene {
                 scaleX: 0.85, scaleY: 0.85,
                 duration: 80, yoyo: true, ease: 'Power2',
             });
+        });
+    }
+
+    // ── Donate button (coffee mug icon) ─────────────────────────────────────
+
+    private createDonateButton(): void {
+        const x = this.W * 0.10;
+        const y = this.H * 0.05;
+        const size = Math.floor(this.H * 0.06);
+
+        const btn = this.add.container(x, y);
+
+        const bg = this.add.graphics();
+        bg.fillStyle(0xffb74d, 0.85);
+        bg.fillRoundedRect(-size / 2, -size / 2, size, size, size * 0.3);
+        btn.add(bg);
+
+        // Coffee mug icon drawn with primitives — body, handle, steam.
+        const mug = this.add.graphics();
+        const cupW = size * 0.42;
+        const cupH = size * 0.34;
+        const cupX = -cupW / 2 - size * 0.04;
+        const cupY = size * 0.02;
+
+        mug.fillStyle(0x3e2723, 1);
+        mug.fillRoundedRect(cupX, cupY, cupW, cupH, cupW * 0.18);
+
+        mug.lineStyle(Math.max(2, size * 0.06), 0x3e2723, 1);
+        mug.strokeCircle(cupX + cupW + size * 0.05, cupY + cupH / 2, cupH * 0.32);
+
+        mug.fillStyle(0x6f4e37, 1);
+        mug.fillRoundedRect(cupX + 2, cupY + 2, cupW - 4, cupH * 0.3, cupW * 0.14);
+
+        mug.lineStyle(Math.max(1.5, size * 0.035), 0x3e2723, 0.8);
+        mug.beginPath();
+        mug.moveTo(cupX + cupW * 0.25, cupY - size * 0.10);
+        mug.lineTo(cupX + cupW * 0.15, cupY - size * 0.20);
+        mug.moveTo(cupX + cupW * 0.65, cupY - size * 0.10);
+        mug.lineTo(cupX + cupW * 0.75, cupY - size * 0.20);
+        mug.strokePath();
+
+        btn.add(mug);
+
+        btn.setSize(size, size).setInteractive({ useHandCursor: true });
+        btn.on('pointerdown', () => {
+            AudioManager.play('snd_click');
+            this.tweens.add({
+                targets: btn,
+                scaleX: 0.85, scaleY: 0.85,
+                duration: 80, yoyo: true, ease: 'Power2',
+            });
+            PurchasesManager.showDonate();
         });
     }
 }

@@ -6,7 +6,6 @@ import { COLORS } from '../constants/Colors';
 import { GAME_CONFIG } from '../constants/GameConstants';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
-import { AdManager } from '../../services/AdManager';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
 import FPS from '../model/FPS';
 
@@ -88,7 +87,6 @@ export default class Game extends BaseScene {
         this.createIncrementButtons();
         this.fpsView = new FPS(this);
 
-        AdManager.hideBanner();
         this.cameras.main.fadeIn(300);
         this.time.delayedCall(500, () => this.startRound());
     }

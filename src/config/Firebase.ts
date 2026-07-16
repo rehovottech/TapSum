@@ -1,4 +1,6 @@
-export const FirebaseConfig = {
+import type { FirebaseConfigInput } from '@rehovottech/firebase';
+
+export const FirebaseConfig: FirebaseConfigInput = {
     apiKey: "AIzaSyBHv5cLgIAqEaBVnWX3IWAMMFrwr6ZLtUY",
     authDomain: "rehovotgames.firebaseapp.com",
     projectId: "rehovotgames",
