@@ -1,5 +1,7 @@
 import type { PurchasesConfig } from '@rehovottech/capacitor-purchases';
 
+const RAZORPAY_KEY = String(import.meta.env.VITE_RAZORPAY_KEY ?? "");
+
 export const PurchasesConfigData: PurchasesConfig = {
     appName: 'Tap Sum',
     platform: {
@@ -20,7 +22,7 @@ export const PurchasesConfigData: PurchasesConfig = {
             },
         },
         web: {
-            razorpayKey: '',
+            razorpayKey: RAZORPAY_KEY,
             products: {
                 donateSmall: 29,
                 donateMedium: 99,
