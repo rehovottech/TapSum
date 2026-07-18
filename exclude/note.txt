@@ -28,3 +28,9 @@ find . -name ".DS_Store" -type f -delete
 
 4. Verify
 git status
+
+
+
+
+
+npx capacitor-assets generate
