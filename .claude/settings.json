@@ -35,10 +35,45 @@
       "Bash(git commit -m ' *)",
       "Bash(/usr/bin/head -n 50)",
       "Bash(rm firebase *)",
-      "Bash(ln -s ../../../../plugins/rehovot-firebase firebase)"
+      "Bash(ln -s ../../../../plugins/rehovot-firebase firebase)",
+      "Bash(find /Volumes/T7/Office/Code/plugins/rehovot-purchase -type f \\\\\\( -name \"*.ts\" -o -name \"*.css\" -o -name \"*.html\" -o -name \"*.tsx\" \\\\\\) | grep -v node_modules | grep -v \"/dist/\" | sort)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/**)",
+      "Bash(find /Volumes/T7/Office/Code/plugins/rehovot-purchase -type d | sort)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/src/**)",
+      "Bash(find /Volumes/T7/Office/Code/plugins/rehovot-purchase -type d -not -path \"*/.git*\" | sort)",
+      "Bash(find /Volumes/T7/Office/Code/plugins/rehovot-purchase -type d -not -path \"*/.git*\" -not -path \"*/.gradle*\" -not -path \"*/build*\" -not -path \"*/node_modules*\" | sort)",
+      "Bash(find /Volumes/T7/Office/Code/plugins/rehovot-purchase/src -type f | sort)",
+      "Bash(xargs -I{} sh -c 'echo ==={}===; cat {}')",
+      "Bash(grep -n \"\\\\\"@rehovottech/capacitor-purchases\\\\\"\" package.json; echo \"---resolved---\"; find node_modules/@rehovottech -maxdepth 2 2>/dev/null; echo \"---installed version file---\"; cat node_modules/@rehovottech/capacitor-purchases/package.json 2>/dev/null | grep -E '\"version\"|\"resolved\"')",
+      "Bash(ls -la node_modules/@rehovottech/capacitor-purchases | head -5; echo \"---dist popup---\"; find node_modules/@rehovottech/capacitor-purchases -iname \"*popup*\")",
+      "Bash(grep -m1 \"\\\\\"@ionic/react\\\\\"\" /Volumes/T7/Office/Code/tap-sum/package.json /Volumes/T7/Office/Code/plugins/rehovot-purchase/package.json 2>/dev/null)",
+      "Bash(find node_modules/@rehovottech/capacitor-purchases -type f | grep -v \"\\\\.d\\\\.ts\"; echo \"---is symlink---\"; ls -la node_modules/@rehovottech/ | cat)",
+      "Bash(ls -la /Volumes/T7/Office/Code/plugins/rehovot-purchase/ | cat; echo \"---dist---\"; find /Volumes/T7/Office/Code/plugins/rehovot-purchase/dist -maxdepth 2 2>/dev/null)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/dist/**)",
+      "Bash(grep -n \"breakpoint\\\\|position = \\\\|host.style\" /Volumes/T7/Office/Code/plugins/rehovot-purchase/dist/popup-manager.js)",
+      "Bash(grep -n \"@ionic\" /Volumes/T7/Office/Code/tap-sum/package.json /Volumes/T7/Office/Code/plugins/rehovot-purchase/package.json)",
+      "Bash(cd /Volumes/T7/Office/Code/plugins/rehovot-purchase && grep -n \"\\\\\"main\\\\\"\\\\|\\\\\"module\\\\\"\\\\|\\\\\"types\\\\\"\\\\|\\\\\"scripts\\\\\"\\\\|\\\\\"build\\\\\"\" -A1 package.json | head -30)",
+      "Bash(grep -o \"rehovot-purchases-modal[^\\\\`]*\" /Volumes/T7/Office/Code/tap-sum/android/app/src/main/assets/public/assets/index-DiUaPDuH.js)",
+      "Bash(unalias head *)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/node_modules/@ionic/react/**)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/node_modules/@ionic/core/**)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/node_modules/react/**)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-purchase/node_modules/react-dom/**)",
+      "Bash(grep -n \"^    \\\\`;\\\\|document.head.append\\\\|style.textContent\\\\|^}\" /Volumes/T7/Office/Code/plugins/rehovot-purchase/src/popup-manager.tsx)",
+      "Bash(cd /Volumes/T7/Office/Code/plugins/rehovot-purchase && npm run build 2>&1)",
+      "Bash(find /Volumes/T7/Office/Code/plugins/rehovot-firebase -iname \"*.ts\" -path \"*src*\" -not -path \"*node_modules*\" 2>/dev/null | grep -i leaderboard)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-firebase/**)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-firebase/src/leaderboard/**)",
+      "Bash(grep -n \"TAP_SUM\" /Volumes/T7/Office/Code/tap-sum/src/constants/GameIds.ts 2>/dev/null; echo \"---\"; grep -rn \"leaderboardCollection\" /Volumes/T7/Office/Code/tap-sum/src/config/Firebase.ts /Volumes/T7/Office/Code/plugins/rehovot-firebase/src/config/*.ts 2>/dev/null)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-firebase/src/config/**)",
+      "Bash(grep -n \"DEFAULT_LEADERBOARD_COLLECTION\\\\|leaderboardCollection\" /Volumes/T7/Office/Code/plugins/rehovot-firebase/src/config/FirebaseConfig.ts; echo \"---tap-sum config---\"; grep -n \"leaderboard\" /Volumes/T7/Office/Code/tap-sum/src/config/Firebase.ts)",
+      "Bash(grep -rn \"DEFAULT_LEADERBOARD_COLLECTION\" /Volumes/T7/Office/Code/plugins/rehovot-firebase/src/)",
+      "Read(//Volumes/T7/Office/Code/plugins/rehovot-firebase/src/**)",
+      "Bash(git -C /Volumes/T7/Office/Code/tap-sum status --short firestore.indexes.json firebase.json)"
     ],
     "additionalDirectories": [
-      "/Volumes/Files/Official Work/Code/plugins/rehovot-purchase/src"
+      "/Volumes/Files/Official Work/Code/plugins/rehovot-purchase/src",
+      "/Volumes/T7/Office/Code/plugins/rehovot-purchase/src"
     ]
   }
 }

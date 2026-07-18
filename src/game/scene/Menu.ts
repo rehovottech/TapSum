@@ -20,7 +20,7 @@ export default class Menu extends BaseScene {
         this.initScene();
     }
 
-    async create(): Promise<void> {
+    create(){
         GlobVar.consolelog(`Scene: ${SCENES.Menu}`);
         AudioManager.init();
         AudioManager.playMusic();
@@ -31,9 +31,8 @@ export default class Menu extends BaseScene {
         this.createBestScore();
         this.createButtons();
         this.createSoundToggle();
-        if (!(await PurchasesManager.hasSupported())) {
-            this.createDonateButton();
-        }
+
+        this.checkPurchaseButton();
 
         this.fpsView = new FPS(this);
 
@@ -198,6 +197,12 @@ export default class Menu extends BaseScene {
     }
 
     // ── Donate button (coffee mug icon) ─────────────────────────────────────
+
+    private async checkPurchaseButton(): Promise<void> {
+        if (!(await PurchasesManager.hasSupported())) {
+            this.createDonateButton();
+        }
+    }
 
     private createDonateButton(): void {
         const x = this.W * 0.10;
