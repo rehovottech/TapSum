@@ -73,7 +73,7 @@ class FireBaseService {
     // ── Leaderboard ──────────────────────────────────────────────────────────
 
     public async submitScore(gameId: string, score: number): Promise<void> {
-        await this.init();
+        await this.signInAnonymous();
         try {
             await RehovotFirebase.Leaderboard.submitScore(gameId, score, {
                 displayName: DEFAULT_PLAYER_NAME,
@@ -84,7 +84,7 @@ class FireBaseService {
     }
 
     public async getTopPlayers(gameId: string, count = 50): Promise<LeaderboardEntry[]> {
-        await this.init();
+        await this.signInAnonymous();
         try {
             const players = await RehovotFirebase.Leaderboard.getTopPlayers(gameId, count);
             return players.map((p, i) => ({
@@ -101,7 +101,7 @@ class FireBaseService {
     }
 
     public async getPlayerRank(gameId: string): Promise<number> {
-        await this.init();
+        await this.signInAnonymous();
         try {
             const rank = await RehovotFirebase.Leaderboard.getPlayerRank(gameId);
             return rank?.rank ?? -1;
@@ -112,7 +112,7 @@ class FireBaseService {
     }
 
     public async getPlayerProfile(gameId: string): Promise<LeaderboardEntry | null> {
-        await this.init();
+        await this.signInAnonymous();
         try {
             const profile = await RehovotFirebase.Leaderboard.getPlayerProfile(gameId);
             if (!profile) return null;

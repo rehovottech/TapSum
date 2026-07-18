@@ -29,9 +29,9 @@ export const PurchasesConfigData: PurchasesConfig = {
         web: {
             razorpayKey: RAZORPAY_KEY,
             products: {
-                donateSmall: 29,
+                donateSmall: 49,
                 donateMedium: 99,
-                donateLarge: 199,
+                donateLarge: 149,
                 premium: 299,
             },
         },

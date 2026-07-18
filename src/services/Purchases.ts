@@ -14,12 +14,33 @@ class PurchasesManagerClass {
         if (this.initialized) return;
         this.initialized = true;
 
+        Purchases.addListener("popupOpened", () => {
+            if (window.game) {
+                window.game.scene.getScenes(true).forEach((scene) => {
+                    scene.input.enabled = false;
+                });
+            }
+        });
+
+        Purchases.addListener("popupClosed", () => {
+            if (window.game) {
+                window.game.scene.getScenes(true).forEach((scene) => {
+                    scene.input.enabled = true;
+                });
+            }
+        });
+
         await Purchases.initialize(PurchasesConfigData);
         await this.maybeShowAutoDonatePopup();
     }
 
     showDonate(): Promise<void> {
         return Purchases.showDonate();
+    }
+
+    async hasSupported(): Promise<boolean> {
+        const [donated, premium] = await Promise.all([Purchases.hasDonated(), Purchases.isPremium()]);
+        return donated || premium;
     }
 
     // Shows the donate popup automatically every DAYS_BETWEEN_AUTO_DONATE days
