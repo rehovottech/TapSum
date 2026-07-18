@@ -1,23 +1,28 @@
 import type { PurchasesConfig } from '@rehovottech/capacitor-purchases';
 
 const RAZORPAY_KEY = String(import.meta.env.VITE_RAZORPAY_KEY ?? "");
+const DONATE_STORE_KEY = {
+    donateSmall: "com.rehovot.game.tapsum.donate_small",
+    donateMedium: "com.rehovot.game.tapsum.donate_medium",
+    donateLarge: "com.rehovot.game.tapsum.donate_large"
+}
 
 export const PurchasesConfigData: PurchasesConfig = {
     appName: 'Tap Sum',
     platform: {
         android: {
             products: {
-                donateSmall: 'donate_small',
-                donateMedium: 'donate_medium',
-                donateLarge: 'donate_large',
+                donateSmall: DONATE_STORE_KEY.donateSmall,
+                donateMedium: DONATE_STORE_KEY.donateMedium,
+                donateLarge: DONATE_STORE_KEY.donateLarge,
                 premium: 'premium_unlock',
             },
         },
         ios: {
             products: {
-                donateSmall: 'donate_small',
-                donateMedium: 'donate_medium',
-                donateLarge: 'donate_large',
+                donateSmall: DONATE_STORE_KEY.donateSmall,
+                donateMedium: DONATE_STORE_KEY.donateMedium,
+                donateLarge: DONATE_STORE_KEY.donateLarge,
                 premium: 'premium_unlock',
             },
         },
@@ -32,9 +37,8 @@ export const PurchasesConfigData: PurchasesConfig = {
         },
     },
     donation: {
-        // The built-in launch-count reminder is disabled — PurchasesManager
-        // loops the popup itself every DAYS_BETWEEN_AUTO_DONATE days of play,
-        // stopping permanently once the player donates or unlocks premium.
+        // Let the app-level PurchasesManager control the auto-popup timing so
+        // it only appears after 2 days of play and stops after donation/premium.
         enabled: false,
         title: '❤️ Buy us a Coffee',
         message: 'Your support helps us keep building free games like Tap Sum.',
