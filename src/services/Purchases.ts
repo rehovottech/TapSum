@@ -4,7 +4,7 @@ import { PurchasesConfigData } from '../config/Purchases';
 
 const FIRST_PLAY_KEY = 'tapsum_first_play_at';
 const LAST_SHOWN_KEY = 'tapsum_donate_last_shown_at';
-const DAYS_BETWEEN_AUTO_DONATE = 3;
+const DAYS_BETWEEN_AUTO_DONATE = 2;
 const MILLIS_IN_DAY = 24 * 60 * 60 * 1000;
 
 class PurchasesManagerClass {
@@ -23,7 +23,7 @@ class PurchasesManagerClass {
     }
 
     // Shows the donate popup automatically every DAYS_BETWEEN_AUTO_DONATE days
-    // of play, looping indefinitely until the player donates or unlocks premium.
+    // of play, looping until the player donates or unlocks premium.
     private async maybeShowAutoDonatePopup(): Promise<void> {
         try {
             const [donated, premium] = await Promise.all([Purchases.hasDonated(), Purchases.isPremium()]);
