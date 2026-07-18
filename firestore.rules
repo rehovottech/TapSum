@@ -3,23 +3,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Leaderboard entries under games/{gameId}/leaderboard/{uid}
-    match /games/{gameId}/leaderboard/{uid} {
+    // Leaderboard entries under leaderboards/{leaderboardId}/entries/{playerId}
+    // (path/fields dictated by the @rehovottech/firebase LeaderboardService)
+    match /leaderboards/{leaderboardId}/entries/{playerId} {
 
       // Anyone authenticated can read leaderboard entries
       allow read: if request.auth != null;
 
       // Only the owner can create their own document
       allow create: if request.auth != null
-                    && request.auth.uid == uid
-                    && request.resource.data.uid == uid
-                    && request.resource.data.bestScore >= 0;
+                    && request.auth.uid == playerId
+                    && request.resource.data.playerId == playerId
+                    && request.resource.data.score >= 0;
 
-      // Owner can update, but cannot lower their bestScore
+      // Owner can update, but cannot lower their score
       allow update: if request.auth != null
-                    && request.auth.uid == uid
-                    && request.resource.data.uid == uid
-                    && request.resource.data.bestScore >= resource.data.bestScore;
+                    && request.auth.uid == playerId
+                    && request.resource.data.playerId == playerId
+                    && request.resource.data.score >= resource.data.score;
 
       // Deletes not allowed
       allow delete: if false;
