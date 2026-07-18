@@ -20,7 +20,7 @@ export default class Menu extends BaseScene {
         this.initScene();
     }
 
-    create(): void {
+    async create(): Promise<void> {
         GlobVar.consolelog(`Scene: ${SCENES.Menu}`);
         AudioManager.init();
         AudioManager.playMusic();
@@ -31,7 +31,9 @@ export default class Menu extends BaseScene {
         this.createBestScore();
         this.createButtons();
         this.createSoundToggle();
-        this.createDonateButton();
+        if (!(await PurchasesManager.hasSupported())) {
+            this.createDonateButton();
+        }
 
         this.fpsView = new FPS(this);
 

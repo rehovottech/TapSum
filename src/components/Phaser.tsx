@@ -11,12 +11,20 @@ class PhaserGame extends React.Component<{canvas:string}>{
     }
 
     async componentDidMount(): Promise<void> {
+        if (window.game) {
+            return;
+        }
         if (Capacitor.isNativePlatform()) {
             await StatusBar.hide().catch(() => {});
         }
         window.game = ConfigPhaserGame();
         GlobVar.isSafariBrowser = (window.game!.device.browser.safari || window.game!.device.browser.mobileSafari);
         ResizePhaserGame();
+    }
+
+    componentWillUnmount(): void {
+        window.game?.destroy(true);
+        window.game = undefined as any;
     }
 
     render(){

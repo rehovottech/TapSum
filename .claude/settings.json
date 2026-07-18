@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' log --oneline --all)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' branch -a)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' remote -v)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' show --stat ac8be03)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' grep -n 'games/\\\\|leaderboard' ac8be03 --)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' log --all -S games/ --oneline)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' log --all -S leaderboard/ --oneline)",
+      "Bash(find '/Volumes/Files/Official Work/Code/plugins/rehovot-firebase' -iname *.rules)",
+      "Bash(find '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum/src' -iname *firebase*)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log --oneline --follow -- src/services/Firebase.ts)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log -p --follow -- src/services/Firebase.ts)",
+      "Bash(find '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' -iname *.rules -not -path */node_modules/*)",
+      "Bash(find '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' -iname firestore* -not -path */node_modules/*)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' show 73ef938 --stat)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log -1 '--format=%H %ad %s' 73ef938)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' show 73ef938 -- src/services/Firebase.ts)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log --oneline -p -- firestore.rules)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log --oneline --follow --diff-filter=M -- src/services/Firebase.ts)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' show 6d9355b -- src/services/Firebase.ts)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' show bdbcfab -- src/services/Firebase.ts src/game/ui/LeaderboardPanel.ts)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' show bdbcfab -- src/services/Firebase.ts)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log --oneline -- firestore.rules)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log -1 --format=%ad -- firestore.rules)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' log --follow --oneline --all -- firestore.rules)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' status)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' diff -- firestore.rules)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' diff --cached -- firestore.rules)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' diff -- src/services/Firebase.ts)",
+      "Bash(find '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' -iname *.log -newer '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum/package.json' -not -path */node_modules/*)",
+      "Bash(git -C '/Volumes/Files/Official Work/Code/rehovot-games-project/tap-sum' diff --stat -- src/components/Phaser.tsx src/game/scene/Menu.ts src/services/Purchases.ts)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(/usr/bin/head -n 50)",
+      "Bash(rm firebase *)",
+      "Bash(ln -s ../../../../plugins/rehovot-firebase firebase)"
+    ],
+    "additionalDirectories": [
+      "/Volumes/Files/Official Work/Code/plugins/rehovot-purchase/src"
+    ]
+  }
+}
