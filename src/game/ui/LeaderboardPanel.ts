@@ -212,7 +212,7 @@ export class LeaderboardPanel {
                 }
 
                 const nameColor = isMe ? COLORS.TEXT_NEON : COLORS.TEXT_WHITE;
-                const nameTxt   = isMe ? 'You' : (p.name ?? `Player ${i + 1}`).substring(0, 10);
+                const nameTxt   = isMe ? 'You' : `Player ${i + 1}`; //(p.name ?? `Player ${i + 1}`).substring(0, 10);
                 this.listContainer.add(
                     this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt, fs, 0).setOrigin(0, 0.5)
                     .setTint(Phaser.Display.Color.ValueToColor(nameColor).color)

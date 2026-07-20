@@ -11,6 +11,7 @@ import FPS from '../model/FPS';
 
 export default class Menu extends BaseScene {
     private soundBtn?: Phaser.GameObjects.Container;
+    private helpPopup?: Phaser.GameObjects.Container;
 
     constructor() {
         super({ key: SCENES.Menu });
@@ -159,6 +160,127 @@ export default class Menu extends BaseScene {
                 new LeaderboardPanel(this);
             },
         );
+
+        // Help button
+        this.createButton(
+            this.CX, this.H * 0.82,
+            Math.floor(bw * 0.44), Math.floor(bh * 0.70),
+            'HELP',
+            Math.floor(fs * 0.56),
+            COLORS.BUTTON_PURPLE, COLORS.BUTTON_PURPLE_DARK,
+            () => {
+                AudioManager.play('snd_click');
+                this.toggleHelpPopup();
+            },
+        );
+    }
+
+    private toggleHelpPopup(): void {
+        if (this.helpPopup) {
+            this.closeHelpPopup();
+            return;
+        }
+
+        this.openHelpPopup();
+    }
+
+    private openHelpPopup(): void {
+        const panelW = Math.floor(this.W * 0.86);
+        const panelH = Math.floor(this.H * 0.66);
+        const px = this.W / 2;
+        const py = this.H / 2;
+
+        const root = this.add.container(0, 0).setDepth(60);
+        this.helpPopup = root;
+
+        const overlay = this.add.graphics();
+        overlay.fillStyle(0x000000, 0.72);
+        overlay.fillRect(0, 0, this.W, this.H);
+        overlay.setInteractive();
+        overlay.on('pointerdown', () => this.closeHelpPopup());
+        root.add(overlay);
+
+        const shadow = this.add.graphics();
+        shadow.fillStyle(0x000000, 0.45);
+        shadow.fillRoundedRect(px - panelW / 2 + 8, py - panelH / 2 + 12, panelW, panelH, 24);
+        root.add(shadow);
+
+        const panel = this.add.graphics();
+        panel.fillStyle(0x12103a, 1);
+        panel.fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 24);
+        panel.lineStyle(2, COLORS.NEON_BLUE, 0.5);
+        panel.strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 24);
+        root.add(panel);
+
+        const titleY = py - panelH / 2 + 90;
+        root.add(
+            this.add.bitmapText(px, titleY, 'coiny-bmp', 'HOW TO PLAY', Math.floor(this.H * 0.032), 0)
+                .setOrigin(0.5)
+                .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color),
+        );
+
+        const lines = [
+            'Each round flashes a new + or - number.',
+            'Keep a running total of every number shown.',
+            'Tap +1, +10, +100 or +1000 to build up to that total.',
+            'Match it exactly to score and reach the next round.',
+            'Overshoot the total, or run out of time, and it\'s game over.',
+        ];
+
+        const maxTextWidth = panelW - 64;
+        const lineSpacing  = Math.floor(this.H * 0.04);
+        let cursorY = titleY + 110;
+
+        lines.forEach((line) => {
+            const text = this.add.bitmapText(px, cursorY, 'coiny-bmp', line, Math.floor(this.H * 0.024), 0)
+                .setOrigin(0.5, 0)
+                .setMaxWidth(maxTextWidth).setLineSpacing(Math.floor(this.H * 0.03))
+                .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_WHITE).color);
+            root.add(text);
+            cursorY += text.height + lineSpacing;
+        });
+
+        const closeX = px + panelW / 2 - 30;
+        const closeY = py - panelH / 2 + 30;
+        const closeBg = this.add.graphics();
+        closeBg.fillStyle(0xff1744, 0.9);
+        closeBg.fillCircle(closeX, closeY, 22);
+        root.add(closeBg);
+
+        const closeTxt = this.add.bitmapText(closeX, closeY - 2, 'krungthep-bmp', 'x', Math.floor(this.H * 0.02), 0).setOrigin(0.5);
+        root.add(closeTxt);
+
+        const closeHit = this.add.zone(closeX, closeY, 50, 50).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        closeHit.on('pointerdown', () => this.closeHelpPopup());
+        root.add(closeHit);
+
+        root.setScale(0.9).setAlpha(0);
+        this.tweens.add({
+            targets: root,
+            scaleX: 1,
+            scaleY: 1,
+            alpha: 1,
+            duration: 260,
+            ease: 'Back.Out',
+        });
+    }
+
+    private closeHelpPopup(): void {
+
+        if (!this.helpPopup) return;
+
+        this.tweens.add({
+            targets: this.helpPopup,
+            scaleX: 0.9,
+            scaleY: 0.9,
+            alpha: 0,
+            duration: 200,
+            ease: 'Back.In',
+            onComplete: () => {
+                this.helpPopup?.destroy();
+                this.helpPopup = undefined;
+            },
+        });
     }
 
     private createSoundToggle(): void {

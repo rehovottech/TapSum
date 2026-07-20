@@ -69,7 +69,8 @@
       "Bash(grep -n \"DEFAULT_LEADERBOARD_COLLECTION\\\\|leaderboardCollection\" /Volumes/T7/Office/Code/plugins/rehovot-firebase/src/config/FirebaseConfig.ts; echo \"---tap-sum config---\"; grep -n \"leaderboard\" /Volumes/T7/Office/Code/tap-sum/src/config/Firebase.ts)",
       "Bash(grep -rn \"DEFAULT_LEADERBOARD_COLLECTION\" /Volumes/T7/Office/Code/plugins/rehovot-firebase/src/)",
       "Read(//Volumes/T7/Office/Code/plugins/rehovot-firebase/src/**)",
-      "Bash(git -C /Volumes/T7/Office/Code/tap-sum status --short firestore.indexes.json firebase.json)"
+      "Bash(git -C /Volumes/T7/Office/Code/tap-sum status --short firestore.indexes.json firebase.json)",
+      "Bash(xargs ls)"
     ],
     "additionalDirectories": [
       "/Volumes/Files/Official Work/Code/plugins/rehovot-purchase/src",
