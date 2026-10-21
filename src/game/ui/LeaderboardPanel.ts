@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { COLORS } from '../constants/Colors';
+import { THEME } from '../constants/Colors';
 import { LeaderboardEntry } from '../../services/Firebase';
 import { Firebase } from '../../services/Firebase';
 
@@ -44,35 +44,33 @@ export class LeaderboardPanel {
 
         // Dim overlay
         const overlay = this.scene.add.graphics();
-        overlay.fillStyle(0x000000, 0.72);
+        overlay.fillStyle(THEME.SCRIM, 0.45);
         overlay.fillRect(0, 0, W, H);
         this.root.add(overlay);
 
         // Panel shadow
         const shadow = this.scene.add.graphics();
-        shadow.fillStyle(0x000000, 0.55);
-        shadow.fillRoundedRect(px - panelW / 2 + 8, py - panelH / 2 + 12, panelW, panelH, 28);
+        shadow.fillStyle(THEME.CARD_SHADOW, 1);
+        shadow.fillRoundedRect(px - panelW / 2, py - panelH / 2 + 8, panelW, panelH, 32);
         this.root.add(shadow);
 
         // Panel body
         const panel = this.scene.add.graphics();
-        panel.fillStyle(0x12103a, 1);
-        panel.fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 24);
-        panel.lineStyle(2, COLORS.NEON_BLUE, 0.5);
-        panel.strokeRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 24);
+        panel.fillStyle(THEME.CARD, 1);
+        panel.fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 32);
         this.root.add(panel);
 
         // Title
         const titleY = py - panelH / 2 + 52;
         this.root.add(
             this.scene.add.bitmapText(px, titleY, 'coiny-bmp', 'LEADERBOARD', Math.floor(H * 0.030), 0).setOrigin(0.5)
-            .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color),
+            .setTint(THEME.INK),
         );
 
         // Divider
         const divY = titleY + Math.floor(H * 0.048);
         const divG = this.scene.add.graphics();
-        divG.lineStyle(1, COLORS.NEON_BLUE, 0.25);
+        divG.lineStyle(2, THEME.TRACK, 1);
         divG.lineBetween(px - panelW / 2 + PANEL_PAD, divY, px + panelW / 2 - PANEL_PAD, divY);
         this.root.add(divG);
 
@@ -82,9 +80,9 @@ export class LeaderboardPanel {
         const colName  = px - panelW / 2 + PANEL_PAD + 90;
         const colScore = px + panelW / 2 - PANEL_PAD - 10;
 
-        this.root.add(this.scene.add.bitmapText(colRank,  headerY, 'coiny-bmp', '#', Math.floor(H * 0.02), 0).setOrigin(0.5));
-        this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5));
-        this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5));
+        this.root.add(this.scene.add.bitmapText(colRank,  headerY, 'coiny-bmp', '#', Math.floor(H * 0.02), 0).setOrigin(0.5).setTint(THEME.MUTED));
+        this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5).setTint(THEME.MUTED));
+        this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5).setTint(THEME.MUTED));
 
         // Scrollable list area — shortened to leave room for the pinned "you" row
         const pinnedRowH     = ROW_H + 20;
@@ -107,7 +105,7 @@ export class LeaderboardPanel {
 
         // Divider above pinned row
         const pinDivG = this.scene.add.graphics();
-        pinDivG.lineStyle(1, 0xffd700, 0.35);
+        pinDivG.lineStyle(2, THEME.STAR, 0.6);
         pinDivG.lineBetween(px - panelW / 2 + PANEL_PAD, this.pinnedAreaY - 4, px + panelW / 2 - PANEL_PAD, this.pinnedAreaY - 4);
         this.root.add(pinDivG);
 
@@ -116,7 +114,7 @@ export class LeaderboardPanel {
         this.root.add(this.pinnedContainer);
 
         // Loading text
-        this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51);
+        this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51).setTint(THEME.MUTED);
         this.root.add(this.loadingText);
 
         // Drag zone for scrolling
@@ -133,10 +131,10 @@ export class LeaderboardPanel {
         const closeX = px + panelW / 2 - 35;
         const closeY = py - panelH / 2 + 35;
         const closeBg = this.scene.add.graphics();
-        closeBg.fillStyle(0xff1744, 0.85);
+        closeBg.fillStyle(THEME.SURFACE, 1);
         closeBg.fillCircle(closeX, closeY, 22);
         
-        const closeTxt = this.scene.add.bitmapText(closeX, closeY-3, 'krungthep-bmp', 'x', Math.floor(H * 0.020), 0).setOrigin(0.5);
+        const closeTxt = this.scene.add.bitmapText(closeX, closeY-3, 'krungthep-bmp', 'x', Math.floor(H * 0.020), 0).setOrigin(0.5).setTint(THEME.INK);
         this.root.add(closeBg);
         this.root.add(closeTxt);
 
@@ -181,7 +179,7 @@ export class LeaderboardPanel {
         if (players.length === 0) {
             this.listContainer.add(
                 this.scene.add.bitmapText(px, this.listAreaTop + 60, 'coiny-bmp', 'No scores yet — be the first!', fs, 0).setOrigin(0.5)
-                .setTint(Phaser.Display.Color.ValueToColor('#667799').color),
+                .setTint(THEME.MUTED),
             );
         } else {
             players.forEach((p, i) => {
@@ -190,10 +188,10 @@ export class LeaderboardPanel {
                 const rowBg = this.scene.add.graphics();
 
                 if (isMe) {
-                    rowBg.fillStyle(COLORS.NEON_BLUE, 0.12);
+                    rowBg.fillStyle(THEME.SURFACE, 1);
                     rowBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
                 } else if (i % 2 === 0) {
-                    rowBg.fillStyle(0xffffff, 0.03);
+                    rowBg.fillStyle(THEME.SURFACE, 0.5);
                     rowBg.fillRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8);
                 }
                 this.listContainer.add(rowBg);
@@ -204,24 +202,24 @@ export class LeaderboardPanel {
                         this.scene.add.image(colRank, rowY, MEDAL_KEYS[i]).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
                     );
                 } else {
-                    const rankColor = '#8899bb';
+                    const rankColor = THEME.MUTED;
                     this.listContainer.add(
                         this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', `${i + 1}`, fs, 0).setOrigin(0.5)
-                        .setTint(Phaser.Display.Color.ValueToColor(rankColor).color)
+                        .setTint(rankColor)
                     );
                 }
 
-                const nameColor = isMe ? COLORS.TEXT_NEON : COLORS.TEXT_WHITE;
+                const nameColor = isMe ? THEME.ADD : THEME.INK;
                 const nameTxt   = isMe ? 'You' : `Player ${i + 1}`; //(p.name ?? `Player ${i + 1}`).substring(0, 10);
                 this.listContainer.add(
                     this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt, fs, 0).setOrigin(0, 0.5)
-                    .setTint(Phaser.Display.Color.ValueToColor(nameColor).color)
+                    .setTint(nameColor)
                 );
 
-                const scoreColor = isMe ? COLORS.TEXT_GOLD : COLORS.TEXT_WHITE;
+                const scoreColor = isMe ? THEME.GOLD : THEME.INK;
                 this.listContainer.add(
                     this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${p.bestScore}`, fs, 0).setOrigin(1, 0.5)
-                    .setTint(Phaser.Display.Color.ValueToColor(scoreColor).color)
+                    .setTint(scoreColor)
                 );
             });
 
@@ -232,13 +230,13 @@ export class LeaderboardPanel {
         const rowY = this.pinnedAreaY + ROW_H / 2;
 
         const pinBg = this.scene.add.graphics();
-        pinBg.fillStyle(0xffa500, 0.18);
+        pinBg.fillStyle(0xfff6dc, 1);
         pinBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
-        pinBg.lineStyle(1, 0xffa500, 0.5);
+        pinBg.lineStyle(2, THEME.STAR, 1);
         pinBg.strokeRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
         this.pinnedContainer.add(pinBg);
 
-        const goldTint = Phaser.Display.Color.ValueToColor(COLORS.TEXT_GOLD).color;
+        const goldTint = THEME.GOLD;
 
         if (myRank > 0 && myProfile) {
             const rankStr = myRank <= 999 ? `${myRank}` : '999+';
@@ -247,7 +245,7 @@ export class LeaderboardPanel {
             );
             this.pinnedContainer.add(
                 this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', 'YOU', fs, 0).setOrigin(0, 0.5)
-                .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color)
+                .setTint(THEME.ADD)
             );
             this.pinnedContainer.add(
                 this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${myProfile.bestScore}`, fs, 0).setOrigin(1, 0.5).setTint(goldTint)
@@ -255,7 +253,7 @@ export class LeaderboardPanel {
         } else {
             this.pinnedContainer.add(
                 this.scene.add.bitmapText(px, rowY, 'coiny-bmp', 'Play a game to appear here!', Math.floor(H * 0.022), 0).setOrigin(0.5)
-                .setTint(Phaser.Display.Color.ValueToColor('#8899bb').color)
+                .setTint(THEME.MUTED)
             );
         }
     }

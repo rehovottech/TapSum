@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { GlobVar } from '../../utils/Global';
 import FPS from '../model/FPS';
+import { THEME } from '../constants/Colors';
 
 export default abstract class BaseScene extends Phaser.Scene {
     protected sceneClose = false;
@@ -68,6 +69,26 @@ export default abstract class BaseScene extends Phaser.Scene {
         return gfx;
     }
 
+    /** White rounded card with a soft coloured drop edge (light theme). */
+    protected drawCard(
+        gfx: Phaser.GameObjects.Graphics,
+        x: number, y: number, w: number, h: number, radius: number,
+        fill: number = THEME.CARD, edge: number = THEME.CARD_SHADOW,
+    ): Phaser.GameObjects.Graphics {
+        gfx.fillStyle(edge, 1);
+        gfx.fillRoundedRect(x, y + Math.max(3, Math.round(h * 0.03)), w, h, radius);
+        gfx.fillStyle(fill, 1);
+        gfx.fillRoundedRect(x, y, w, h, radius);
+        return gfx;
+    }
+
+    /** Light-theme bitmap label helper: Coiny, tinted, centred. */
+    protected label(
+        x: number, y: number, text: string, size: number, tint: number = THEME.INK,
+    ): Phaser.GameObjects.BitmapText {
+        return this.add.bitmapText(x, y, 'coiny-bmp', text, Math.floor(size), 0).setOrigin(0.5).setTint(tint);
+    }
+
     // ── 3-D feel button ─────────────────────────────────────────────────────
 
     protected createButton(
@@ -76,15 +97,16 @@ export default abstract class BaseScene extends Phaser.Scene {
         label: string, fontSize: number,
         faceColor: number, sideColor: number,
         callback: () => void,
+        textColor = 0xffffff,
     ): Phaser.GameObjects.Container {
-        const radius = height * 0.2;
+        const radius = height * 0.28;
         const sideH  = Math.round(height * 0.10);
 
         const container = this.add.container(x, y);
 
         const shadow = this.add.graphics();
-        shadow.fillStyle(0x000000, 0.35);
-        shadow.fillRoundedRect(-width / 2 + 5, -height / 2 + sideH + 4, width, height, radius);
+        shadow.fillStyle(0x000000, 0.10);
+        shadow.fillRoundedRect(-width / 2, -height / 2 + sideH + 4, width, height, radius);
 
         const side = this.add.graphics();
         side.fillStyle(sideColor, 1);
@@ -94,7 +116,8 @@ export default abstract class BaseScene extends Phaser.Scene {
         face.fillStyle(faceColor, 1);
         face.fillRoundedRect(-width / 2, -height / 2, width, height - sideH, radius);
 
-        const txt = this.add.bitmapText(0, -Math.round(sideH * 0.3), 'krungthep-bmp', label, Math.floor(fontSize), 0).setOrigin(0.5);
+        const txt = this.add.bitmapText(0, -Math.round(sideH * 0.5), 'coiny-bmp', label, Math.floor(fontSize), 0)
+            .setOrigin(0.5).setTint(textColor);
 
         container.add([shadow, side, face, txt]);
         container.setSize(width, height);
@@ -155,12 +178,10 @@ export default abstract class BaseScene extends Phaser.Scene {
         toX: number,   toY: number,
         label: string, color = '#ffd700',
     ): void {
-        const txt = this.add.text(fromX, fromY, label, {
-            fontFamily: 'Coiny',
-            fontSize: `${Math.floor(this.H * 0.045)}px`,
-            color,
-            fontStyle: 'bold',
-        }).setOrigin(0.5).setDepth(25);
+        // Bitmap font so it matches the rest of the UI (the CSS 'Coiny' face isn't loaded)
+        const txt = this.add.bitmapText(fromX, fromY, 'coiny-bmp', label, Math.floor(this.H * 0.045), 0)
+            .setOrigin(0.5).setDepth(25)
+            .setTint(Phaser.Display.Color.HexStringToColor(color).color);
 
         this.tweens.add({
             targets: txt,

@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import BaseScene from './BaseScene';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
-import { COLORS } from '../constants/Colors';
+import { THEME } from '../constants/Colors';
 import FPS from '../model/FPS';
 
 export default class Preload extends BaseScene {
@@ -55,12 +55,12 @@ export default class Preload extends BaseScene {
     // ─────────────────────────────────────────────────────────────────────────
 
     private createBackground(): void {
-        this.createGradientBg(COLORS.BG_TOP, COLORS.BG_BOTTOM);
+        this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
     }
 
     private createLoadingUI(): void {
         // Title
-        const title = this.add.bitmapText(this.CX, this.H * 0.32, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5);
+        const title = this.add.bitmapText(this.CX, this.H * 0.32, 'coiny-bmp', 'TapSum', Math.floor(this.H * 0.1), 0).setOrigin(0.5).setTint(THEME.INK);
         this.tweens.add({
             targets: title,
             y: this.H * 0.32 - 18,
@@ -75,11 +75,11 @@ export default class Preload extends BaseScene {
         });
 
         this.add.bitmapText(this.CX, this.H * 0.44, 'coiny-bmp', 'Remember. Count. Tap!', Math.floor(this.H * 0.028), 0).setOrigin(0.5)
-        .setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_NEON).color);
+        .setTint(THEME.MUTED);
 
         // Dots loading animation
         const dots1 = this.add.bitmapText(this.CX, this.H * 0.52, 'coiny-bmp', '• • •', Math.floor(this.H * 0.06), 0).setOrigin(0.5);
-        dots1.setTint(Phaser.Display.Color.ValueToColor(COLORS.TEXT_ACCENT).color);
+        dots1.setTint(THEME.WARN);
 
         this.tweens.add({
             targets: dots1,
@@ -99,16 +99,16 @@ export default class Preload extends BaseScene {
 
         // Track
         this.barBg = this.add.graphics();
-        this.barBg.fillStyle(0x333355, 1);
+        this.barBg.fillStyle(THEME.TRACK, 1);
         this.barBg.fillRoundedRect(this.barX, this.barY, this.barW, this.barH, radius);
 
-        this.barBg.lineStyle(1, COLORS.NEON_BLUE, 0.5);
+        this.barBg.lineStyle(0, THEME.TRACK, 0);
         this.barBg.strokeRoundedRect(this.barX, this.barY, this.barW, this.barH, radius);
 
         this.barFill = this.add.graphics();
 
         // Percentage text
-        this.pctText = this.add.bitmapText(this.CX, this.barY + this.barH + Math.floor(this.H * 0.03), 'coiny-bmp', '0%', 40, 0).setOrigin(0.5);
+        this.pctText = this.add.bitmapText(this.CX, this.barY + this.barH + Math.floor(this.H * 0.03), 'coiny-bmp', '0%', 40, 0).setOrigin(0.5).setTint(THEME.INK);
 
         this.setProgress(0);
     }
@@ -119,8 +119,8 @@ export default class Preload extends BaseScene {
         const ratio = Phaser.Math.Clamp(value, 0, 1);
         const radius = this.barH / 2;
 
-        const r1 = 0x00, g1 = 0xd4, b1 = 0xff; // NEON_BLUE
-        const r2 = 0xb4, g2 = 0x4b, b2 = 0xff; // NEON_PURPLE
+        const r1 = 0x1f, g1 = 0xa3, b1 = 0x4f; // THEME.ADD
+        const r2 = 0x1e, g2 = 0x90, b2 = 0xe8; // blue
         const r = Math.round(r1 + (r2 - r1) * ratio);
         const g = Math.round(g1 + (g2 - g1) * ratio);
         const b = Math.round(b1 + (b2 - b1) * ratio);
