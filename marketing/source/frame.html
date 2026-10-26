@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Coiny";src:url("fonts/Coiny-Regular.ttf")}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);overflow:hidden}
+body{font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif;background:var(--bg);position:relative;color:#14304a}
+.hill{position:absolute;border-radius:50%;z-index:1}
+.tile{position:absolute;z-index:4;display:flex;align-items:center;justify-content:center;font-family:"Coiny";
+  border-radius:22%;box-shadow:0 calc(var(--u)*12) 0 rgba(0,0,0,.14)}
+.cap{position:absolute;left:0;right:0;top:calc(var(--u)*var(--capTop));text-align:center;padding:0 calc(var(--u)*80);z-index:3}
+.kicker{display:inline-block;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:calc(var(--u)*40);
+  color:#fff;background:var(--accent);padding:calc(var(--u)*12) calc(var(--u)*32);border-radius:999px;margin-bottom:calc(var(--u)*30)}
+h1{font-family:"Coiny";font-weight:400;font-size:calc(var(--u)*var(--h1));line-height:1.04;color:#14304a}
+h1 em{font-style:normal;color:var(--accent)}
+p{font-weight:600;font-size:calc(var(--u)*50);line-height:1.28;color:#3f6584;margin-top:calc(var(--u)*24)}
+.dev{position:absolute;left:50%;transform:translateX(-50%);z-index:2;background:#14304a;
+  box-shadow:0 calc(var(--u)*40) calc(var(--u)*90) rgba(20,48,74,.30)}
+.scr{overflow:hidden;width:100%;height:100%}
+.dev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+</style></head>
+<body>
+<div id="decos"></div>
+<div class="cap"><div class="kicker" id="k"></div><h1 id="h"></h1><p id="s"></p></div>
+<div class="dev" id="dev"><div class="scr" id="scr"><img id="img"></div></div>
+<script>
+// Params (JSON in ?p=): W,H canvas; k,h,s caption; bg, accent; img; aspect; devTop, devBottom, sideMargin, radius, bezel, h1, capTop
+const P = JSON.parse(decodeURIComponent(location.search.slice(3)));
+const r = document.documentElement.style;
+const W = P.W, H = P.H, u = W / 1290;
+r.setProperty('--W', W + 'px'); r.setProperty('--H', H + 'px'); r.setProperty('--u', u + 'px');
+r.setProperty('--bg', P.bg); r.setProperty('--accent', P.accent);
+r.setProperty('--h1', P.h1 || 132); r.setProperty('--capTop', P.capTop || 150);
+document.getElementById('k').textContent = P.k;
+document.getElementById('h').innerHTML = P.h;
+document.getElementById('s').textContent = P.s;
+
+// Phone, sized to fit below the caption
+const dev = document.getElementById('dev'), scr = document.getElementById('scr');
+const dTop = P.devTop * u, avH = H - dTop - (P.devBottom ?? 0) * u, avW = W - (P.sideMargin ?? 170) * 2 * u;
+const bez = (P.bezel ?? 24) * u;
+let sw = avW - 2 * bez, sh = sw / P.aspect;
+if (sh + 2 * bez > avH) { sh = avH - 2 * bez; sw = sh * P.aspect; }
+dev.style.width = (sw + 2 * bez) + 'px'; dev.style.height = (sh + 2 * bez) + 'px'; dev.style.top = dTop + 'px';
+dev.style.padding = bez + 'px'; dev.style.borderRadius = (P.radius * u + bez) + 'px'; scr.style.borderRadius = (P.radius * u) + 'px';
+document.getElementById('img').src = P.img;
+
+// Soft meadow hills along the bottom (like the game) and floating place-value tiles
+const decos = document.getElementById('decos');
+const add = (cls, css, html = '') => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); d.innerHTML = html; decos.appendChild(d); };
+add('hill', { left: -0.25 * W + 'px', top: H * 0.86 + 'px', width: W * 1.0 + 'px', height: H * 0.3 + 'px', background: '#a8e6b8' });
+add('hill', { left: 0.35 * W + 'px', top: H * 0.89 + 'px', width: W * 1.0 + 'px', height: H * 0.3 + 'px', background: '#7fd396' });
+const tiles = { '+1': ['#ffc531', '#14304a'], '+10': ['#1e90e8', '#fff'], '+100': ['#ff8a2b', '#14304a'], '-1': ['#ff6b6b', '#fff'] };
+// Tiles hug the phone's side edges (x < 0.5 = left edge, otherwise right edge); y is a fraction of H
+const phoneL = (W - (sw + 2 * bez)) / 2, phoneR = phoneL + sw + 2 * bez;
+(P.tiles || []).forEach(([label, x, y, s, rot]) => {
+  const [bg, fg] = tiles[label];
+  const tw = s * 1.5 * u;
+  const left = x < 0.5 ? phoneL - tw * 0.62 : phoneR - tw * 0.38;
+  add('tile', { left: left + 'px', top: y * H + 'px', width: tw + 'px', height: s * u + 'px', background: bg, color: fg,
+    fontSize: s * 0.42 * u + 'px', transform: `rotate(${rot}deg)` }, label);
+});
+document.fonts.ready.then(() => document.getElementById('img').decode().then(() => document.body.dataset.ready = 1));
+</script>
+</body></html>

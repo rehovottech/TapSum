@@ -1,0 +1,87 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Coiny";src:url("fonts/Coiny-Regular.ttf")}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);overflow:hidden}
+body{font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif;background:var(--bg);position:relative;color:#14304a}
+.hill{position:absolute;border-radius:50%}
+.txt{position:absolute;z-index:3}
+.brand{display:flex;align-items:center;gap:calc(var(--u)*22)}
+.brand img{width:calc(var(--u)*120);height:calc(var(--u)*120);border-radius:24%;box-shadow:0 calc(var(--u)*8) calc(var(--u)*20) rgba(20,48,74,.18)}
+.brand .name{font-family:"Coiny";font-size:calc(var(--u)*62);line-height:1}
+.brand .name span{display:inline-block}
+h1{font-family:"Coiny";font-weight:400;font-size:calc(var(--u)*var(--h1));line-height:1.04;margin-top:calc(var(--u)*34)}
+h1 em{font-style:normal;color:var(--accent)}
+p{font-weight:600;font-size:calc(var(--u)*var(--p));line-height:1.3;color:#3f6584;margin-top:calc(var(--u)*22)}
+.pills{display:flex;flex-wrap:wrap;gap:calc(var(--u)*14);margin-top:calc(var(--u)*30)}
+.pill{font-weight:800;font-size:calc(var(--u)*30);padding:calc(var(--u)*10) calc(var(--u)*24);border-radius:999px;background:#fff;color:#14304a;
+  box-shadow:0 calc(var(--u)*5) 0 rgba(20,48,74,.12)}
+.pill.hot{background:var(--accent);color:#fff}
+.dev{position:absolute;z-index:2;background:#14304a;box-shadow:0 calc(var(--u)*30) calc(var(--u)*70) rgba(20,48,74,.30)}
+.scr{overflow:hidden;width:100%;height:100%}
+.dev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.tile{position:absolute;z-index:4;display:flex;align-items:center;justify-content:center;font-family:"Coiny";
+  border-radius:22%;box-shadow:0 calc(var(--u)*10) 0 rgba(0,0,0,.14)}
+</style></head>
+<body>
+<div id="decos"></div>
+<div class="txt" id="txt">
+  <div class="brand" id="brand"><img src="icon.png"><div class="name" id="name"></div></div>
+  <h1 id="h"></h1><p id="s"></p><div class="pills" id="pills"></div>
+</div>
+<div class="dev" id="dev"><div class="scr" id="scr"><img id="img"></div></div>
+<script>
+// Params (?p=JSON): W,H; layout 'side' (text left, phone right) or 'stack' (text top, phone below);
+// h, s, pills[], bg, accent, img, h1, p (font sizes in units of W/1080), tiles, brand (bool)
+const P = JSON.parse(decodeURIComponent(location.search.slice(3)));
+const r = document.documentElement.style;
+const W = P.W, H = P.H, u = (P.layout === 'side' ? Math.min(W, H * 1.3) : W) / 1080;
+r.setProperty('--W', W + 'px'); r.setProperty('--H', H + 'px'); r.setProperty('--u', u + 'px');
+r.setProperty('--bg', P.bg); r.setProperty('--accent', P.accent);
+r.setProperty('--h1', P.h1 || 110); r.setProperty('--p', P.p || 40);
+
+// Rainbow wordmark like the game title
+const cols = ['#e5392d', '#ff8a2b', '#e0a000', '#1fa34f', '#1e90e8', '#8b5cf6'];
+document.getElementById('name').innerHTML = [...'TapSum'].map((c, i) => `<span style="color:${cols[i]}">${c}</span>`).join('');
+if (P.brand === false) document.getElementById('brand').style.display = 'none';
+document.getElementById('h').innerHTML = P.h;
+document.getElementById('s').textContent = P.s || '';
+if (!P.s) document.getElementById('s').style.display = 'none';
+document.getElementById('pills').innerHTML = (P.pills || []).map((t, i) => `<span class="pill${i === 0 ? ' hot' : ''}">${t}</span>`).join('');
+
+const txt = document.getElementById('txt'), dev = document.getElementById('dev'), scr = document.getElementById('scr');
+const aspect = 1170 / 2532, bez = 18 * u, rad = 90 * u;
+let pw, ph, px, py;
+if (P.layout === 'side') {
+  // Text column on the left, phone on the right bleeding off the bottom
+  Object.assign(txt.style, { left: 64 * u + 'px', top: '50%', transform: 'translateY(-50%)', width: (W * 0.54) + 'px' });
+  ph = H * (P.phoneH || 1.05); pw = ph * aspect;
+  px = W * (P.phoneX || 0.60); py = H * (P.phoneY || 0.08);
+} else {
+  // Text block on top (inside safe zone), phone centred below bleeding off the bottom
+  Object.assign(txt.style, { left: 0, right: 0, top: H * (P.textTop || 0.06) + 'px', textAlign: 'center', padding: `0 ${70 * u}px` });
+  document.getElementById('brand').style.justifyContent = 'center';
+  document.getElementById('pills').style.justifyContent = 'center';
+  pw = W * (P.phoneW || 0.62); ph = pw / aspect;
+  px = (W - pw) / 2; py = H * (P.phoneY || 0.42);
+}
+Object.assign(dev.style, { left: px + 'px', top: py + 'px', width: pw + 'px', height: ph + 'px', padding: bez + 'px', borderRadius: rad + bez + 'px' });
+scr.style.borderRadius = rad + 'px';
+document.getElementById('img').src = P.img;
+
+// Meadow hills + floating place-value tiles
+const decos = document.getElementById('decos');
+const add = (cls, css, html = '') => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); d.innerHTML = html; decos.appendChild(d); };
+add('hill', { left: -0.3 * W + 'px', top: H * 0.80 + 'px', width: W * 1.1 + 'px', height: H * 0.45 + 'px', background: '#a8e6b8' });
+add('hill', { left: 0.3 * W + 'px', top: H * 0.85 + 'px', width: W * 1.1 + 'px', height: H * 0.45 + 'px', background: '#7fd396' });
+const tiles = { '+1': ['#ffc531', '#14304a'], '+10': ['#1e90e8', '#fff'], '+100': ['#ff8a2b', '#14304a'], '-1': ['#ff6b6b', '#fff'] };
+(P.tiles || []).forEach(([label, x, y, s, rot]) => {
+  const [bg, fg] = tiles[label];
+  add('tile', { left: x * W + 'px', top: y * H + 'px', width: s * 1.5 * u + 'px', height: s * u + 'px', background: bg, color: fg,
+    fontSize: s * 0.42 * u + 'px', transform: `rotate(${rot}deg)` }, label);
+});
+Promise.all([document.fonts.ready, document.getElementById('img').decode(), document.querySelector('.brand img').decode()])
+  .then(() => document.body.dataset.ready = 1);
+</script>
+</body></html>
