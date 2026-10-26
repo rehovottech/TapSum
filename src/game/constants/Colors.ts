@@ -34,15 +34,14 @@ export const COLORS = {
     TEXT_GREEN:  '#39ff14',
 };
 
-// Daytime theme used by Preload, Menu, Game, End and panels:
-// sky-to-meadow background, cream cards, dark ink for anything on the sky.
+// Daytime theme used by Boot, Menu, Game, End and panels:
+// light gray background, cream cards, dark ink for anything on the sky.
 export const THEME = {
     // Backgrounds & surfaces
-    BG_TOP:      0x8fd3ff,
-    BG_BOTTOM:   0xd8f6e4,
+    BG_TOP:      0xeeeeee,
+    BG_BOTTOM:   0xeeeeee,
     HILL_BACK:   0xa8e6b8,
     HILL_FRONT:  0x7fd396,
-    CLOUD:       0xffffff,
     CARD:        0xfffdf6,
     CARD_SHADOW: 0xa9c3d3,
     SURFACE:     0xe2ecf2,

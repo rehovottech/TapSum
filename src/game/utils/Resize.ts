@@ -20,46 +20,27 @@ export const ResizePhaserGame = () => {
         GlobVar.centerIX = w * 0.5;
         GlobVar.centerIY = h * 0.5;
     }else{
-        const RATIO_16_9 = { w: 720, h: 1280 };   // classic
-        const RATIO_TALL = { w: 720, h: 1440 };   // 18:9+
-        const RATIO_ULTRA = { w: 720, h: 1600 };  // 20:9+
-
-        const screenRatio = window.innerHeight / window.innerWidth;
-
-        let base = RATIO_16_9;
-        if (screenRatio > 2.0) {
-            base = RATIO_ULTRA;
-        } else if (screenRatio > 1.8) {
-            base = RATIO_TALL;
-        }
-
-        let BASE_WIDTH = base.w;
-        let BASE_HEIGHT = base.h;
-
-        // Choose closest ratio
-        if (screenRatio > 2.0) {
-            // very tall devices (20:9)
-            BASE_HEIGHT = 1600;
-        } 
-        else if (screenRatio > 1.8) {
-            // modern phones (18:9 / 19.5:9)
-            BASE_HEIGHT = 1440;
-        } 
-        else {
-            // standard 16:9
-            BASE_HEIGHT = 1280;
-        }
+        // Internal resolution follows the screen's aspect ratio so the canvas
+        // covers the whole viewport (no side bars). Portrait screens keep a
+        // 720px-wide design width; wider screens keep a 1280px design height.
+        const MIN_WIDTH  = 720;
+        const MIN_HEIGHT = 1280;
 
         const w = window.innerWidth;
         const h = window.innerHeight;
+        const screenRatio = h / w;
 
-        // Calculate scale to FIT inside screen (no stretch)
-        const scale = Math.min(w / BASE_WIDTH, h / BASE_HEIGHT);
+        let BASE_WIDTH  = MIN_WIDTH;
+        let BASE_HEIGHT = Math.round(MIN_WIDTH * screenRatio);
+        if (BASE_HEIGHT < MIN_HEIGHT) {
+            BASE_HEIGHT = MIN_HEIGHT;
+            BASE_WIDTH  = Math.round(MIN_HEIGHT / screenRatio);
+        }
 
-        const displayWidth = BASE_WIDTH * scale;
-        const displayHeight = BASE_HEIGHT * scale;
+        const displayWidth  = w;
+        const displayHeight = h;
 
-        // Keep internal resolution fixed (important!)
+        // Internal resolution (game coordinates)
         GlobVar.width = BASE_WIDTH;
         GlobVar.height = BASE_HEIGHT;
 
@@ -75,9 +56,8 @@ export const ResizePhaserGame = () => {
         canvas.style.width = `${displayWidth}px`;
         canvas.style.height = `${displayHeight}px`;
 
-        // Centering
         canvas.style.position = 'absolute';
-        //canvas.style.left = `${(w - displayWidth) / 2}px`;
-        canvas.style.top = `${(h - displayHeight) / 2}px`;
+        canvas.style.left = '0px';
+        canvas.style.top  = '0px';
     }
 };

@@ -69,25 +69,9 @@ export default abstract class BaseScene extends Phaser.Scene {
         return gfx;
     }
 
-    /** Sky gradient with drifting clouds and two rolling hills along the bottom. */
+    /** Background fill with two rolling hills along the bottom. */
     protected createSkyBg(hillTop = 0.86): void {
         this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
-
-        const clouds: [number, number, number][] = [[0.18, 0.05, 1], [0.78, 0.2, 0.8], [0.35, 0.42, 0.65], [0.86, 0.6, 0.7]];
-        clouds.forEach(([fx, fy, s], i) => {
-            const c = this.add.graphics().setAlpha(0.75);
-            const r = this.W * 0.06 * s;
-            c.fillStyle(THEME.CLOUD, 1);
-            c.fillCircle(-r * 1.1, r * 0.25, r * 0.8);
-            c.fillCircle(0, 0, r);
-            c.fillCircle(r * 1.1, r * 0.3, r * 0.75);
-            c.fillRoundedRect(-r * 1.9, r * 0.2, r * 3.7, r * 0.85, r * 0.42);
-            c.setPosition(this.W * fx, this.H * fy);
-            this.tweens.add({
-                targets: c, x: c.x + this.W * 0.06 * (i % 2 ? -1 : 1),
-                duration: 9000 + i * 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-            });
-        });
 
         const hills = this.add.graphics();
         const y0 = this.H * hillTop;

@@ -23,7 +23,7 @@ const AUDIO_SRCS: Record<string, string> = {
 };
 
 const MUSIC_SRC = 'assets/audio/background-music.mp3';
-const MUSIC_VOL = 0.3;
+const MUSIC_VOL = 0.1;
 const SFX_VOL   = 1;
 
 class AudioManagerClass {

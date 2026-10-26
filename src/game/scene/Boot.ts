@@ -5,13 +5,18 @@ import { GlobVar } from '../../utils/Global';
 import { THEME } from '../constants/Colors';
 import { Firebase } from '../../services/Firebase';
 import { AudioManager } from '../managers/AudioManager';
-import { FlatPreloadBar } from '../model/Preloader';
 import FPS from '../model/FPS';
 
 export default class Boot extends BaseScene {
     
-    private preloadBar?: FlatPreloadBar;
     private logoContiner?: Phaser.GameObjects.Container;
+    private barFill!: Phaser.GameObjects.Graphics;
+    private pctText?: Phaser.GameObjects.BitmapText;
+    private barW!: number;
+    private barH!: number;
+    private barX!: number;
+    private barY!: number;
+    private progress = 0;
 
     constructor() {
         super({ key: SCENES.Boot });
@@ -49,6 +54,7 @@ export default class Boot extends BaseScene {
         AudioManager.init();
 
         this.showLogo();
+        this.finishLoading();
 
         // Kick off service initializations in the background.
         Firebase.signInAnonymous().catch(() => {});
@@ -71,19 +77,59 @@ export default class Boot extends BaseScene {
 
     private createBackground(): void {
         this.add.rectangle(this.CX, this.CY, this.W, this.H, THEME.BG_TOP);
+        this.createLoadingBar();
+    }
 
-        this.preloadBar = new FlatPreloadBar(this);
-        this.preloadBar.x = this.CX;
-        this.preloadBar.y = this.H * 0.82;
+    // ── Loading bar ─────────────────────────────────────────────────────────
 
-        this.load.on('progress', (v: number) => {
-            if (this.preloadBar) {
-                this.preloadBar.progressValue = v * 100;
-                this.preloadBar.update();
-            }
+    private createLoadingBar(): void {
+        this.barW = this.W * 0.65;
+        this.barH = Math.floor(this.H * 0.018);
+        this.barX = this.CX - this.barW / 2;
+        this.barY = this.H * 0.82;
+
+        const track = this.add.graphics();
+        track.fillStyle(THEME.TRACK, 1);
+        track.fillRoundedRect(this.barX, this.barY, this.barW, this.barH, this.barH / 2);
+
+        this.barFill = this.add.graphics();
+
+        // Real asset loading drives the first part of the bar; create() finishes it.
+        this.load.on('progress', (v: number) => this.setProgress(v * 0.4));
+        this.setProgress(0);
+    }
+
+    private finishLoading(): void {
+        // Fonts are loaded now, so the percentage label can be shown.
+        this.pctText = this.add.bitmapText(
+            this.CX, this.barY + this.barH + Math.floor(this.H * 0.03),
+            'coiny-bmp', '', 40, 0,
+        ).setOrigin(0.5).setTint(THEME.INK);
+        this.setProgress(this.progress);
+
+        const prog = { v: this.progress };
+        this.tweens.add({
+            targets: prog,
+            v: 1,
+            delay: 200,
+            duration: 1600,
+            ease: 'Sine.easeIn',
+            onUpdate: () => this.setProgress(prog.v),
+            onComplete: () => {
+                this.time.delayedCall(400, () => this.fadeToScene(SCENES.Menu));
+            },
         });
+    }
 
-        this.children.bringToTop(this.logoContiner!);
+    private setProgress(value: number): void {
+        this.progress = Phaser.Math.Clamp(value, 0, 1);
+
+        this.barFill.clear();
+        if (this.progress > 0) {
+            this.barFill.fillStyle(THEME.GOLD, 1);
+            this.barFill.fillRoundedRect(this.barX, this.barY, this.barW * this.progress, this.barH, this.barH / 2);
+        }
+        this.pctText?.setText(`${Math.floor(this.progress * 100)}%`);
     }
 
     private showLogo(): void {
@@ -105,6 +151,5 @@ export default class Boot extends BaseScene {
 
         this.tweens.add({ targets: logo,  alpha: 1, delay: 150, duration: 500, ease: 'Cubic.InOut' });
         this.tweens.add({ targets: title, alpha: 1, delay: 250, duration: 500, ease: 'Cubic.InOut' });
-        this.time.delayedCall(2000, () => this.fadeToScene(SCENES.Preload));
     }
 }

@@ -1,5 +1,4 @@
 import Boot from "../game/scene/Boot";
-import Preload from "../game/scene/Preloader";
 import Game from "../game/scene/Game";
 import * as Phaser from "phaser";
 import Menu from "../game/scene/Menu";
@@ -23,7 +22,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
 
     const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
-        backgroundColor: '#000000',
+        backgroundColor: '#eeeeee',
         seed: [ (Date.now() * Math.random()).toString() ],
         scale: {
             parent: 'phaser-game',
@@ -34,7 +33,6 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         },
         scene: [
             Boot,
-            Preload,
             Menu,
             Game,
             End
