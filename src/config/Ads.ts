@@ -14,14 +14,14 @@
 export const ADS_CONFIG = {
     TEST_MODE: true,
     android: {
-        appKey:       'REPLACE_APP_KEY',
-        interstitial: 'REPLACE_INTERSTITIAL',
-        rewarded:     'REPLACE_REWARDED',
+        appKey:       '290389935',
+        interstitial: '5h3xprwr9zq0bja8',
+        rewarded:     'fr6jasil839nfb5r',
     },
     ios: {
-        appKey:       'REPLACE_APP_KEY',
-        interstitial: 'REPLACE_INTERSTITIAL',
-        rewarded:     'REPLACE_REWARDED',
+        appKey:       '29038d2bd',
+        interstitial: 'rsy5rqhtr7bkded1',
+        rewarded:     'ngp1uyg1x9a1mdhx',
     },
     /** Interstitial pacing (shown only when leaving the End screen) */
     interstitialAfterGames: 2,     // never during the first N finished games

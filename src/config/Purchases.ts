@@ -37,8 +37,8 @@ export const PurchasesConfigData: PurchasesConfig = {
         },
     },
     donation: {
-        // Let the app-level PurchasesManager control the auto-popup timing so
-        // it only appears after 2 days of play and stops after donation/premium.
+        // No automatic reminder popup: Tap Sum is played by kids (Families policy).
+        // The donate popup only opens from the coffee button in Menu.
         enabled: false,
         title: '❤️ Buy us a Coffee',
         message: 'Your support helps us keep building free games like Tap Sum.',
