@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import BaseScene from './BaseScene';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
-import { COLORS } from '../constants/Colors';
+import { THEME } from '../constants/Colors';
 import { Firebase } from '../../services/Firebase';
 import { AudioManager } from '../managers/AudioManager';
 import { FlatPreloadBar } from '../model/Preloader';
@@ -70,7 +70,7 @@ export default class Boot extends BaseScene {
     }
 
     private createBackground(): void {
-        this.createGradientBg(COLORS.BG_TOP, COLORS.BG_BOTTOM);
+        this.add.rectangle(this.CX, this.CY, this.W, this.H, THEME.BG_TOP);
 
         this.preloadBar = new FlatPreloadBar(this);
         this.preloadBar.x = this.CX;

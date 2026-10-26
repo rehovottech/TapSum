@@ -3,10 +3,13 @@ import BaseScene from './BaseScene';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { THEME, INCREMENT_SCHEME } from '../constants/Colors';
-import { GAME_CONFIG } from '../constants/GameConstants';
+import { GAME_CONFIG, TUTORIAL_NUMBERS, ProfileRules } from '../constants/GameConstants';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
+import { Firebase } from '../../services/Firebase';
+import { Mascot } from '../ui/Mascot';
+import { Feel } from '../utils/Feel';
 import FPS from '../model/FPS';
 
 interface GameData {
@@ -14,25 +17,31 @@ interface GameData {
     resumeRound?: number;
 }
 
-export type EndReason = 'overshoot' | 'timeout' | 'quit';
+export type EndReason = 'wrong' | 'timeout' | 'quit';
+type FailReason = 'wrong' | 'timeout';
 
-type IncrementAmount = 1 | 10 | 100 | 1000;
+type IncrementAmount = 1 | 10 | 100 | 1000 | -1;
 
-const INCREMENT_AMOUNTS: IncrementAmount[] = [1, 10, 100, 1000];
+const INCREMENT_AMOUNTS: IncrementAmount[] = [1, 10, 100, 1000, -1];
 
 interface IncrementButton {
     amount:    IncrementAmount;
     container: Phaser.GameObjects.Container;
     face:      Phaser.GameObjects.Graphics;
+    side:      Phaser.GameObjects.Graphics;
     glow:      Phaser.GameObjects.Graphics;
+    text:      Phaser.GameObjects.BitmapText;
+    locked:    boolean;
     w:         number;
     h:         number;
     sideH:     number;
     radius:    number;
 }
 
-const MAX_PIPS = 12;
 const TAPE_SIZE = 3;
+
+type PlaceValue = 1 | 10 | 100 | 1000;
+const HEART_COLOR = 0xff5d73;
 
 export default class Game extends BaseScene {
     // ── State ───────────────────────────────────────────────────────────────
@@ -48,6 +57,13 @@ export default class Game extends BaseScene {
     private roundActive   = false;
     private gameOver      = false;
     private paused        = false;
+    private lives         = GAME_CONFIG.LIVES;
+    private roundsCleared = 0;
+    private streak        = 0;
+    private worriedShown  = false;
+    private tutorial      = false;
+    private profile!: ProfileRules;
+    private lastTapAmount: IncrementAmount | 0 = 0;
 
     // ── UI refs ─────────────────────────────────────────────────────────────
     private targetLabel!: Phaser.GameObjects.BitmapText;
@@ -58,8 +74,11 @@ export default class Game extends BaseScene {
     private roundText!:   Phaser.GameObjects.BitmapText;
     private ring!:        Phaser.GameObjects.Graphics;
     private tape!:        Phaser.GameObjects.Container;
-    private pips!:        Phaser.GameObjects.Graphics;
-    private pipsText!:    Phaser.GameObjects.BitmapText;
+    private tray!:        Phaser.GameObjects.Container;
+    private hintPill?:    Phaser.GameObjects.Container;
+    private mascot!:      Mascot;
+    private doneBtn?:     { container: Phaser.GameObjects.Container; glow: Phaser.GameObjects.Graphics };
+    private hearts!:      Phaser.GameObjects.Graphics;
     private pauseOverlay?: Phaser.GameObjects.Container;
 
     // Index matches INCREMENT_AMOUNTS (0 → +1 … 3 → +1000), not screen position
@@ -97,21 +116,34 @@ export default class Game extends BaseScene {
         this.timerDuration = GAME_CONFIG.TIMER_BASE_SEC * 1000;
         this.lastHintRemaining = -1;
         this.buttons       = [];
+        this.lives         = GAME_CONFIG.LIVES;
+        this.roundsCleared = 0;
+        this.streak        = 0;
+        this.worriedShown  = false;
+        this.profile       = SaveManager.getProfile();
+        this.tutorial      = !SaveManager.isTutorialDone();
+        this.lastTapAmount = 0;
+        this.hintPill      = undefined;
+        this.doneBtn       = undefined;
+        this.timerDuration = this.profile.timerBaseSec * 1000;
     }
 
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.Game}`);
         AudioManager.init();
 
-        this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
+        this.createSkyBg(0.9);
         this.createTopBar();
+        this.createHearts();
         this.createTimerRing();
         this.createTape();
-        this.createPips();
+        this.createTray();
         this.createIncrementButtons();
+        this.mascot = new Mascot(this, this.CX, this.H * 0.655, Math.floor(this.H * 0.038));
         this.fpsView = new FPS(this);
 
         this.cameras.main.fadeIn(300);
+        this.track('game_start', { lives: GAME_CONFIG.LIVES, profile: this.profile.id, tutorial: this.tutorial });
         this.time.delayedCall(500, () => this.startRound());
     }
 
@@ -119,11 +151,16 @@ export default class Game extends BaseScene {
         this.fpsView?.update();
 
         if (!this.roundActive || this.gameOver || this.paused) return;
+        if (this.inTutorial()) return;   // guided rounds have no timer
 
         this.timeLeft -= delta;
+        if (!this.worriedShown && this.timeLeft < this.timerDuration * 0.25) {
+            this.worriedShown = true;
+            this.mascot.setMood('worried');
+        }
         if (this.timeLeft <= 0) {
             this.timeLeft = 0;
-            this.triggerGameOver('timeout');
+            this.onFail('timeout');
         }
         this.redrawRing();
     }
@@ -158,6 +195,48 @@ export default class Game extends BaseScene {
         }
         g.fillStyle(color, 1);
         g.fillPoints(pts, true);
+    }
+
+    // ── Hearts under the round label ────────────────────────────────────────
+
+    private createHearts(): void {
+        this.hearts = this.add.graphics();
+        this.redrawHearts(false);
+    }
+
+    private redrawHearts(justLost: boolean): void {
+        const r     = Math.max(9, Math.floor(this.H * 0.013));
+        const gap   = r * 0.9;
+        const n     = GAME_CONFIG.LIVES;
+        const y     = this.H * 0.122;
+        const total = n * r * 2 + (n - 1) * gap;
+
+        this.hearts.clear();
+        for (let i = 0; i < n; i++) {
+            const x = this.CX - total / 2 + r + i * (r * 2 + gap);
+            this.drawHeart(this.hearts, x, y, r, i < this.lives ? HEART_COLOR : THEME.PIP_OFF);
+        }
+
+        if (justLost) {
+            // The heart that just emptied pops out and fades
+            const x   = this.CX - total / 2 + r + this.lives * (r * 2 + gap);
+            const pop = this.add.graphics().setDepth(30);
+            this.drawHeart(pop, 0, 0, r, HEART_COLOR);
+            pop.setPosition(x, y);
+            this.tweens.add({
+                targets: pop, y: y - r * 3, scaleX: 1.8, scaleY: 1.8, alpha: 0,
+                duration: 600, ease: 'Power2', onComplete: () => pop.destroy(),
+            });
+            this.tweens.add({ targets: this.hearts, x: { from: -10, to: 0 }, duration: 380, ease: 'Elastic.Out' });
+        }
+    }
+
+    private drawHeart(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number, color: number): void {
+        const h = r * 0.55;
+        g.fillStyle(color, 1);
+        g.fillCircle(x - h, y - r * 0.2, h);
+        g.fillCircle(x + h, y - r * 0.2, h);
+        g.fillTriangle(x - r * 1.08, y - r * 0.05, x + r * 1.08, y - r * 0.05, x, y + r * 0.95);
     }
 
     // ── Timer ring with the round's signed number inside ────────────────────
@@ -232,7 +311,7 @@ export default class Game extends BaseScene {
     // ── Ghost tape: the last few numbers, fading out early in the round ─────
 
     private createTape(): void {
-        this.tape = this.add.container(this.CX, this.H * 0.48).setAlpha(0);
+        this.tape = this.add.container(this.CX, this.H * 0.462).setAlpha(0);
     }
 
     private showTape(): void {
@@ -283,28 +362,143 @@ export default class Game extends BaseScene {
         this.tweens.add({ targets: this.tape, alpha: 0, delay: 1200, duration: 400, ease: 'Sine.easeIn' });
     }
 
-    // ── Tap pips (taps made this round — never how many are needed) ─────────
+    // ── Bead tray: what you have built this round, in place-value pieces ──
+    // +1 = bead, +10 = rod, +100 = flat, +1000 = cube (the pieces teachers use).
 
-    private createPips(): void {
-        this.pips     = this.add.graphics();
-        this.pipsText = this.label(this.CX, this.H * 0.558, '', this.H * 0.015, THEME.MUTED);
+    private createTray(): void {
+        this.tray = this.add.container(this.CX, this.H * 0.548);
     }
 
-    private redrawPips(): void {
-        const r   = Math.max(5, Math.floor(this.H * 0.007));
-        const gap = r * 1.4;
-        const n   = Math.min(this.tapsThisRound, MAX_PIPS);
-        const y   = this.H * 0.53;
-        const w   = n * r * 2 + Math.max(0, n - 1) * gap;
+    private redrawTray(): void {
+        this.tray.removeAll(true);
+        this.tray.setScale(1);
 
-        this.pips.clear();
-        this.pips.fillStyle(THEME.INK, 1);
-        for (let i = 0; i < n; i++) {
-            this.pips.fillCircle(this.CX - w / 2 + r + i * (r * 2 + gap), y, r);
+        // The tray shows what you have built so far, broken into place values,
+        // so 20 then -1 visibly regroups into 1 rod + 9 beads.
+        const total = Math.max(0, this.currentTotal);
+        const counts: [PlaceValue, number][] = [
+            [1000, Math.floor(total / 1000)],
+            [100,  Math.floor(total / 100) % 10],
+            [10,   Math.floor(total / 10) % 10],
+            [1,    total % 10],
+        ];
+
+        const u = Math.max(8, this.H * 0.021);
+        const shape: Record<PlaceValue, { w: number; h: number; gap: number }> = {
+            1000: { w: u * 2.2, h: u * 2.2, gap: u * 0.4 },
+            100:  { w: u * 1.9, h: u * 1.9, gap: u * 0.35 },
+            10:   { w: u * 0.7, h: u * 2.2, gap: u * 0.4 },
+            1:    { w: u * 1.1, h: u * 1.1, gap: u * 0.35 },
+        };
+
+        let x = 0;
+        const groupGap = u * 1.4;
+        const items: Phaser.GameObjects.GameObject[] = [];
+        let newest: Phaser.GameObjects.Graphics | undefined;
+
+        for (const [amt, count] of counts) {
+            if (count === 0) continue;
+            const { w, h, gap } = shape[amt];
+            const scheme = INCREMENT_SCHEME[amt];
+            // Thousands can exceed 9; draw up to 9 and label the rest
+            const shown = Math.min(count, 9);
+
+            for (let i = 0; i < shown; i++) {
+                const g = this.add.graphics();
+                g.fillStyle(scheme.side, 1);
+                if (amt === 1) g.fillCircle(0, 1.5, w / 2);
+                else g.fillRoundedRect(-w / 2, -h / 2 + 2, w, h, u * 0.2);
+                g.fillStyle(scheme.face, 1);
+                if (amt === 1) g.fillCircle(0, 0, w / 2);
+                else g.fillRoundedRect(-w / 2, -h / 2, w, h, u * 0.2);
+                if (amt === 100 || amt === 1000) {
+                    // grid lines so a flat/cube reads as "made of tens"
+                    g.lineStyle(1, scheme.side, 0.7);
+                    for (let k = 1; k < 4; k++) {
+                        g.lineBetween(-w / 2 + (w * k) / 4, -h / 2 + 2, -w / 2 + (w * k) / 4, h / 2 - 2);
+                        g.lineBetween(-w / 2 + 2, -h / 2 + (h * k) / 4, w / 2 - 2, -h / 2 + (h * k) / 4);
+                    }
+                }
+                g.setPosition(x + w / 2, u * 1.1 - h / 2);
+                items.push(g);
+                if (amt === this.lastTapAmount && i === shown - 1) newest = g;
+                x += w + gap;
+            }
+            if (count > shown) {
+                const more = this.add.bitmapText(x + u * 0.2, u * 0.2, 'coiny-bmp', `+${count - shown}`, Math.floor(u * 1.5), 0)
+                    .setOrigin(0, 0.5).setTint(scheme.side);
+                items.push(more);
+                x += more.width + u * 0.6;
+            }
+            x += groupGap;
         }
 
-        const t = this.tapsThisRound;
-        this.pipsText.setText(t === 0 ? '' : `${t} tap${t === 1 ? '' : 's'}`);
+        if (items.length === 0) return;
+        const width = x - groupGap;
+        for (const it of items) (it as unknown as Phaser.GameObjects.Components.Transform).x -= width / 2;
+        this.tray.add(items);
+
+        const maxW = this.W * 0.9;
+        if (width > maxW) this.tray.setScale(maxW / width);
+
+        if (newest) {
+            newest.setScale(0);
+            this.tweens.add({ targets: newest, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.Out' });
+        }
+    }
+
+    private resetTray(): void {
+        this.lastTapAmount = 0;
+        this.redrawTray();
+    }
+
+    // ── Guided first game ───────────────────────────────────────────────────
+
+    private inTutorial(): boolean {
+        return this.tutorial && this.round <= TUTORIAL_NUMBERS.length;
+    }
+
+    private showHint(text: string): void {
+        this.hideHint();
+        const fs  = Math.floor(this.H * 0.02);
+        const t   = this.add.bitmapText(0, 0, 'coiny-bmp', text, fs, 0).setOrigin(0.5).setTint(THEME.INK);
+        const maxW = this.W * 0.86;
+        if (t.width > maxW) t.setScale(maxW / t.width);
+        const w   = t.width * t.scaleX + this.W * 0.08;
+        const h   = Math.floor(this.H * 0.05);
+        const bg  = this.add.graphics();
+        this.drawCard(bg, -w / 2, -h / 2, w, h, h / 2);
+        this.hintPill = this.add.container(this.CX, this.H * 0.462, [bg, t]).setDepth(15).setScale(0.6).setAlpha(0);
+        this.tweens.add({ targets: this.hintPill, scaleX: 1, scaleY: 1, alpha: 1, duration: 260, ease: 'Back.Out' });
+    }
+
+    private hideHint(): void {
+        this.hintPill?.destroy();
+        this.hintPill = undefined;
+    }
+
+    private tutorialHint(): string {
+        const [a, b, c] = TUTORIAL_NUMBERS;
+        switch (this.round) {
+            case 1:  return `Tap +1 ${a} times, then DONE`;
+            case 2:  return `${a} + ${b} = ${a + b}. Make ${a + b}, then DONE`;
+            default: return `Add ${c} from memory, then DONE`;
+        }
+    }
+
+    /** In the guided rounds a mistake just clears the tray and lets them retry. */
+    private tutorialRetry(): void {
+        AudioManager.play('snd_fail');
+        Feel.fail();
+        this.mascot.setMood('sad', 700).wobble();
+        this.currentTotal  = 0;
+        this.tapsThisRound = 0;
+        this.resetTray();
+        this.restoreButtonColors();
+        this.showHint('Not quite! Try again');
+        this.time.delayedCall(1200, () => {
+            if (this.roundActive && this.inTutorial()) this.showHint(this.tutorialHint());
+        });
     }
 
     // ── Increment buttons: +1000 · +100 · +10 on top, wide +1 under the thumb ──
@@ -314,8 +508,10 @@ export default class Game extends BaseScene {
         const gap      = Math.floor(this.W * 0.03);
         const topW     = Math.floor((contentW - gap * 2) / 3);
         const topH     = Math.floor(this.H * 0.09);
-        const bigW     = Math.floor(contentW);
         const bigH     = Math.floor(this.H * 0.123);
+        const minusW   = Math.floor(contentW * 0.2);
+        const doneW    = Math.floor(contentW * 0.28);
+        const plusW    = Math.floor(contentW - minusW - doneW - gap * 2);
         const bigCY    = this.H - this.H * 0.04 - bigH / 2;
         const topCY    = bigCY - bigH / 2 - gap - topH / 2;
         const left     = this.CX - contentW / 2;
@@ -324,7 +520,8 @@ export default class Game extends BaseScene {
             1000: { x: left + topW / 2,                  y: topCY, w: topW, h: topH, fs: this.H * 0.031 },
             100:  { x: left + topW * 1.5 + gap,          y: topCY, w: topW, h: topH, fs: this.H * 0.033 },
             10:   { x: left + topW * 2.5 + gap * 2,      y: topCY, w: topW, h: topH, fs: this.H * 0.036 },
-            1:    { x: this.CX,                          y: bigCY, w: bigW, h: bigH, fs: this.H * 0.057 },
+            1:    { x: left + minusW + gap + plusW / 2,  y: bigCY, w: plusW, h: bigH, fs: this.H * 0.057 },
+            [-1]: { x: left + minusW / 2,                y: bigCY, w: minusW, h: bigH, fs: this.H * 0.045 },
         };
 
         for (const amount of INCREMENT_AMOUNTS) {
@@ -336,41 +533,105 @@ export default class Game extends BaseScene {
             const container = this.add.container(x, y);
 
             const side = this.add.graphics();
-            side.fillStyle(scheme.side, 1);
-            side.fillRoundedRect(-w / 2, -h / 2 + sideH, w, h - sideH, radius);
 
             const face = this.add.graphics();
             const glow = this.add.graphics().setAlpha(0);
             glow.lineStyle(8, scheme.face, 1);
             glow.strokeRoundedRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12, radius + 6);
 
-            const text = this.add.bitmapText(0, -sideH / 2, 'coiny-bmp', `+${amount}`, Math.floor(fs), 0)
+            const text = this.add.bitmapText(0, -sideH / 2, 'coiny-bmp', this.formatDelta(amount), Math.floor(fs), 0)
                 .setOrigin(0.5).setTint(scheme.text);
 
             container.add([glow, side, face, text]);
             container.setSize(w, h);
             container.setInteractive({ useHandCursor: true });
 
-            const btn: IncrementButton = { amount, container, face, glow, w, h, sideH, radius };
+            // +1 and -1 are open from the start; the rest unlock as the total grows
+            const locked = amount !== 1 && amount !== -1;
+            const btn: IncrementButton = { amount, container, face, side, glow, text, locked, w, h, sideH, radius };
             this.buttons.push(btn);
             this.drawButtonFace(btn, scheme.face);
 
             const btnIndex = this.buttons.length - 1;
             container.on('pointerdown', () => {
                 if (!this.roundActive || this.gameOver || this.paused) return;
+                if (this.buttons[btnIndex].locked) {
+                    this.tweens.add({ targets: container, x: { from: x - 6, to: x }, duration: 260, ease: 'Elastic.Out' });
+                    return;
+                }
                 this.handleIncrementTap(amount, btnIndex);
             });
+        }
+
+        this.createDoneButton(left + contentW - doneW / 2, bigCY, doneW, bigH);
+    }
+
+    // ── DONE: the player locks in the total they remember ────────────────────
+
+    private createDoneButton(x: number, y: number, w: number, h: number): void {
+        const sideH  = Math.round(h * 0.07);
+        const radius = Math.floor(h * 0.26);
+        const container = this.add.container(x, y);
+
+        const glow = this.add.graphics().setAlpha(0);
+        glow.lineStyle(8, THEME.GO, 1);
+        glow.strokeRoundedRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12, radius + 6);
+        const g = this.add.graphics();
+        g.fillStyle(THEME.GO_DARK, 1);
+        g.fillRoundedRect(-w / 2, -h / 2 + sideH, w, h - sideH, radius);
+        g.fillStyle(THEME.GO, 1);
+        g.fillRoundedRect(-w / 2, -h / 2, w, h - sideH, radius);
+        // Tick mark drawn above the label
+        const tick = this.add.graphics();
+        tick.lineStyle(Math.max(4, h * 0.06), THEME.INK, 1);
+        tick.beginPath();
+        tick.moveTo(-h * 0.13, -h * 0.2);
+        tick.lineTo(-h * 0.03, -h * 0.1);
+        tick.lineTo(h * 0.15, -h * 0.3);
+        tick.strokePath();
+        const text = this.add.bitmapText(0, h * 0.12, 'coiny-bmp', 'DONE', Math.floor(this.H * 0.026), 0)
+            .setOrigin(0.5).setTint(THEME.INK);
+
+        container.add([glow, g, tick, text]);
+        container.setSize(w, h).setInteractive({ useHandCursor: true });
+        container.on('pointerdown', () => {
+            if (!this.roundActive || this.gameOver || this.paused) return;
+            this.tweens.add({ targets: container, scaleX: 0.92, scaleY: 0.92, duration: 65, yoyo: true, ease: 'Power2' });
+            if (this.tapsThisRound === 0) {
+                this.tweens.add({ targets: container, x: { from: x - 6, to: x }, duration: 260, ease: 'Elastic.Out' });
+                return;
+            }
+            this.submitAnswer();
+        });
+        this.doneBtn = { container, glow };
+    }
+
+    private submitAnswer(): void {
+        if (this.currentTotal === this.targetTotal) {
+            this.onRoundSuccess();
+        } else if (this.inTutorial()) {
+            this.tutorialRetry();
+        } else {
+            this.onFail('wrong');
         }
     }
 
     private drawButtonFace(btn: IncrementButton, color: number): void {
-        const { face, w, h, sideH, radius, amount } = btn;
+        const { face, side, text, w, h, sideH, radius, amount, locked } = btn;
+        const scheme = INCREMENT_SCHEME[amount];
+
+        side.clear();
+        side.fillStyle(locked ? THEME.CARD_SHADOW : scheme.side, 1);
+        side.fillRoundedRect(-w / 2, -h / 2 + sideH, w, h - sideH, radius);
+
         face.clear();
-        face.fillStyle(color, 1);
+        face.fillStyle(locked ? THEME.SURFACE : color, 1);
         face.fillRoundedRect(-w / 2, -h / 2, w, h - sideH, radius);
 
-        const border = INCREMENT_SCHEME[amount].border;
-        if (border) {
+        text.setTint(locked ? THEME.PIP_OFF : scheme.text);
+
+        const border = scheme.border;
+        if (border && !locked) {
             face.lineStyle(4, border, 1);
             face.strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - sideH - 4, radius);
         }
@@ -385,10 +646,18 @@ export default class Game extends BaseScene {
     // ── Increment tap handler ───────────────────────────────────────────────
 
     private handleIncrementTap(amount: IncrementAmount, btnIndex: number): void {
+        if (amount < 0 && this.currentTotal + amount < 0) {
+            const { container } = this.buttons[btnIndex];
+            this.tweens.add({ targets: container, x: { from: container.x - 6, to: container.x }, duration: 260, ease: 'Elastic.Out' });
+            return;
+        }
         this.currentTotal += amount;
         this.tapsThisRound++;
-        this.redrawPips();
+        this.lastTapAmount = amount;
+        this.redrawTray();
         this.updateHints();
+        this.mascot.nudge();
+        if (amount === 1) Feel.tap(); else Feel.bigTap();
         this.animateIncrementButton(btnIndex);
         this.spawnFloatingLabel(btnIndex, amount);
 
@@ -397,16 +666,16 @@ export default class Game extends BaseScene {
             10:   'snd_click',
             100:  'snd_tap',
             1000: 'snd_click',
+            [-1]: 'snd_tap',
         };
-        AudioManager.play(sndMap[amount]);
-
-        this.validateCurrentProgress();
+        // Pitch climbs a little with every tap in the round; -1 drops it
+        AudioManager.play(sndMap[amount], amount < 0 ? 0.8 : 1 + Math.min(this.tapsThisRound, 15) * 0.035);
     }
 
     private spawnFloatingLabel(btnIndex: number, amount: number): void {
         const { container } = this.buttons[btnIndex];
         const txt = this.add.bitmapText(container.x, container.y - 30, 'coiny-bmp',
-            `+${amount}`, Math.floor(this.H * 0.040), 0)
+            this.formatDelta(amount), Math.floor(this.H * 0.040), 0)
             .setOrigin(0.5).setDepth(30).setTint(INCREMENT_SCHEME[INCREMENT_AMOUNTS[btnIndex]].side);
 
         this.tweens.add({
@@ -427,8 +696,8 @@ export default class Game extends BaseScene {
         });
 
         // Screen shake is reserved for failure; taps get particles only.
-        const counts    = [5, 8, 12, 20];
-        const minSpeeds = [50, 90, 140, 220];
+        const counts    = [5, 8, 12, 20, 5];
+        const minSpeeds = [50, 90, 140, 220, 50];
         this.spawnBurst(
             container.x, container.y,
             [INCREMENT_SCHEME[INCREMENT_AMOUNTS[btnIndex]].face],
@@ -436,9 +705,54 @@ export default class Game extends BaseScene {
         );
     }
 
+    // ── Unlocking increment buttons ─────────────────────────────────────────
+
+    /** Opens every button the running total has reached. Returns true if one opened. */
+    private unlockButtons(): boolean {
+        let opened = false;
+        this.buttons.forEach((btn, i) => {
+            if (!btn.locked || this.targetTotal < btn.amount) return;
+            btn.locked = false;
+            opened = true;
+            this.drawButtonFace(btn, INCREMENT_SCHEME[btn.amount].face);
+            this.celebrateUnlock(i);
+            this.track('button_unlocked', { amount: btn.amount, round: this.round });
+        });
+        return opened;
+    }
+
+    private celebrateUnlock(btnIndex: number): void {
+        const { container, amount } = this.buttons[btnIndex];
+        AudioManager.play('snd_reward');
+        this.mascot?.setMood('wow', 1000);
+
+        this.tweens.add({
+            targets: container,
+            scaleX: 1.15, scaleY: 1.15,
+            duration: 180, yoyo: true, repeat: 1, ease: 'Back.Out',
+        });
+        this.spawnBurst(container.x, container.y, [INCREMENT_SCHEME[amount].face, THEME.WHITE], 18, 120, 300);
+
+        const txt = this.label(container.x, container.y - container.height * 0.85,
+            `NEW +${amount}!`, this.H * 0.03, INCREMENT_SCHEME[amount].face).setDepth(30).setScale(0.4);
+        this.tweens.add({
+            targets: txt, scaleX: 1, scaleY: 1, duration: 260, ease: 'Back.Out',
+            onComplete: () => this.tweens.add({
+                targets: txt, alpha: 0, y: txt.y - 40, delay: 700, duration: 400,
+                onComplete: () => txt.destroy(),
+            }),
+        });
+    }
+
     // ── Hints ────────────────────────────────────────────────────────────────
 
+    /** Button glows give the answer away, so only beginners get them. */
+    private hintsOn(): boolean {
+        return this.inTutorial() || this.profile.id === 'little';
+    }
+
     private updateHints(): void {
+        if (!this.hintsOn()) return;
         const remaining = this.targetTotal - this.currentTotal;
         if (remaining !== this.lastHintRemaining) {
             this.lastHintRemaining = remaining;
@@ -451,11 +765,24 @@ export default class Game extends BaseScene {
         let hintIdx = -1;
         if (remaining > 0) {
             for (let i = INCREMENT_AMOUNTS.length - 1; i >= 0; i--) {
+                if (this.buttons[i]?.locked) continue;
                 const amt = INCREMENT_AMOUNTS[i];
+                if (amt < 0) continue;
                 if (remaining % amt === 0 && remaining < amt * 10) {
                     hintIdx = i;
                     break;
                 }
+            }
+        }
+
+        if (remaining < 0 && this.hintsOn()) hintIdx = INCREMENT_AMOUNTS.indexOf(-1);
+
+        // In the guided rounds, point at DONE once the total is right
+        if (this.doneBtn) {
+            this.tweens.killTweensOf(this.doneBtn.glow);
+            this.doneBtn.glow.setAlpha(0);
+            if (remaining === 0 && this.inTutorial()) {
+                this.tweens.add({ targets: this.doneBtn.glow, alpha: 0.8, duration: 300, yoyo: true, repeat: -1 });
             }
         }
 
@@ -471,83 +798,26 @@ export default class Game extends BaseScene {
         });
     }
 
-    // ── Validation ───────────────────────────────────────────────────────────
-
-    private validateCurrentProgress(): void {
-        if (this.currentTotal > this.targetTotal) {
-            this.showOvershootEffect();
-            this.triggerGameOver('overshoot');
-        } else if (this.currentTotal === this.targetTotal) {
-            this.onRoundSuccess();
-        }
-    }
-
-    private showOvershootEffect(): void {
-        for (const btn of this.buttons) this.drawButtonFace(btn, THEME.RED);
-
-        const txt = this.label(this.CX, this.H * 0.50, 'TOO MUCH!', this.H * 0.05, THEME.SUB).setDepth(20);
-        this.tweens.add({
-            targets: txt,
-            scaleX: 1.4, scaleY: 1.4, alpha: 0, y: txt.y - 60,
-            duration: 600, ease: 'Power2',
-            onComplete: () => txt.destroy(),
-        });
-    }
-
     // ── Round logic ──────────────────────────────────────────────────────────
 
     private generateBalancedTarget(): number {
-        let min = 1;
-        let max = 10;
+        if (this.inTutorial()) return TUTORIAL_NUMBERS[this.round - 1];
 
-        // Difficulty scaling
-        if (this.round <= 10) {
-            min = 1;
-            max = 10;
-        } else if (this.round <= 20) {
-            min = 1;
-            max = 15;
-        } else if (this.round <= 40) {
-            min = 5;
-            max = 25;
-        } else if (this.round <= 80) {
-            min = 15;
-            max = 50;
-        } else {
-            min = 50;
-            max = 100;
-        }
+        const band = this.profile.ranges.find((r) => this.round <= r.upTo) ?? this.profile.ranges[this.profile.ranges.length - 1];
+        let value  = Phaser.Math.Between(band.min, band.max);
 
-        let value = Phaser.Math.Between(min, max);
-
-        // Negative chance based on round
-        let negativeChance = 0;
-
-        if (this.round <= 15) {
-            negativeChance = 25;
-        } else if (this.round <= 30) {
-            negativeChance = 35;
-        } else {
-            negativeChance = 50;
-        }
-
-        // Current cumulative total
-        const currentTotal = this.targetTotal || 0;
-
-        // Apply negative randomly
-        const shouldBeNegative =
-            Phaser.Math.Between(1, 100) <= negativeChance;
-
-        if (shouldBeNegative && currentTotal > value) {
+        const neg = this.profile.negatives.find((n) => this.round <= n.upTo)?.chance ?? 0;
+        // Only take away when the running total stays above zero
+        if (Phaser.Math.Between(1, 100) <= neg && this.targetTotal > value) {
             value = -value;
         }
-
         return value;
     }
 
     private calculateTaskTime(): number {
-        const extra = Math.floor(this.round / GAME_CONFIG.TIMER_STEP_ROUNDS) * GAME_CONFIG.TIMER_STEP_SEC;
-        return Math.min(GAME_CONFIG.TIMER_MAX_SEC, GAME_CONFIG.TIMER_BASE_SEC + extra) * 1000;
+        const p     = this.profile;
+        const extra = Math.floor(this.round / GAME_CONFIG.TIMER_STEP_ROUNDS) * p.timerStepSec;
+        return Math.min(p.timerMaxSec, p.timerBaseSec + extra) * 1000;
     }
 
     private formatDelta(v: number): string {
@@ -562,13 +832,20 @@ export default class Game extends BaseScene {
 
         this.currentTotal      = 0;
         this.tapsThisRound     = 0;
+        this.worriedShown      = false;
         this.currentDelta      = this.generateBalancedTarget();
         this.targetTotal      += this.currentDelta;
         this.timeLeft          = this.calculateTaskTime();
         this.timerDuration     = this.timeLeft;
         this.lastHintRemaining = -1;
 
-        this.roundText.setText(`ROUND ${this.round}`);
+        // A newly opened button gets a moment of extra time to notice it
+        if (this.unlockButtons()) {
+            this.timeLeft     += GAME_CONFIG.UNLOCK_BONUS_MS;
+            this.timerDuration = this.timeLeft;
+        }
+
+        this.roundText.setText(this.inTutorial() ? 'PRACTICE' : `ROUND ${this.round}`);
         this.scoreText.setText(`${this.score}`);
         this.placeScoreStar();
 
@@ -586,10 +863,17 @@ export default class Game extends BaseScene {
             duration: 300, ease: 'Back.Out',
         });
 
-        this.showTape();
-        this.redrawPips();
+        if (this.inTutorial()) {
+            this.showHint(this.tutorialHint());
+        } else {
+            this.hideHint();
+            this.showTape();
+        }
+        this.resetTray();
         this.restoreButtonColors();
-        this.applyButtonHints(-1);
+        this.applyButtonHints(Number.NaN);   // NaN = clear all hints
+        this.mascot.look(0, -1).setMood('eat', 380);
+        this.time.delayedCall(420, () => this.mascot.look(0, 0));
 
         AudioManager.play('snd_click');
         this.roundActive = true;
@@ -600,8 +884,24 @@ export default class Game extends BaseScene {
 
     private onRoundSuccess(): void {
         this.roundActive = false;
+        this.roundsCleared++;
+        this.streak++;
         this.score += GAME_CONFIG.SCORE_PER_ROUND;
         AudioManager.play('snd_success');
+        Feel.success();
+        this.mascot.setMood('happy', 640).hop();
+
+        if (this.tutorial && this.round === TUTORIAL_NUMBERS.length) {
+            this.tutorial = false;
+            SaveManager.setTutorialDone(true);
+            this.track('tutorial_complete', { profile: this.profile.id });
+            this.showHint("You're ready! Now beat the timer");
+            this.time.delayedCall(1400, () => this.hideHint());
+        } else if (this.inTutorial()) {
+            this.showHint('Great job!');
+        }
+
+        if (this.streak > 0 && this.streak % 5 === 0) this.celebrateStreak();
 
         this.spawnScoreLabel(
             this.CX, this.H * 0.55,
@@ -622,7 +922,69 @@ export default class Game extends BaseScene {
         this.time.delayedCall(280, () => this.restoreButtonColors());
 
         this.round++;
-        this.time.delayedCall(660, () => this.startRound());
+        // Give the "you're ready" message a moment before the timer starts
+        const wait = this.round === TUTORIAL_NUMBERS.length + 1 && this.roundsCleared === TUTORIAL_NUMBERS.length ? 1500 : 660;
+        this.time.delayedCall(wait, () => this.startRound());
+    }
+
+    private celebrateStreak(): void {
+        this.spawnConfetti(36);
+        AudioManager.play('snd_reward');
+        this.mascot.setMood('happy', 1400);
+        const txt = this.label(this.CX, this.H * 0.462, `${this.streak} IN A ROW!`, this.H * 0.038, THEME.GOLD)
+            .setDepth(30).setScale(0.3);
+        this.tweens.add({
+            targets: txt, scaleX: 1, scaleY: 1, duration: 280, ease: 'Back.Out',
+            onComplete: () => this.tweens.add({
+                targets: txt, alpha: 0, y: txt.y - 50, delay: 600, duration: 400,
+                onComplete: () => txt.destroy(),
+            }),
+        });
+        this.track('streak', { length: this.streak, round: this.round });
+    }
+
+    // ── Wrong answer: lose a heart, show the real total, carry on ───────────
+
+    private onFail(reason: FailReason): void {
+        if (!this.roundActive || this.gameOver) return;
+        this.roundActive = false;
+        this.streak = 0;
+        this.lives = Math.max(0, this.lives - 1);
+        this.redrawHearts(true);
+        Feel.fail();
+        this.mascot.setMood('sad', GAME_CONFIG.REVEAL_MS).wobble();
+        this.track('life_lost', { round: this.round, reason, lives_left: this.lives });
+
+        if (this.lives <= 0) {
+            this.triggerGameOver(reason);
+            return;
+        }
+
+        AudioManager.play('snd_fail');
+        this.cameras.main.shake(200, 0.006);
+        this.revealTotal(reason);
+
+        this.time.delayedCall(GAME_CONFIG.REVEAL_MS, () => {
+            if (this.gameOver) return;
+            this.round++;
+            this.startRound();
+        });
+    }
+
+    /** Shows the correct running total so the player can keep going from it. */
+    private revealTotal(reason: FailReason): void {
+        this.targetLabel.setText('THE TOTAL IS').setTint(THEME.INK);
+        this.targetText.setText(`${this.targetTotal}`).setTint(THEME.INK).setScale(1);
+        const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
+        this.targetText.setScale(fit * 0.6);
+        this.tweens.add({ targets: this.targetText, scaleX: fit, scaleY: fit, duration: 320, ease: 'Back.Out' });
+        this.secondsText.setText(reason === 'timeout' ? 'Out of time' : `You had ${this.currentTotal}`);
+        this.restoreButtonColors();
+        this.applyButtonHints(Number.NaN);   // NaN = clear all hints
+    }
+
+    private track(name: string, params: Record<string, string | number | boolean> = {}): void {
+        Firebase.logEvent(name, params).catch(() => {});
     }
 
     // ── Pause sheet ──────────────────────────────────────────────────────────
@@ -684,23 +1046,23 @@ export default class Game extends BaseScene {
         sheet.fillRoundedRect(this.CX - 30, sheetY + 18, 60, 8, 4);
 
         const title = this.label(this.CX, sheetY + sheetH * 0.13, 'Paused', this.H * 0.045);
-        const sub   = this.label(this.CX, sheetY + sheetH * 0.23, 'Timer stopped. The number is hidden.', this.H * 0.016, THEME.MUTED);
+        const sub   = this.label(this.CX, sheetY + sheetH * 0.23, 'Timer stopped. The number is hidden.', this.H * 0.016, 0x52697b);
 
         // Round / score tiles
         const tileW = (innerW - pad * 0.5) / 2;
         const tileH = Math.floor(sheetH * 0.17);
         const tileY = sheetY + sheetH * 0.30;
         const tiles = this.add.graphics();
-        tiles.fillStyle(THEME.SURFACE, 1);
+        tiles.fillStyle(0xe6eef2, 1);
         tiles.fillRoundedRect(pad, tileY, tileW, tileH, 18);
         tiles.fillRoundedRect(this.W - pad - tileW, tileY, tileW, tileH, 18);
         const t1x = pad + tileW / 2;
         const t2x = this.W - pad - tileW / 2;
         const tiles2 = [
-            this.label(t1x, tileY + tileH * 0.3, 'ROUND', this.H * 0.013, THEME.MUTED),
+            this.label(t1x, tileY + tileH * 0.3, 'ROUND', this.H * 0.013, 0x52697b),
             this.label(t1x, tileY + tileH * 0.66, `${this.round}`, this.H * 0.028),
-            this.label(t2x, tileY + tileH * 0.3, 'SCORE', this.H * 0.013, THEME.MUTED),
-            this.label(t2x, tileY + tileH * 0.66, `${this.score}`, this.H * 0.028, THEME.GOLD),
+            this.label(t2x, tileY + tileH * 0.3, 'SCORE', this.H * 0.013, 0x52697b),
+            this.label(t2x, tileY + tileH * 0.66, `${this.score}`, this.H * 0.028, 0x52691e),
         ];
 
         const resume = this.createButton(this.CX, sheetY + sheetH * 0.64, innerW, bh, 'RESUME',
@@ -757,11 +1119,19 @@ export default class Game extends BaseScene {
         }
 
         LeaderboardManager.submitScore(this.score);
+        this.track('game_over', {
+            score: this.score,
+            rounds_cleared: this.roundsCleared,
+            reached_round: this.round,
+            reason,
+            profile: this.profile.id,
+        });
 
         this.time.delayedCall(voluntary ? 50 : 700, () => {
             this.fadeToScene(SCENES.End, {
                 score:     this.score,
                 round:     this.round,
+                cleared:   this.roundsCleared,
                 bestScore: SaveManager.getBestScore(),
                 reason,
                 needed:    this.targetTotal,

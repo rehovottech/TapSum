@@ -34,36 +34,45 @@ export const COLORS = {
     TEXT_GREEN:  '#39ff14',
 };
 
-// Kid-friendly light theme used by Preload, Menu, Game, End and panels.
+// Daytime theme used by Preload, Menu, Game, End and panels:
+// sky-to-meadow background, cream cards, dark ink for anything on the sky.
 export const THEME = {
     // Backgrounds & surfaces
-    BG_TOP:      0xe8f6ff,
-    BG_BOTTOM:   0xd6eeff,
-    CARD:        0xffffff,
-    CARD_SHADOW: 0xbfe3f7,
-    SURFACE:     0xf0f9ff,
-    TRACK:       0xd3ecfa,
-    PIP_OFF:     0xc5e3f5,
-    SCRIM:       0x12305a,
+    BG_TOP:      0x8fd3ff,
+    BG_BOTTOM:   0xd8f6e4,
+    HILL_BACK:   0xa8e6b8,
+    HILL_FRONT:  0x7fd396,
+    CLOUD:       0xffffff,
+    CARD:        0xfffdf6,
+    CARD_SHADOW: 0xa9c3d3,
+    SURFACE:     0xe2ecf2,
+    TRACK:       0xd3e2ea,
+    PIP_OFF:     0xa7bccb,
+    SCRIM:       0x0b2236,
 
     // Text
-    INK:   0x12305a,
-    MUTED: 0x4a6585,
+    INK:   0x14304a,
+    MUTED: 0x3f6584,
     WHITE: 0xffffff,
 
     // Meaning
-    ADD:      0x1fa34f,
-    SUB:      0xe5392d,
-    SUB_TINT: 0xfff0f3,
+    ADD:      0x1f9e4c,
+    SUB:      0xd64a3d,
+    SUB_TINT: 0xffe7e4,
     WARN:     0xff8a2b,
-    GOLD:     0xb36b00,
-    STAR:     0xffc531,
+    GOLD:     0xe67e00,
+    STAR:     0xffb703,
 
     // Buttons
-    GO:       0x1e9e4e,
-    GO_DARK:  0x13703a,
-    RED:      0xe5392d,
-    RED_DARK: 0xa8251c,
+    GO:       0x47d16f,
+    GO_DARK:  0x26994a,
+    RED:      0xd64a3d,
+    RED_DARK: 0x8e342c,
+
+    // Mascot
+    MASCOT:       0xff7f5c,
+    MASCOT_DARK:  0xd95a3a,
+    MASCOT_BELLY: 0xffd9c2,
 
     // Candy palette (title letters, particles)
     CANDY: [0xe5392d, 0xff8a2b, 0xe0a000, 0x1fa34f, 0x1e90e8, 0x8b5cf6],
@@ -75,4 +84,6 @@ export const INCREMENT_SCHEME = {
     10:   { face: 0x1e90e8, side: 0x146db5, text: THEME.WHITE, border: 0 },
     100:  { face: 0xff8a2b, side: 0xd9640f, text: THEME.INK,   border: 0 },
     1000: { face: 0x8b5cf6, side: 0x6236c9, text: THEME.WHITE, border: 0xffc531 },
+    // Take-away keeps the game's red = minus meaning
+    [-1]: { face: 0xff6b6b, side: 0xd64a3d, text: THEME.WHITE, border: 0 },
 } as const;

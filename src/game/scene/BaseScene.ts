@@ -69,6 +69,56 @@ export default abstract class BaseScene extends Phaser.Scene {
         return gfx;
     }
 
+    /** Sky gradient with drifting clouds and two rolling hills along the bottom. */
+    protected createSkyBg(hillTop = 0.86): void {
+        this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
+
+        const clouds: [number, number, number][] = [[0.18, 0.05, 1], [0.78, 0.2, 0.8], [0.35, 0.42, 0.65], [0.86, 0.6, 0.7]];
+        clouds.forEach(([fx, fy, s], i) => {
+            const c = this.add.graphics().setAlpha(0.75);
+            const r = this.W * 0.06 * s;
+            c.fillStyle(THEME.CLOUD, 1);
+            c.fillCircle(-r * 1.1, r * 0.25, r * 0.8);
+            c.fillCircle(0, 0, r);
+            c.fillCircle(r * 1.1, r * 0.3, r * 0.75);
+            c.fillRoundedRect(-r * 1.9, r * 0.2, r * 3.7, r * 0.85, r * 0.42);
+            c.setPosition(this.W * fx, this.H * fy);
+            this.tweens.add({
+                targets: c, x: c.x + this.W * 0.06 * (i % 2 ? -1 : 1),
+                duration: 9000 + i * 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+            });
+        });
+
+        const hills = this.add.graphics();
+        const y0 = this.H * hillTop;
+        hills.fillStyle(THEME.HILL_BACK, 1);
+        hills.fillEllipse(this.W * 0.2, y0 + this.H * 0.07, this.W * 1.1, this.H * 0.2);
+        hills.fillStyle(THEME.HILL_FRONT, 1);
+        hills.fillEllipse(this.W * 0.85, y0 + this.H * 0.1, this.W * 1.2, this.H * 0.22);
+        hills.fillRect(0, y0 + this.H * 0.1, this.W, this.H);
+    }
+
+    /** Paper confetti falling from the top of the screen. */
+    protected spawnConfetti(count = 40): void {
+        for (let i = 0; i < count; i++) {
+            const w = Phaser.Math.Between(6, 12);
+            const piece = this.add.rectangle(
+                Phaser.Math.Between(0, Math.floor(this.W)), -20 - Phaser.Math.Between(0, Math.floor(this.H * 0.2)),
+                w, w * 1.8, THEME.CANDY[i % THEME.CANDY.length],
+            ).setDepth(40).setAngle(Phaser.Math.Between(0, 360));
+            this.tweens.add({
+                targets: piece,
+                y: this.H + 40,
+                x: piece.x + Phaser.Math.Between(-80, 80),
+                angle: piece.angle + Phaser.Math.Between(180, 720),
+                duration: Phaser.Math.Between(1400, 2400),
+                delay: Phaser.Math.Between(0, 400),
+                ease: 'Sine.easeIn',
+                onComplete: () => piece.destroy(),
+            });
+        }
+    }
+
     /** White rounded card with a soft coloured drop edge (light theme). */
     protected drawCard(
         gfx: Phaser.GameObjects.Graphics,
@@ -97,7 +147,7 @@ export default abstract class BaseScene extends Phaser.Scene {
         label: string, fontSize: number,
         faceColor: number, sideColor: number,
         callback: () => void,
-        textColor = 0xffffff,
+        textColor = THEME.INK,
     ): Phaser.GameObjects.Container {
         const radius = height * 0.28;
         const sideH  = Math.round(height * 0.10);

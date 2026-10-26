@@ -5,13 +5,14 @@ import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { THEME } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
-import { Firebase } from '../../services/Firebase';
-import { GameIds } from '../../constants/GameIds';
+import { LeaderboardManager } from '../managers/LeaderboardManager';
+import { Mascot } from '../ui/Mascot';
 import FPS from '../model/FPS';
 
 interface EndData {
     score?:     number;
     round?:     number;
+    cleared?:   number;
     bestScore?: number;
     reason?:    EndReason;
     needed?:    number;
@@ -22,6 +23,7 @@ interface EndData {
 export default class End extends BaseScene {
     private finalScore = 0;
     private finalRound = 1;
+    private cleared    = 0;
     private bestScore  = 0;
     private isNewBest  = false;
     private reason: EndReason = 'quit';
@@ -38,6 +40,7 @@ export default class End extends BaseScene {
         this.initScene();
         this.finalScore = data?.score     ?? 0;
         this.finalRound = data?.round     ?? 1;
+        this.cleared    = data?.cleared   ?? Math.max(0, this.finalRound - 1);
         this.bestScore  = data?.bestScore ?? 0;
         this.reason     = data?.reason    ?? 'quit';
         this.needed     = data?.needed    ?? 0;
@@ -50,12 +53,13 @@ export default class End extends BaseScene {
         GlobVar.consolelog(`Scene: ${SCENES.End}`);
         AudioManager.init();
 
-        this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
+        this.createSkyBg(0.93);
         const content = this.add.container(0, 0);
         this.createHeader(content);
         this.createWhatHappened(content);
         this.createStats(content);
         this.createButtons();
+        this.createMascot();
         this.fpsView = new FPS(this);
 
         content.setAlpha(0).setY(this.H * 0.03);
@@ -78,13 +82,19 @@ export default class End extends BaseScene {
 
     private createHeader(content: Phaser.GameObjects.Container): void {
         const kicker =
-            this.isNewBest            ? 'NEW BEST!' :
-            this.reason === 'overshoot' ? 'TOO MUCH!' :
-            this.reason === 'timeout'   ? "TIME'S UP!" : 'RUN ENDED';
-        const kickerColor = this.isNewBest ? THEME.GOLD : this.reason === 'quit' ? THEME.MUTED : THEME.SUB;
+            this.isNewBest          ? 'NEW BEST!' :
+            this.reason === 'quit'  ? 'RUN ENDED' : 'OUT OF HEARTS';
+        const kickerColor = this.isNewBest ? THEME.GOLD : THEME.MUTED;
+
+        const n     = this.cleared;
+        const title =
+            this.isNewBest ? 'Amazing memory!' :
+            n >= 15        ? 'Super memory!' :
+            n >= 5         ? 'Nice run!' : 'Good try!';
 
         const k = this.label(this.CX, this.H * 0.085, kicker, this.H * 0.018, kickerColor);
-        const t = this.label(this.CX, this.H * 0.135, 'Game over', this.H * 0.062);
+        const t = this.label(this.CX, this.H * 0.135, title, this.H * 0.055, THEME.INK);
+        t.setScale(Math.min(1, (this.W * 0.86) / Math.max(1, t.width)));
         content.add([k, t]);
 
         if (this.isNewBest) {
@@ -104,7 +114,7 @@ export default class End extends BaseScene {
         const card  = this.drawCard(this.add.graphics(), pad, top, innerW, cardH, 28);
         content.add(card);
 
-        content.add(this.label(this.CX, top + this.H * 0.03, 'WHAT HAPPENED', this.H * 0.014, THEME.MUTED));
+        content.add(this.label(this.CX, top + this.H * 0.03, 'THE LAST ONE', this.H * 0.014, 0x52697b));
 
         if (this.reason === 'quit') {
             content.add(this.label(this.CX, top + cardH * 0.62, `You stopped at round ${this.finalRound}.`, this.H * 0.022));
@@ -124,16 +134,16 @@ export default class End extends BaseScene {
         boxes.fillRoundedRect(leftX, boxY, boxW, boxH, 20);
         boxes.lineStyle(4, THEME.ADD, 1);
         boxes.strokeRoundedRect(leftX, boxY, boxW, boxH, 20);
-        boxes.fillStyle(THEME.SUB_TINT, 1);
+        boxes.fillStyle(0xfff1e3, 1);
         boxes.fillRoundedRect(rightX, boxY, boxW, boxH, 20);
-        boxes.lineStyle(4, THEME.SUB, 1);
+        boxes.lineStyle(4, THEME.WARN, 1);
         boxes.strokeRoundedRect(rightX, boxY, boxW, boxH, 20);
 
         // Arrow
         const ax = this.CX;
         const ay = boxY + boxH / 2;
         const aw = arrowW * 0.32;
-        boxes.lineStyle(5, THEME.MUTED, 1);
+        boxes.lineStyle(5, 0x52697b, 1);
         boxes.lineBetween(ax - aw, ay, ax + aw, ay);
         boxes.lineBetween(ax + aw * 0.35, ay - aw * 0.6, ax + aw, ay);
         boxes.lineBetween(ax + aw * 0.35, ay + aw * 0.6, ax + aw, ay);
@@ -142,10 +152,10 @@ export default class End extends BaseScene {
         const lcx = leftX + boxW / 2;
         const rcx = rightX + boxW / 2;
         content.add([
-            this.label(lcx, boxY + boxH * 0.24, 'YOU NEEDED', this.H * 0.013, THEME.ADD),
+            this.label(lcx, boxY + boxH * 0.24, 'THE TOTAL WAS', this.H * 0.013, THEME.ADD),
             this.label(lcx, boxY + boxH * 0.62, `${this.needed}`, this.H * 0.048, THEME.ADD),
-            this.label(rcx, boxY + boxH * 0.24, 'YOU TAPPED', this.H * 0.013, THEME.SUB),
-            this.label(rcx, boxY + boxH * 0.62, `${this.tapped}`, this.H * 0.048, THEME.SUB),
+            this.label(rcx, boxY + boxH * 0.24, 'YOU TAPPED', this.H * 0.013, 0xc0600f),
+            this.label(rcx, boxY + boxH * 0.62, `${this.tapped}`, this.H * 0.048, 0xc0600f),
         ]);
 
         // "Last three: +12 -3 +8" in their own colours
@@ -153,7 +163,7 @@ export default class End extends BaseScene {
             const y  = top + cardH - this.H * 0.035;
             const fs = Math.floor(this.H * 0.019);
             const parts: { text: string; tint: number }[] = [
-                { text: this.recent.length === 1 ? 'Last number:' : `Last ${this.recent.length}:`, tint: THEME.MUTED },
+                { text: this.recent.length === 1 ? 'Last number:' : `Last ${this.recent.length}:`, tint: 0x52697b },
                 ...this.recent.map((v) => ({ text: v < 0 ? `-${-v}` : `+${v}`, tint: v < 0 ? THEME.SUB : THEME.ADD })),
             ];
             const gap   = this.W * 0.025;
@@ -184,12 +194,12 @@ export default class End extends BaseScene {
 
         const s1 = pad + tileW / 2;
         const s2 = pad + tileW * 1.5 + gap;
-        const scoreNum = this.label(s1, top + tileH * 0.62, `${this.finalScore}`, this.H * 0.045, THEME.GOLD);
+        const scoreNum = this.label(s1, top + tileH * 0.62, `${this.finalScore}`, this.H * 0.045, THEME.INK);
         content.add([
-            this.label(s1, top + tileH * 0.25, 'SCORE', this.H * 0.014, THEME.MUTED),
+            this.label(s1, top + tileH * 0.25, 'SCORE', this.H * 0.014, 0x52697b),
             scoreNum,
-            this.label(s2, top + tileH * 0.25, 'ROUNDS', this.H * 0.014, THEME.MUTED),
-            this.label(s2, top + tileH * 0.62, `${Math.max(0, this.finalRound - 1)}`, this.H * 0.045),
+            this.label(s2, top + tileH * 0.25, 'ROUNDS CLEARED', this.H * 0.014, 0x52697b),
+            this.label(s2, top + tileH * 0.62, `${this.cleared}`, this.H * 0.045),
         ]);
 
         scoreNum.setScale(0);
@@ -198,7 +208,7 @@ export default class End extends BaseScene {
         // World rank row (filled once Firestore answers)
         const rowY = top + tileH + this.H * 0.03;
         const rowH = Math.floor(this.H * 0.065);
-        content.add(this.drawCard(this.add.graphics(), pad, rowY, innerW, rowH, 20, THEME.SURFACE, THEME.CARD_SHADOW));
+        content.add(this.drawCard(this.add.graphics(), pad, rowY, innerW, rowH, 20, 0xe6eef2, THEME.CARD_SHADOW));
         content.add(this.add.bitmapText(pad + this.W * 0.05, rowY + rowH / 2, 'coiny-bmp', 'World rank', Math.floor(this.H * 0.02), 0)
             .setOrigin(0, 0.5).setTint(THEME.INK));
         this.rankText = this.add.bitmapText(this.W - pad - this.W * 0.05, rowY + rowH / 2, 'coiny-bmp', '...', Math.floor(this.H * 0.024), 0)
@@ -208,17 +218,33 @@ export default class End extends BaseScene {
         // Best line
         const bestY = rowY + rowH + this.H * 0.04;
         const diff  = this.bestScore - this.finalScore;
-        const best  = this.isNewBest
-            ? `Your best ever: ${this.finalScore}`
-            : `Best ${this.bestScore}  (${diff} to beat it)`;
+        const best  =
+            this.isNewBest        ? `Your best ever: ${this.finalScore}` :
+            this.bestScore === 0  ? 'Clear a round to set your first best!' :
+            diff === 0            ? `You matched your best: ${this.bestScore}` :
+                                    `Best ${this.bestScore}  (${diff} to beat it)`;
         content.add(this.label(this.CX, bestY, best, this.H * 0.019, this.isNewBest ? THEME.GOLD : THEME.MUTED));
+    }
+
+    // ── Summy cheers or consoles ─────────────────────────────────────────────
+
+    private createMascot(): void {
+        const m = new Mascot(this, this.CX, this.H * 0.745, Math.floor(this.H * 0.03));
+        if (this.isNewBest) {
+            this.time.delayedCall(600, () => { m.setMood('happy'); m.hop(0.7); });
+            this.time.delayedCall(700, () => this.spawnConfetti(50));
+        } else if (this.cleared >= 5) {
+            m.setMood('happy', 1500);
+        } else if (this.reason !== 'quit') {
+            m.setMood('sad', 1500);
+        }
     }
 
     // ── Rank fetch ───────────────────────────────────────────────────────────
 
     private async fetchAndShowRank(): Promise<void> {
         try {
-            const rank = await Firebase.getPlayerRank(GameIds.TAP_SUM);
+            const rank = await LeaderboardManager.getPlayerRank();
             if (!this.rankText || !this.scene.isActive()) return;
             this.rankText.setText(rank > 0 ? `#${rank}` : '-');
         } catch {

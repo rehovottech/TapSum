@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#edf7fc" />
+    <title>TapSum · Main menu concept</title>
+    <style>
+      @font-face {
+        font-family: "Coiny";
+        src: url("../../public/assets/font/Coiny-Regular.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+      }
+
+      :root {
+        color-scheme: light;
+        --ground: #edf7fc;
+        --paper: #ffffff;
+        --game-ground: #e8f6ff;
+        --game-ground-deep: #d6eeff;
+        --ink: #12305a;
+        --muted: #4a6585;
+        --line: #d3ecfa;
+        --blue-surface: #f0f9ff;
+        --green: #1e9e4e;
+        --green-deep: #13703a;
+        --green-ink: #126b36;
+        --gold: #b36b00;
+        --yellow: #ffc531;
+        --red: #e5392d;
+        --orange: #ff8a2b;
+        --blue: #1e90e8;
+        --purple: #8b5cf6;
+        --font: "Coiny", "Trebuchet MS", system-ui, sans-serif;
+        --ui-font: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--ui-font);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button { font: inherit; }
+
+      .page {
+        width: min(1220px, calc(100% - 56px));
+        margin-inline: auto;
+        padding: 38px 0 54px;
+      }
+
+      .page-heading {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+
+      .page-mark {
+        display: block;
+        width: 52px;
+        height: 52px;
+        border-radius: 15px;
+        object-fit: cover;
+        flex: none;
+      }
+
+      .page-title {
+        margin: 0;
+        font-family: var(--font);
+        font-size: 28px;
+        font-weight: 400;
+        line-height: 1.15;
+      }
+
+      .page-subtitle {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 356px;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .preview-panel {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid #dce8ee;
+        border-radius: 18px;
+        background: var(--paper);
+      }
+
+      .panel-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 20px 16px;
+      }
+
+      .panel-heading h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 650;
+      }
+
+      .viewport-size {
+        color: var(--muted);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .desktop-viewport {
+        display: grid;
+        min-height: 744px;
+        place-items: center;
+        padding: 22px;
+        background: #131a2a;
+      }
+
+      .phone-viewport {
+        display: grid;
+        min-height: 744px;
+        place-items: center;
+        padding: 22px 16px;
+        background: #f4f8fa;
+      }
+
+      .phone-frame {
+        position: relative;
+        width: min(100%, 316px);
+        aspect-ratio: 390 / 844;
+        overflow: hidden;
+        border: 7px solid #18243a;
+        border-radius: 34px;
+        background: #18243a;
+        box-shadow: 0 10px 24px rgb(18 48 90 / 12%);
+      }
+
+      .phone-frame::before {
+        position: absolute;
+        z-index: 5;
+        top: 7px;
+        left: 50%;
+        width: 24%;
+        height: 13px;
+        border-radius: 0 0 10px 10px;
+        background: #18243a;
+        content: "";
+        transform: translateX(-50%);
+      }
+
+      .game-screen {
+        container-type: size;
+        position: relative;
+        display: grid;
+        width: auto;
+        height: 100%;
+        aspect-ratio: 9 / 16;
+        grid-template-rows: 8% 22% 25% 17% 28%;
+        overflow: hidden;
+        padding: 4.2% 6.5% 3.6%;
+        background: var(--game-ground);
+        color: var(--ink);
+        font-family: var(--font);
+        isolation: isolate;
+      }
+
+      .desktop-viewport .game-screen {
+        max-width: 100%;
+        max-height: 700px;
+      }
+
+      .phone-frame .game-screen {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+        grid-template-rows: 8% 22% 25% 17% 28%;
+        padding-top: 6%;
+        padding-bottom: 4%;
+      }
+
+      .screen-tools {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+      }
+
+      .tool-button {
+        display: grid;
+        width: clamp(42px, 8cqw, 52px);
+        height: clamp(42px, 8cqw, 52px);
+        place-items: center;
+        padding: 0;
+        border: 1px solid rgb(18 48 90 / 6%);
+        border-radius: 50%;
+        background: #fff;
+        color: var(--ink);
+        box-shadow: 0 3px 0 var(--line);
+        cursor: pointer;
+        transition: transform 130ms ease, box-shadow 130ms ease;
+      }
+
+      .tool-button svg { width: 48%; height: 48%; }
+      .sound-waves[hidden], .sound-cross[hidden] { display: none; }
+      .tool-button:hover { transform: translateY(-2px); box-shadow: 0 5px 0 var(--line); }
+      .tool-button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+      .tool-button:focus-visible,
+      .action:focus-visible,
+      .play-button:focus-visible,
+      dialog button:focus-visible {
+        outline: 3px solid var(--blue);
+        outline-offset: 3px;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4.4cqw;
+        align-self: center;
+        min-width: 0;
+      }
+
+      .game-icon {
+        width: 19cqw;
+        height: 19cqw;
+        max-width: 92px;
+        max-height: 92px;
+        flex: none;
+        border-radius: 20%;
+        object-fit: cover;
+      }
+
+      .brand-copy { min-width: 0; }
+
+      .game-title {
+        margin: 0;
+        font-size: clamp(34px, 9.2cqw, 70px);
+        font-weight: 400;
+        letter-spacing: -0.035em;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .tagline {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-family: var(--ui-font);
+        font-size: clamp(12px, 2.55cqw, 17px);
+        font-weight: 600;
+        line-height: 1.25;
+        white-space: nowrap;
+      }
+
+      .example-card {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        align-self: center;
+        width: 100%;
+        min-height: 88%;
+        padding: 5.5% 5.2% 4.5%;
+        border: 1px solid var(--line);
+        border-radius: clamp(16px, 4cqw, 25px);
+        background: var(--paper);
+      }
+
+      .example-title {
+        margin: 0;
+        color: var(--muted);
+        font-family: var(--ui-font);
+        font-size: clamp(12px, 2.7cqw, 16px);
+        font-weight: 650;
+        line-height: 1.25;
+        text-align: center;
+      }
+
+      .number-trail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: 2.1%;
+        min-width: 0;
+        padding-top: 2%;
+      }
+
+      .trail-step {
+        display: grid;
+        grid-template-rows: minmax(48px, 9.2cqh) auto;
+        gap: 6px;
+        min-width: 0;
+        text-align: center;
+      }
+
+      .number-tile {
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        border-radius: clamp(10px, 2.6cqw, 16px);
+        background: var(--blue-surface);
+        color: var(--green-ink);
+        font-size: clamp(25px, 7cqw, 48px);
+        line-height: 1;
+      }
+
+      .trail-step:last-child .number-tile {
+        background: var(--yellow);
+        color: var(--ink);
+      }
+
+      .step-caption {
+        color: var(--ink);
+        font-family: var(--ui-font);
+        font-size: clamp(11px, 2.65cqw, 15px);
+        font-weight: 650;
+        line-height: 1.2;
+      }
+
+      .operator {
+        align-self: start;
+        padding-top: 4cqh;
+        color: #7592ad;
+        font-family: var(--ui-font);
+        font-size: clamp(15px, 3.8cqw, 24px);
+        font-weight: 500;
+        line-height: 1;
+      }
+
+      .best-score {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 3px;
+      }
+
+      .best-label {
+        color: var(--muted);
+        font-family: var(--ui-font);
+        font-size: clamp(12px, 2.5cqw, 15px);
+        font-weight: 650;
+      }
+
+      .best-value {
+        color: var(--gold);
+        font-size: clamp(37px, 10cqw, 62px);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+
+      .screen-actions {
+        display: grid;
+        grid-template-rows: minmax(54px, 9cqh) minmax(44px, 7.5cqh);
+        align-content: end;
+        gap: 12px;
+        padding-bottom: 1.5%;
+      }
+
+      .play-button {
+        width: 100%;
+        min-height: 54px;
+        border: 0;
+        border-radius: clamp(16px, 3.5cqw, 24px);
+        background: var(--green);
+        box-shadow: 0 7px 0 var(--green-deep);
+        color: #fff;
+        cursor: pointer;
+        font-family: var(--font);
+        font-size: clamp(25px, 6.7cqw, 42px);
+        line-height: 1;
+        transition: transform 130ms ease, box-shadow 130ms ease, background 130ms ease;
+      }
+
+      .play-button:hover { background: #198c45; transform: translateY(-2px); box-shadow: 0 9px 0 var(--green-deep); }
+      .play-button:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--green-deep); }
+
+      .secondary-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .action {
+        min-width: 0;
+        min-height: 44px;
+        padding: 8px 5px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+        font-family: var(--ui-font);
+        font-size: clamp(11px, 2.55cqw, 15px);
+        font-weight: 700;
+        line-height: 1.1;
+        text-align: center;
+        transition: background 130ms ease, color 130ms ease;
+      }
+
+      .action:hover { background: rgb(18 48 90 / 6%); color: #0a2448; }
+      .action svg { width: 15px; height: 15px; margin-right: 5px; vertical-align: -3px; }
+
+      .prototype-note {
+        margin: 16px 0 0;
+        color: #536d83;
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: center;
+      }
+
+      dialog {
+        width: min(440px, calc(100% - 32px));
+        max-height: min(80vh, 620px);
+        padding: 26px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: 0 20px 60px rgb(18 48 90 / 20%);
+      }
+
+      dialog::backdrop { background: rgb(18 48 90 / 50%); }
+      dialog h2 { margin: 0 0 18px; font: 400 24px/1.1 var(--font); }
+      dialog p, dialog li { color: #294667; font-size: 15px; line-height: 1.5; }
+      dialog ul { padding-left: 20px; }
+      .dialog-close {
+        min-height: 42px;
+        margin-top: 12px;
+        padding: 0 18px;
+        border: 1px solid #b5cbe0;
+        border-radius: 12px;
+        background: #f5fbff;
+        color: var(--ink);
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .toast {
+        position: fixed;
+        z-index: 10;
+        right: 20px;
+        bottom: 20px;
+        max-width: min(360px, calc(100% - 40px));
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: var(--ink);
+        color: #fff;
+        font-size: 14px;
+        line-height: 1.4;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(8px);
+        transition: opacity 150ms ease, transform 150ms ease;
+      }
+
+      .toast[data-open="true"] { opacity: 1; transform: translateY(0); }
+
+      @media (max-width: 800px) {
+        .page { width: min(600px, calc(100% - 32px)); padding-top: 24px; }
+        .preview-grid { grid-template-columns: 1fr; gap: 16px; }
+        .desktop-viewport, .phone-viewport { min-height: 0; padding: 18px; }
+        .desktop-viewport { min-height: 680px; }
+        .phone-viewport { min-height: 700px; }
+        .desktop-viewport .game-screen { max-height: 640px; }
+        .phone-frame { width: min(100%, 320px); }
+      }
+
+      @media (max-width: 420px) {
+        .page { width: calc(100% - 24px); padding-top: 18px; }
+        .page-heading { gap: 12px; margin-bottom: 18px; }
+        .page-mark { width: 44px; height: 44px; border-radius: 13px; }
+        .page-title { font-size: 23px; }
+        .page-subtitle { font-size: 12px; }
+        .panel-heading { padding: 15px 15px 13px; }
+        .desktop-viewport, .phone-viewport { padding: 14px; }
+        .desktop-viewport { min-height: 610px; }
+        .phone-viewport { min-height: 666px; }
+        .desktop-viewport .game-screen { max-height: 580px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-heading">
+        <img class="page-mark" src="../../public/assets/icons/icon-512.webp" alt="" />
+        <div>
+          <h1 class="page-title">TapSum · Main menu</h1>
+          <p class="page-subtitle">Visual concept · Phaser portrait screen in desktop and phone viewports</p>
+        </div>
+      </header>
+
+      <div class="preview-grid">
+        <section class="preview-panel" aria-labelledby="desktop-heading">
+          <div class="panel-heading">
+            <h2 id="desktop-heading">Desktop viewport</h2>
+            <span class="viewport-size">1440 × 900 · portrait game canvas</span>
+          </div>
+          <div class="desktop-viewport">
+            <section class="game-screen" aria-label="TapSum main menu, desktop preview">
+              <nav class="screen-tools" aria-label="Game utilities">
+                <button class="tool-button" type="button" data-toast="Support flow stays in the live app." aria-label="Support TapSum">
+                  <svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="M7 13h15a2 2 0 0 1 2 2v8H9a4 4 0 0 1-4-4v-2a4 4 0 0 1 2-4Z" fill="#8b5e43" />
+                    <path d="M24 15h2a4 4 0 0 1 0 8h-2" fill="none" stroke="#8b5e43" stroke-width="2.6" />
+                    <path d="M9 10c0-2 2-2 2-4m5 4c0-2 2-2 2-4" fill="none" stroke="#8b5e43" stroke-linecap="round" stroke-width="1.8" />
+                    <path d="M8 15h13" stroke="#f0cc9c" stroke-width="2" />
+                  </svg>
+                </button>
+                <button class="tool-button sound-toggle" type="button" aria-label="Mute sound" aria-pressed="false">
+                  <svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="M5 13h5l7-6v18l-7-6H5z" fill="currentColor" />
+                    <path class="sound-waves" d="M21 11a7 7 0 0 1 0 10m3-14a12 12 0 0 1 0 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.4" />
+                    <path class="sound-cross" d="m21 12 7 8m0-8-7 8" fill="none" stroke="#e5392d" stroke-linecap="round" stroke-width="2.5" hidden />
+                  </svg>
+                </button>
+              </nav>
+
+              <div class="brand-lockup">
+                <img class="game-icon" src="../../public/assets/icons/icon-512.webp" alt="" />
+                <div class="brand-copy">
+                  <h2 class="game-title">TapSum</h2>
+                  <p class="tagline">Remember. Count. Tap!</p>
+                </div>
+              </div>
+
+              <section class="example-card" aria-labelledby="example-title-desktop">
+                <h3 class="example-title" id="example-title-desktop">A round in three steps</h3>
+                <div class="number-trail" aria-label="Plus five, plus three, equals eight">
+                  <div class="trail-step"><span class="number-tile">+5</span><span class="step-caption">Remember</span></div>
+                  <span class="operator" aria-hidden="true">+</span>
+                  <div class="trail-step"><span class="number-tile">+3</span><span class="step-caption">Count</span></div>
+                  <span class="operator" aria-hidden="true">=</span>
+                  <div class="trail-step"><span class="number-tile">8</span><span class="step-caption">Tap it</span></div>
+                </div>
+              </section>
+
+              <section class="best-score" aria-label="Personal best score">
+                <span class="best-label">Your best</span>
+                <strong class="best-value">0</strong>
+              </section>
+
+              <div class="screen-actions">
+                <button class="play-button" type="button" data-toast="Visual concept only — the live game flow is unchanged.">Play</button>
+                <div class="secondary-actions">
+                  <button class="action" type="button" data-dialog="leaderboard-dialog">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12v14H4zM7 6h6M7 9h6M7 12h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" /></svg>Leaderboard
+                  </button>
+                  <button class="action" type="button" data-dialog="help-dialog">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 7.5a2.1 2.1 0 1 1 3.7 1.3c-.9.9-1.7 1.1-1.7 2.4m0 2v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" /></svg>How to play
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="preview-panel" aria-labelledby="phone-heading">
+          <div class="panel-heading">
+            <h2 id="phone-heading">Phone viewport</h2>
+            <span class="viewport-size">390 × 844</span>
+          </div>
+          <div class="phone-viewport">
+            <div class="phone-frame">
+              <section class="game-screen" aria-label="TapSum main menu, phone preview">
+                <nav class="screen-tools" aria-label="Game utilities">
+                  <button class="tool-button" type="button" data-toast="Support flow stays in the live app." aria-label="Support TapSum">
+                    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 13h15a2 2 0 0 1 2 2v8H9a4 4 0 0 1-4-4v-2a4 4 0 0 1 2-4Z" fill="#8b5e43" /><path d="M24 15h2a4 4 0 0 1 0 8h-2" fill="none" stroke="#8b5e43" stroke-width="2.6" /><path d="M9 10c0-2 2-2 2-4m5 4c0-2 2-2 2-4" fill="none" stroke="#8b5e43" stroke-linecap="round" stroke-width="1.8" /><path d="M8 15h13" stroke="#f0cc9c" stroke-width="2" /></svg>
+                  </button>
+                  <button class="tool-button sound-toggle" type="button" aria-label="Mute sound" aria-pressed="false">
+                    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 13h5l7-6v18l-7-6H5z" fill="currentColor" /><path class="sound-waves" d="M21 11a7 7 0 0 1 0 10m3-14a12 12 0 0 1 0 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.4" /><path class="sound-cross" d="m21 12 7 8m0-8-7 8" fill="none" stroke="#e5392d" stroke-linecap="round" stroke-width="2.5" hidden /></svg>
+                  </button>
+                </nav>
+
+                <div class="brand-lockup">
+                  <img class="game-icon" src="../../public/assets/icons/icon-512.webp" alt="" />
+                  <div class="brand-copy"><h2 class="game-title">TapSum</h2><p class="tagline">Remember. Count. Tap!</p></div>
+                </div>
+
+                <section class="example-card" aria-labelledby="example-title-phone">
+                  <h3 class="example-title" id="example-title-phone">A round in three steps</h3>
+                  <div class="number-trail" aria-label="Plus five, plus three, equals eight">
+                    <div class="trail-step"><span class="number-tile">+5</span><span class="step-caption">Remember</span></div>
+                    <span class="operator" aria-hidden="true">+</span>
+                    <div class="trail-step"><span class="number-tile">+3</span><span class="step-caption">Count</span></div>
+                    <span class="operator" aria-hidden="true">=</span>
+                    <div class="trail-step"><span class="number-tile">8</span><span class="step-caption">Tap it</span></div>
+                  </div>
+                </section>
+
+                <section class="best-score" aria-label="Personal best score"><span class="best-label">Your best</span><strong class="best-value">0</strong></section>
+
+                <div class="screen-actions">
+                  <button class="play-button" type="button" data-toast="Visual concept only — the live game flow is unchanged.">Play</button>
+                  <div class="secondary-actions">
+                    <button class="action" type="button" data-dialog="leaderboard-dialog"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12v14H4zM7 6h6M7 9h6M7 12h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" /></svg>Leaderboard</button>
+                    <button class="action" type="button" data-dialog="help-dialog"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 7.5a2.1 2.1 0 1 1 3.7 1.3c-.9.9-1.7 1.1-1.7 2.4m0 2v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" /></svg>How to play</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p class="prototype-note">Concept only. Buttons demonstrate focus and feedback; no game, leaderboard, sound, or payment action is connected.</p>
+    </main>
+
+    <dialog id="help-dialog">
+      <h2>How to play</h2>
+      <ul>
+        <li>Each round shows a new plus or minus number.</li>
+        <li>Keep a running total of every number shown.</li>
+        <li>Tap +1, +10, +100 or +1000 to build up to that total.</li>
+        <li>Match it exactly to score and reach the next round.</li>
+        <li>Go over the total, or run out of time, and the game ends.</li>
+      </ul>
+      <button class="dialog-close" type="button">Close</button>
+    </dialog>
+    <dialog id="leaderboard-dialog">
+      <h2>Leaderboard</h2>
+      <p>Leaderboard data is connected in the game. This visual concept uses no invented player names or scores.</p>
+      <button class="dialog-close" type="button">Close</button>
+    </dialog>
+    <div class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const toast = document.querySelector('.toast');
+      let toastTimer;
+      function showToast(message) {
+        toast.textContent = message;
+        toast.dataset.open = 'true';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.dataset.open = 'false'; }, 2600);
+      }
+      document.querySelectorAll('[data-toast]').forEach((button) => {
+        button.addEventListener('click', () => showToast(button.dataset.toast));
+      });
+      document.querySelectorAll('[data-dialog]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.dialog).showModal());
+      });
+      document.querySelectorAll('dialog').forEach((dialog) => {
+        dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+        dialog.addEventListener('click', (event) => {
+          if (event.target === dialog) dialog.close();
+        });
+      });
+      document.querySelectorAll('.sound-toggle').forEach((button) => {
+        button.addEventListener('click', () => {
+          const muted = button.getAttribute('aria-pressed') !== 'true';
+          button.setAttribute('aria-pressed', String(muted));
+          button.setAttribute('aria-label', muted ? 'Turn sound on' : 'Mute sound');
+          button.querySelector('.sound-waves').hidden = muted;
+          button.querySelector('.sound-cross').hidden = !muted;
+          showToast(muted ? 'Sound is muted in this preview.' : 'Sound is shown as on; no audio is connected.');
+        });
+      });
+    </script>
+  </body>
+</html>

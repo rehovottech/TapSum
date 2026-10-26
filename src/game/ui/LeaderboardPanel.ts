@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser';
 import { THEME } from '../constants/Colors';
-import { LeaderboardEntry } from '../../services/Firebase';
-import { Firebase } from '../../services/Firebase';
+import { LeaderboardEntry, Firebase } from '../../services/Firebase';
+import { LeaderboardManager } from '../managers/LeaderboardManager';
+import { SaveManager } from '../managers/SaveManager';
 
 const ROW_H        = 72;
 const PANEL_PAD    = 28;
@@ -66,6 +67,10 @@ export class LeaderboardPanel {
             this.scene.add.bitmapText(px, titleY, 'coiny-bmp', 'LEADERBOARD', Math.floor(H * 0.030), 0).setOrigin(0.5)
             .setTint(THEME.INK),
         );
+        this.root.add(
+            this.scene.add.bitmapText(px, titleY + Math.floor(H * 0.03), 'coiny-bmp', SaveManager.getProfile().name.toUpperCase(),
+                Math.floor(H * 0.014), 0).setOrigin(0.5).setTint(SaveManager.getProfile().color),
+        );
 
         // Divider
         const divY = titleY + Math.floor(H * 0.048);
@@ -80,9 +85,9 @@ export class LeaderboardPanel {
         const colName  = px - panelW / 2 + PANEL_PAD + 90;
         const colScore = px + panelW / 2 - PANEL_PAD - 10;
 
-        this.root.add(this.scene.add.bitmapText(colRank,  headerY, 'coiny-bmp', '#', Math.floor(H * 0.02), 0).setOrigin(0.5).setTint(THEME.MUTED));
-        this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5).setTint(THEME.MUTED));
-        this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5).setTint(THEME.MUTED));
+        this.root.add(this.scene.add.bitmapText(colRank,  headerY, 'coiny-bmp', '#', Math.floor(H * 0.02), 0).setOrigin(0.5).setTint(0x52697b));
+        this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5).setTint(0x52697b));
+        this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5).setTint(0x52697b));
 
         // Scrollable list area — shortened to leave room for the pinned "you" row
         const pinnedRowH     = ROW_H + 20;
@@ -114,7 +119,7 @@ export class LeaderboardPanel {
         this.root.add(this.pinnedContainer);
 
         // Loading text
-        this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51).setTint(THEME.MUTED);
+        this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51).setTint(0x52697b);
         this.root.add(this.loadingText);
 
         // Drag zone for scrolling
@@ -131,7 +136,7 @@ export class LeaderboardPanel {
         const closeX = px + panelW / 2 - 35;
         const closeY = py - panelH / 2 + 35;
         const closeBg = this.scene.add.graphics();
-        closeBg.fillStyle(THEME.SURFACE, 1);
+        closeBg.fillStyle(0xe6eef2, 1);
         closeBg.fillCircle(closeX, closeY, 22);
         
         const closeTxt = this.scene.add.bitmapText(closeX, closeY-3, 'krungthep-bmp', 'x', Math.floor(H * 0.020), 0).setOrigin(0.5).setTint(THEME.INK);
@@ -154,9 +159,9 @@ export class LeaderboardPanel {
 
     private async load(): Promise<void> {
         const [players, rank, profile] = await Promise.all([
-            Firebase.getTopPlayers('tapsum', 10),
-            Firebase.getPlayerRank('tapsum'),
-            Firebase.getPlayerProfile('tapsum'),
+            LeaderboardManager.getTopPlayers(10),
+            LeaderboardManager.getPlayerRank(),
+            LeaderboardManager.getPlayerProfile(),
         ]);
         const uid = Firebase.getUid();
 
@@ -179,7 +184,7 @@ export class LeaderboardPanel {
         if (players.length === 0) {
             this.listContainer.add(
                 this.scene.add.bitmapText(px, this.listAreaTop + 60, 'coiny-bmp', 'No scores yet — be the first!', fs, 0).setOrigin(0.5)
-                .setTint(THEME.MUTED),
+                .setTint(0x52697b),
             );
         } else {
             players.forEach((p, i) => {
@@ -188,10 +193,10 @@ export class LeaderboardPanel {
                 const rowBg = this.scene.add.graphics();
 
                 if (isMe) {
-                    rowBg.fillStyle(THEME.SURFACE, 1);
+                    rowBg.fillStyle(0xe6eef2, 1);
                     rowBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
                 } else if (i % 2 === 0) {
-                    rowBg.fillStyle(THEME.SURFACE, 0.5);
+                    rowBg.fillStyle(0xe6eef2, 0.6);
                     rowBg.fillRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8);
                 }
                 this.listContainer.add(rowBg);
@@ -202,14 +207,14 @@ export class LeaderboardPanel {
                         this.scene.add.image(colRank, rowY, MEDAL_KEYS[i]).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
                     );
                 } else {
-                    const rankColor = THEME.MUTED;
+                    const rankColor = 0x52697b;
                     this.listContainer.add(
                         this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', `${i + 1}`, fs, 0).setOrigin(0.5)
                         .setTint(rankColor)
                     );
                 }
 
-                const nameColor = isMe ? THEME.ADD : THEME.INK;
+                const nameColor = isMe ? 0x52691e : THEME.INK;
                 const nameTxt   = isMe ? 'You' : `Player ${i + 1}`; //(p.name ?? `Player ${i + 1}`).substring(0, 10);
                 this.listContainer.add(
                     this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt, fs, 0).setOrigin(0, 0.5)
@@ -230,13 +235,13 @@ export class LeaderboardPanel {
         const rowY = this.pinnedAreaY + ROW_H / 2;
 
         const pinBg = this.scene.add.graphics();
-        pinBg.fillStyle(0xfff6dc, 1);
+        pinBg.fillStyle(0xe8f2c7, 1);
         pinBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
         pinBg.lineStyle(2, THEME.STAR, 1);
         pinBg.strokeRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
         this.pinnedContainer.add(pinBg);
 
-        const goldTint = THEME.GOLD;
+        const goldTint = 0x52691e;
 
         if (myRank > 0 && myProfile) {
             const rankStr = myRank <= 999 ? `${myRank}` : '999+';

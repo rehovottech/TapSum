@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#10253A"><title>TapSum screen · Sum Machine</title>
+  <link rel="stylesheet" href="prototype.css">
+</head>
+<body class="prototype-page">
+  <header class="prototype-bar">
+    <a class="wordmark" href="index.html"><img src="../../public/assets/icons/icon-128.webp" alt=""><span>TapSum</span></a>
+    <span id="screen-label" class="screen-label">Loading screen…</span>
+    <nav class="prototype-nav" aria-label="Screen navigation">
+      <a id="previous-screen" class="nav-button" href="#">← <span>Previous</span></a>
+      <a class="nav-button all-button" href="index.html">All screens</a>
+      <a id="next-screen" class="nav-button" href="#"><span>Next</span> →</a>
+    </nav>
+  </header>
+  <main class="prototype-stage">
+    <div class="portrait-note"><span class="orientation-mark" aria-hidden="true">▯</span><span>Portrait game canvas · centered on web and locked on native</span></div>
+    <section id="game-screen" class="game-screen" aria-live="polite"></section>
+    <p class="prototype-footnote">Prototype interactions demonstrate navigation and sample states; gameplay services are not connected.</p>
+  </main>
+  <script src="prototype.js"></script>
+</body>
+</html>

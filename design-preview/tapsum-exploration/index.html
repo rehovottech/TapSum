@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TapSum · Four screen concepts</title>
+    <style>
+      :root { color-scheme: light; --ink:#172633; --muted:#586b78; --ground:#edf3f6; --paper:#fff; --line:#d9e2e8; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:var(--ground); color:var(--ink); font-family:Inter,"Avenir Next",system-ui,sans-serif; }
+      .page { width:min(1420px,calc(100% - 56px)); margin:0 auto; padding:36px 0 64px; }
+      .intro { display:flex; justify-content:space-between; align-items:end; gap:24px; margin:0 0 26px; }
+      h1 { max-width:800px; margin:0; font-size:clamp(30px,4.2vw,54px); line-height:1.02; letter-spacing:-.045em; }
+      .lede { max-width:430px; margin:0; color:var(--muted); font-size:15px; line-height:1.55; }
+      .concepts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+      .concept { min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--paper); }
+      .concept-head { min-height:102px; display:grid; grid-template-columns:minmax(0,1fr) auto; align-content:center; gap:7px 16px; padding:18px 20px; }
+      .concept-head h2 { margin:0; font-size:19px; letter-spacing:-.025em; }
+      .concept-head p { grid-column:1; margin:0; color:var(--muted); font-size:13px; line-height:1.4; }
+      .palette { display:flex; align-items:center; gap:5px; grid-column:2; grid-row:1 / 3; align-self:center; }
+      .swatch { width:16px; height:16px; border-radius:50%; border:1px solid rgb(0 0 0 / 10%); }
+      .preview { height:688px; display:grid; place-items:center; overflow:hidden; background:#dce5eb; }
+      .preview iframe { display:block; width:390px; height:844px; border:0; transform:scale(.79); transform-origin:center; }
+      .concept-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 18px 15px; border-top:1px solid #e6edf1; }
+      .concept-foot span { color:var(--muted); font-size:12px; line-height:1.4; }
+      .concept-foot a { flex:none; color:#194e88; font-size:13px; font-weight:700; text-decoration:none; }
+      .concept-foot a:hover { text-decoration:underline; }
+      @media (max-width:760px) {
+        .page { width:calc(100% - 28px); padding-top:24px; }
+        .intro { display:block; margin-bottom:20px; }
+        .lede { margin-top:12px; }
+        .concepts { grid-template-columns:1fr; }
+        .preview { height:650px; }
+        .preview iframe { transform:scale(.74); }
+      }
+      @media (max-width:400px) {
+        .preview { height:602px; }
+        .preview iframe { transform:scale(.68); }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="intro">
+        <h1>TapSum, seen four different ways.</h1>
+        <p class="lede">Four alternate main-menu directions. Each keeps the same game, record, and utility actions while changing the composition, hierarchy, type, and visual language. Nothing here is wired to production.</p>
+      </header>
+
+      <div class="concepts">
+        <article class="concept">
+          <header class="concept-head">
+            <h2>Arithmetic Broadside</h2>
+            <p>Swiss editorial · asymmetry, large numerals, open paper space</p>
+            <div class="palette" aria-label="Palette: #F7F8F5, #10253A, #315BCB, #F2C94C"><i class="swatch" style="background:#F7F8F5"></i><i class="swatch" style="background:#10253A"></i><i class="swatch" style="background:#315BCB"></i><i class="swatch" style="background:#F2C94C"></i></div>
+          </header>
+          <div class="preview"><iframe title="Arithmetic Broadside concept" src="concept-editorial.html"></iframe></div>
+          <footer class="concept-foot"><span>Action sits inside the equation’s reading path.</span><a href="concept-editorial.html">Open full concept ↗</a></footer>
+        </article>
+
+        <article class="concept">
+          <header class="concept-head">
+            <h2>Number Carnival</h2>
+            <p>Playful / expressive · an illustrated, high-energy play stage</p>
+            <div class="palette" aria-label="Palette: #14213D, #FF5A4E, #4DD6C8, #FFD84D, #9074FF"><i class="swatch" style="background:#14213D"></i><i class="swatch" style="background:#FF5A4E"></i><i class="swatch" style="background:#4DD6C8"></i><i class="swatch" style="background:#FFD84D"></i><i class="swatch" style="background:#9074FF"></i></div>
+          </header>
+          <div class="preview"><iframe title="Number Carnival concept" src="concept-playful.html"></iframe></div>
+          <footer class="concept-foot"><span>The illustrated number orbit leads; the name follows.</span><a href="concept-playful.html">Open full concept ↗</a></footer>
+        </article>
+
+        <article class="concept">
+          <header class="concept-head">
+            <h2>Quiet Scorekeeper</h2>
+            <p>Modern / premium · the personal record leads, with calm utility</p>
+            <div class="palette" aria-label="Palette: #F4F7F5, #17242E, #5C6B72, #137E72"><i class="swatch" style="background:#F4F7F5"></i><i class="swatch" style="background:#17242E"></i><i class="swatch" style="background:#5C6B72"></i><i class="swatch" style="background:#137E72"></i></div>
+          </header>
+          <div class="preview"><iframe title="Quiet Scorekeeper concept" src="concept-premium.html"></iframe></div>
+          <footer class="concept-foot"><span>A low-noise, score-first entry point.</span><a href="concept-premium.html">Open full concept ↗</a></footer>
+        </article>
+
+        <article class="concept">
+          <header class="concept-head">
+            <h2>Sum Machine</h2>
+            <p>Experimental · a vertical number tape and an edge-mounted action</p>
+            <div class="palette" aria-label="Palette: #121821, #F4F5EF, #D0F35C, #65D3FF, #FF6F59"><i class="swatch" style="background:#121821"></i><i class="swatch" style="background:#F4F5EF"></i><i class="swatch" style="background:#D0F35C"></i><i class="swatch" style="background:#65D3FF"></i><i class="swatch" style="background:#FF6F59"></i></div>
+          </header>
+          <div class="preview"><iframe title="Sum Machine concept" src="concept-experimental.html"></iframe></div>
+          <footer class="concept-foot"><span>The sum becomes a route; Play becomes its control.</span><a href="concept-experimental.html">Open full concept ↗</a></footer>
+        </article>
+      </div>
+    </main>
+  </body>
+</html>

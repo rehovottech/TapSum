@@ -1,26 +1,67 @@
+import { PROFILES, ProfileId, ProfileRules } from '../constants/GameConstants';
+
 const KEYS = {
-    BEST_SCORE:    'tapsum_best_score',
+    BEST_SCORE:    'tapsum_best_score',   // Explorer (original key, keeps old bests)
     SOUND_ENABLED: 'tapsum_sound',
+    PROFILE:       'tapsum_profile',
+    TUTORIAL_DONE: 'tapsum_tutorial_done',
 };
 
+const read = (key: string): string | null => {
+    try { return localStorage.getItem(key); } catch { return null; }
+};
+const write = (key: string, value: string): void => {
+    try { localStorage.setItem(key, value); } catch { /* storage unavailable */ }
+};
+
+const bestKey = (id: ProfileId) => (id === 'explorer' ? KEYS.BEST_SCORE : `${KEYS.BEST_SCORE}_${id}`);
+
 export const SaveManager = {
+    // ── Profile ─────────────────────────────────────────────────────────────
+
+    /** null until the player has picked on the "who's playing" screen. */
+    getProfileId(): ProfileId | null {
+        const v = read(KEYS.PROFILE);
+        return v === 'little' || v === 'explorer' || v === 'adult' ? v : null;
+    },
+
+    getProfile(): ProfileRules {
+        return PROFILES[this.getProfileId() ?? 'explorer'];
+    },
+
+    setProfile(id: ProfileId): void {
+        write(KEYS.PROFILE, id);
+    },
+
+    // ── Best score (per profile) ────────────────────────────────────────────
+
     getBestScore(): number {
-        return parseInt(localStorage.getItem(KEYS.BEST_SCORE) ?? '0', 10);
+        return parseInt(read(bestKey(this.getProfile().id)) ?? '0', 10) || 0;
     },
 
     setBestScore(score: number): void {
         if (score > this.getBestScore()) {
-            localStorage.setItem(KEYS.BEST_SCORE, score.toString());
+            write(bestKey(this.getProfile().id), score.toString());
         }
     },
 
+    // ── Tutorial ────────────────────────────────────────────────────────────
+
+    isTutorialDone(): boolean {
+        return read(KEYS.TUTORIAL_DONE) === 'true';
+    },
+
+    setTutorialDone(done = true): void {
+        write(KEYS.TUTORIAL_DONE, String(done));
+    },
+
+    // ── Sound ───────────────────────────────────────────────────────────────
+
     isSoundEnabled(): boolean {
-        return localStorage.getItem(KEYS.SOUND_ENABLED) !== 'false';
+        return read(KEYS.SOUND_ENABLED) !== 'false';
     },
 
     setSoundEnabled(enabled: boolean): void {
-        localStorage.setItem(KEYS.SOUND_ENABLED, enabled.toString());
+        write(KEYS.SOUND_ENABLED, enabled.toString());
     },
-
-
 };

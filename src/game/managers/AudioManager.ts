@@ -23,7 +23,7 @@ const AUDIO_SRCS: Record<string, string> = {
 };
 
 const MUSIC_SRC = 'assets/audio/background-music.mp3';
-const MUSIC_VOL = 0.5;
+const MUSIC_VOL = 0.3;
 const SFX_VOL   = 1;
 
 class AudioManagerClass {
@@ -68,9 +68,13 @@ class AudioManagerClass {
         document.addEventListener('mousedown',  onInteraction, { once: true });
     }
 
-    play(key: string): void {
+    /** rate > 1 raises the pitch (used for rising taps within a round). */
+    play(key: string, rate = 1): void {
         if (!SaveManager.isSoundEnabled()) return;
-        this.sounds.get(key)?.play();
+        const snd = this.sounds.get(key);
+        if (!snd) return;
+        const id = snd.play();
+        if (rate !== 1) snd.rate(rate, id);
     }
 
     playMusic(): void {

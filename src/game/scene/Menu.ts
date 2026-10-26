@@ -7,6 +7,9 @@ import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
 import { PurchasesManager } from '../../services/Purchases';
 import { LeaderboardPanel } from '../ui/LeaderboardPanel';
+import { Firebase } from '../../services/Firebase';
+import { Mascot } from '../ui/Mascot';
+import { ProfilePicker } from '../ui/ProfilePicker';
 import FPS from '../model/FPS';
 
 export default class Menu extends BaseScene {
@@ -26,13 +29,19 @@ export default class Menu extends BaseScene {
         AudioManager.init();
         AudioManager.playMusic();
 
-        this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
-        this.createFloatingParticles();
+        // Title, example, mascot + best, then Play: read top to bottom.
+        this.createSkyBg();
         this.createTitle();
         this.createHowItWorks();
-        this.createBestScore();
+        this.createMascotAndBest();
         this.createButtons();
         this.createSoundToggle();
+        this.createProfileChip();
+
+        // First launch: ask who's playing before anything else
+        if (SaveManager.getProfileId() === null) {
+            this.time.delayedCall(450, () => this.openProfilePicker());
+        }
 
         this.checkPurchaseButton();
 
@@ -47,43 +56,10 @@ export default class Menu extends BaseScene {
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    private createFloatingParticles(): void {
-        for (let i = 0; i < 14; i++) {
-            this.time.delayedCall(i * 350, () => {
-                if (!this.sceneClose) this.spawnFloatingParticle();
-            });
-        }
-    }
-
-    private spawnFloatingParticle(): void {
-        const x     = Phaser.Math.Between(0, this.W);
-        const size  = Phaser.Math.Between(4, 10);
-        const color = THEME.CANDY[Phaser.Math.Between(0, THEME.CANDY.length - 1)];
-        const dur   = Phaser.Math.Between(4500, 8000);
-
-        const gfx = this.add.graphics().setDepth(0);
-        gfx.fillStyle(color, 0.35);
-        gfx.fillCircle(0, 0, size);
-        gfx.setPosition(x, this.H + 20);
-
-        this.tweens.add({
-            targets: gfx,
-            y: -20,
-            x: x + Phaser.Math.Between(-120, 120),
-            alpha: 0,
-            duration: dur,
-            ease: 'Sine.easeInOut',
-            onComplete: () => {
-                gfx.destroy();
-                if (!this.sceneClose) this.spawnFloatingParticle();
-            },
-        });
-    }
-
-    // Each letter its own colour, like toy blocks
+    // Preserve the playful wordmark colours while reserving motion for controls.
     private createTitle(): void {
-        const y      = this.H * 0.19;
-        const fs     = Math.floor(this.H * 0.09);
+        const y      = this.H * 0.145;
+        const fs     = Math.floor(Math.min(this.H * 0.075, this.W * 0.16));
         const word   = 'TapSum';
         const title  = this.add.container(this.CX, y);
         const letters = [...word].map((ch, i) =>
@@ -94,74 +70,117 @@ export default class Menu extends BaseScene {
         letters.forEach((l, i) => {
             l.setX(x);
             x += l.width;
-            // Little bounce wave across the letters
-            this.tweens.add({
-                targets: l, y: -fs * 0.08,
-                duration: 600, delay: i * 90, yoyo: true, repeat: -1, repeatDelay: 1400, ease: 'Sine.easeInOut',
-            });
         });
         title.add(letters);
 
-        this.label(this.CX, this.H * 0.247, 'Remember. Count. Tap!', this.H * 0.02, THEME.MUTED);
+        this.label(this.CX, this.H * 0.205, 'Remember. Count. Tap!', this.H * 0.024, THEME.INK);
     }
 
     // "+5, +3 → tap 8" in three beats
     private createHowItWorks(): void {
-        const pad   = Math.floor(this.W * 0.062);
-        const top   = this.H * 0.29;
+        const pad = Math.floor(this.W * 0.075);
+        const top = this.H * 0.25;
         const cardW = this.W - pad * 2;
-        const cardH = Math.floor(this.H * 0.2);
-        this.drawCard(this.add.graphics(), pad, top, cardW, cardH, 28);
+        const cardH = Math.floor(this.H * 0.3);
+        this.drawCard(this.add.graphics(), pad, top, cardW, cardH, 24);
 
-        this.label(this.CX, top + this.H * 0.03, 'HOW IT WORKS', this.H * 0.014, THEME.MUTED);
+        const left = pad + Math.floor(this.W * 0.055);
+        const right = pad + cardW - Math.floor(this.W * 0.06);
+        this.add.bitmapText(left, top + this.H * 0.03, 'coiny-bmp', 'SAMPLE ROUND', Math.floor(this.H * 0.016), 0)
+            .setOrigin(0, 0.5).setTint(0x315bc3);
 
-        const steps = [
-            { chip: '+5', caption: 'Remember', fill: THEME.SURFACE, text: THEME.ADD },
-            { chip: '+3', caption: 'Count',    fill: THEME.SURFACE, text: THEME.ADD },
-            { chip: '8',  caption: 'Tap it',   fill: THEME.STAR,    text: THEME.INK },
+        const rows = [
+            { y: top + this.H * 0.08,  caption: 'Remember this number', value: '+5', color: THEME.ADD },
+            { y: top + this.H * 0.16,  caption: 'Add the next one', value: '+3', color: THEME.ADD },
+            { y: top + this.H * 0.245, caption: 'Tap the total exactly', value: '8', color: THEME.INK },
         ];
-        const chipW = Math.floor(this.W * 0.185);
-        const chipH = Math.floor(this.H * 0.066);
-        const chipY = top + this.H * 0.095;
-        const colW  = cardW / 3;
 
-        steps.forEach((s, i) => {
-            const cx = pad + colW * (i + 0.5);
-            const g  = this.add.graphics();
-            g.fillStyle(s.fill, 1);
-            g.fillRoundedRect(cx - chipW / 2, chipY - chipH / 2, chipW, chipH, 18);
-            const chip = this.label(cx, chipY, s.chip, this.H * 0.033, s.text);
-            this.label(cx, top + this.H * 0.162, s.caption, this.H * 0.016);
-
-            // Beats light up one after another
-            g.setAlpha(0.55);
-            chip.setAlpha(0.55);
-            this.tweens.add({
-                targets: [g, chip], alpha: 1,
-                duration: 250, delay: 400 + i * 450, hold: 900, yoyo: true,
-                repeat: -1, repeatDelay: 1350,
-            });
+        const guide = this.add.graphics();
+        guide.lineStyle(2, 0x9caab0, 1);
+        guide.lineBetween(left + 6, rows[0].y, left + 6, rows[2].y);
+        rows.forEach((row, i) => {
+            const dot = this.add.graphics();
+            dot.fillStyle(row.color, 1);
+            dot.fillCircle(left + 6, row.y, 7);
+            dot.lineStyle(2, THEME.CARD, 1);
+            dot.strokeCircle(left + 6, row.y, 7);
+            this.add.bitmapText(left + 25, row.y - this.H * 0.022, 'coiny-bmp', row.caption, Math.floor(this.H * 0.016), 0)
+                .setOrigin(0, 0.5).setTint(0x455c70);
+            this.add.bitmapText(left + 25, row.y + this.H * 0.016, 'coiny-bmp', row.value,
+                Math.floor(this.H * (i === 2 ? 0.05 : 0.036)), 0)
+                .setOrigin(0, 0.5).setTint(row.color);
+            if (i < 2) {
+                const sign = i === 0 ? '+' : '=';
+                const midY = (row.y + rows[i + 1].y) / 2;
+                this.add.bitmapText(right - 4, midY, 'coiny-bmp', sign, Math.floor(this.H * 0.028), 0)
+                    .setOrigin(1, 0.5).setTint(0x657887);
+            }
         });
     }
 
-    private createBestScore(): void {
+    // Summy stands next to the personal best and reacts when tapped
+    private createMascotAndBest(): void {
+        const y = this.H * 0.655;
+        const mascot = new Mascot(this, this.W * 0.25, y, Math.floor(this.H * 0.042));
+        mascot.setSize(this.H * 0.1, this.H * 0.11).setInteractive({ useHandCursor: true });
+        mascot.on('pointerdown', () => {
+            AudioManager.play('snd_tap', 1.3);
+            mascot.setMood('happy', 900);
+            mascot.hop();
+        });
+
         const best = SaveManager.getBestScore();
-        this.label(this.CX, this.H * 0.54, 'BEST SCORE', this.H * 0.016, THEME.MUTED);
-        this.label(this.CX, this.H * 0.595, `${best}`, this.H * 0.066, THEME.GOLD);
+        const x = this.W * 0.45;
+        this.add.bitmapText(x, y - this.H * 0.026, 'coiny-bmp', 'Personal best', Math.floor(this.H * 0.02), 0)
+            .setOrigin(0, 0.5).setTint(THEME.MUTED);
+        this.add.bitmapText(x, y + this.H * 0.022, 'coiny-bmp', `${best}`, Math.floor(this.H * 0.05), 0)
+            .setOrigin(0, 0.5).setTint(THEME.GOLD);
+    }
+
+    // ── Who's playing ────────────────────────────────────────────────────────
+
+    private createProfileChip(): void {
+        const p    = SaveManager.getProfile();
+        const y    = this.H * 0.065;
+        const h    = Math.floor(this.H * 0.042);
+        const text = this.add.bitmapText(0, 0, 'coiny-bmp', p.name.toUpperCase(), Math.floor(this.H * 0.017), 0)
+            .setOrigin(0.5).setTint(THEME.WHITE);
+        const w    = text.width + this.W * 0.09;
+
+        const bg = this.add.graphics();
+        bg.fillStyle(0x000000, 0.12);
+        bg.fillRoundedRect(-w / 2, -h / 2 + 4, w, h, h / 2);
+        bg.fillStyle(p.color, 1);
+        bg.fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+
+        const chip = this.add.container(this.CX, y, [bg, text]);
+        chip.setSize(w, h).setInteractive({ useHandCursor: true });
+        chip.setVisible(SaveManager.getProfileId() !== null);
+        chip.on('pointerdown', () => {
+            AudioManager.play('snd_click');
+            this.openProfilePicker();
+        });
+    }
+
+    private openProfilePicker(): void {
+        new ProfilePicker(this, (id) => {
+            Firebase.logEvent('profile_selected', { profile: id }).catch(() => {});
+            this.time.delayedCall(180, () => this.scene.restart());
+        });
     }
 
     private createButtons(): void {
-        const pad   = Math.floor(this.W * 0.062);
+        const pad   = Math.floor(this.W * 0.075);
         const fullW = this.W - pad * 2;
-        const gap   = Math.floor(this.W * 0.03);
-        const smH   = Math.floor(this.H * 0.066);
-        const bigH  = Math.floor(this.H * 0.085);
-        const smY   = this.H - this.H * 0.04 - smH / 2;
-        const bigY  = smY - smH / 2 - this.H * 0.016 - bigH / 2;
+        const gap   = Math.floor(this.W * 0.025);
+        const smH   = Math.floor(this.H * 0.062);
+        const bigH  = Math.floor(this.H * 0.095);
+        const smY   = this.H - this.H * 0.052 - smH / 2;
+        const bigY  = smY - smH / 2 - this.H * 0.035 - bigH / 2;
         const halfW = (fullW - gap) / 2;
 
-        const playBtn = this.createButton(
-            this.CX, bigY, fullW, bigH, 'PLAY', this.H * 0.04,
+        this.createButton(
+            this.CX, bigY, fullW, bigH, 'PLAY', this.H * 0.045,
             THEME.GO, THEME.GO_DARK,
             () => {
                 AudioManager.play('snd_click');
@@ -169,13 +188,8 @@ export default class Menu extends BaseScene {
             },
         );
 
-        this.tweens.add({
-            targets: playBtn, scaleX: 1.03, scaleY: 1.03,
-            duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-
         this.createButton(
-            pad + halfW / 2, smY, halfW, smH, 'LEADERBOARD', this.H * 0.02,
+            pad + halfW / 2, smY, halfW, smH, 'LEADERBOARD', this.H * 0.016,
             THEME.CARD, THEME.CARD_SHADOW,
             () => {
                 AudioManager.play('snd_click');
@@ -185,7 +199,7 @@ export default class Menu extends BaseScene {
         );
 
         this.createButton(
-            this.W - pad - halfW / 2, smY, halfW, smH, 'HOW TO PLAY', this.H * 0.02,
+            this.W - pad - halfW / 2, smY, halfW, smH, 'HOW TO PLAY', this.H * 0.016,
             THEME.CARD, THEME.CARD_SHADOW,
             () => {
                 AudioManager.play('snd_click');
@@ -228,9 +242,9 @@ export default class Menu extends BaseScene {
         const lines = [
             'Each round shows a new + or - number.',
             'Keep a running total of every number shown.',
-            'Tap +1, +10, +100 or +1000 to build up to that total.',
-            'Match it exactly to score and reach the next round.',
-            'Go over the total, or run out of time, and it\'s game over.',
+            'Tap the buttons to build that total, then tap DONE.',
+            'Went too far? Use -1. Bigger buttons unlock as the total grows.',
+            'A wrong total or running out of time costs a heart. You have 3.',
         ];
 
         const maxTextWidth = panelW - 64;

@@ -119,12 +119,7 @@ export default class Preload extends BaseScene {
         const ratio = Phaser.Math.Clamp(value, 0, 1);
         const radius = this.barH / 2;
 
-        const r1 = 0x1f, g1 = 0xa3, b1 = 0x4f; // THEME.ADD
-        const r2 = 0x1e, g2 = 0x90, b2 = 0xe8; // blue
-        const r = Math.round(r1 + (r2 - r1) * ratio);
-        const g = Math.round(g1 + (g2 - g1) * ratio);
-        const b = Math.round(b1 + (b2 - b1) * ratio);
-        const fillColor = (r << 16) | (g << 8) | b;
+        const fillColor = THEME.GOLD;
 
         this.barFill.clear();
         if (ratio > 0) {
