@@ -14,7 +14,11 @@ export const ConfigPhaserGame = (): Phaser.Game => {
     let gameWidth  = vw * dpr;
     let gameHeight = vh * dpr;
     let mode = Phaser.Scale.FIT;
+    // Web centring is done by ResizePhaserGame (fitCanvasToWindow); Phaser's
+    // autoCenter would add a second offset on top and push the game sideways.
+    let center = Phaser.Scale.CENTER_BOTH;
     if (!Capacitor.isNativePlatform()){
+        center = Phaser.Scale.NO_CENTER;
         gameWidth  = vw;
         gameHeight = vh;
         mode = Phaser.Scale.NONE;
@@ -26,7 +30,7 @@ export const ConfigPhaserGame = (): Phaser.Game => {
         seed: [ (Date.now() * Math.random()).toString() ],
         scale: {
             parent: 'phaser-game',
-            autoCenter: Phaser.Scale.CENTER_BOTH,
+            autoCenter: center,
             mode: mode,
             width: gameWidth,
             height: gameHeight

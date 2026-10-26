@@ -20,44 +20,58 @@ export const ResizePhaserGame = () => {
         GlobVar.centerIX = w * 0.5;
         GlobVar.centerIY = h * 0.5;
     }else{
-        // Internal resolution follows the screen's aspect ratio so the canvas
-        // covers the whole viewport (no side bars). Portrait screens keep a
-        // 720px-wide design width; wider screens keep a 1280px design height.
-        const MIN_WIDTH  = 720;
-        const MIN_HEIGHT = 1280;
+        // Web is portrait only. The internal resolution is a portrait box: 720px wide and
+        // as tall as the screen's portrait ratio (at least 16:9). Phones use their portrait
+        // dimensions even if the page opened sideways; desktop gets gray side margins.
+        const DESIGN_W = 720;
+        const DESIGN_H = 1280;
 
         const w = window.innerWidth;
         const h = window.innerHeight;
-        const screenRatio = h / w;
+        const portraitW = GlobVar.isDesktop ? w : Math.min(w, h);
+        const portraitH = GlobVar.isDesktop ? h : Math.max(w, h);
+        const ratio = Math.max(DESIGN_H / DESIGN_W, portraitH / portraitW);
 
-        let BASE_WIDTH  = MIN_WIDTH;
-        let BASE_HEIGHT = Math.round(MIN_WIDTH * screenRatio);
-        if (BASE_HEIGHT < MIN_HEIGHT) {
-            BASE_HEIGHT = MIN_HEIGHT;
-            BASE_WIDTH  = Math.round(MIN_HEIGHT / screenRatio);
-        }
+        const BASE_WIDTH  = DESIGN_W;
+        const BASE_HEIGHT = Math.round(DESIGN_W * ratio);
 
-        const displayWidth  = w;
-        const displayHeight = h;
-
-        // Internal resolution (game coordinates)
+        // Internal resolution (game coordinates); fixed for the session
         GlobVar.width = BASE_WIDTH;
         GlobVar.height = BASE_HEIGHT;
 
         GlobVar.centerX = BASE_WIDTH / 2;
         GlobVar.centerY = BASE_HEIGHT / 2;
 
-        // Resize Phaser canvas (internal resolution)
         window.game!.scale.resize(BASE_WIDTH, BASE_HEIGHT);
 
-        // Apply CSS scaling (visual size)
-        const canvas = window.game!.canvas;
-
-        canvas.style.width = `${displayWidth}px`;
-        canvas.style.height = `${displayHeight}px`;
-
-        canvas.style.position = 'absolute';
-        canvas.style.left = '0px';
-        canvas.style.top  = '0px';
+        fitCanvasToWindow();
+        if (!resizeListening) {
+            resizeListening = true;
+            window.addEventListener('resize', fitCanvasToWindow);
+            window.addEventListener('orientationchange', fitCanvasToWindow);
+        }
     }
+};
+
+let resizeListening = false;
+
+/** Scale the canvas (CSS only) to fit the window, centred; the page background fills the rest. */
+const fitCanvasToWindow = () => {
+    const canvas = window.game?.canvas;
+    if (!canvas) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const scale = Math.min(w / GlobVar.width, h / GlobVar.height);
+    const displayWidth  = GlobVar.width  * scale;
+    const displayHeight = GlobVar.height * scale;
+
+    canvas.style.width    = `${displayWidth}px`;
+    canvas.style.height   = `${displayHeight}px`;
+    canvas.style.position = 'absolute';
+    canvas.style.margin   = '0';
+    canvas.style.left     = `${(w - displayWidth) / 2}px`;
+    canvas.style.top      = `${(h - displayHeight) / 2}px`;
+
+    // Re-read the canvas position so pointer coordinates stay correct
+    window.game!.scale.updateBounds();
 };

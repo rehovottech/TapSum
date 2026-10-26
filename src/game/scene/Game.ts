@@ -1031,6 +1031,8 @@ export default class Game extends BaseScene {
                 this.track('continue_used', { round: this.round, score: this.score });
                 this.lives = 1;
                 this.redrawHearts(false);
+                AudioManager.play('snd_reward');
+                Feel.success();
                 this.mascot.setMood('happy', 900);
                 this.carryOn(reason);
             });

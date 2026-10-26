@@ -82,6 +82,7 @@ class App extends React.Component{
         GlobVar.isDesktop = ((Capacitor.isNativePlatform() === false) && (isPlatform("desktop") === true));
         GlobVar.isMobileWeb = ((Capacitor.isNativePlatform() === false) && (isPlatform("mobileweb") === true));
         GlobVar.platformData.isNative = Capacitor.isNativePlatform();
+        if (Capacitor.isNativePlatform()) document.documentElement.classList.add('native');
 
         GlobVar.orientation = "landscape"; //Check orientation type
         if(window.innerHeight > window.innerWidth && window.outerHeight > 400) {

@@ -22,7 +22,7 @@ export class ProfilePicker {
         this.root = scene.add.container(0, 0).setDepth(80);
 
         const scrim = scene.add.rectangle(W / 2, H / 2, W, H, THEME.SCRIM, 0.55).setInteractive();
-        if (canClose) scrim.on('pointerdown', () => this.close());
+        if (canClose) scrim.on('pointerdown', () => { AudioManager.play('snd_click'); this.close(); });
         this.root.add(scrim);
 
         const panelW = Math.floor(W * 0.88);

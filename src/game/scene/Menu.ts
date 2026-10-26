@@ -231,7 +231,7 @@ export default class Menu extends BaseScene {
         overlay.fillStyle(THEME.SCRIM, 0.45);
         overlay.fillRect(0, 0, this.W, this.H);
         overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.W, this.H), Phaser.Geom.Rectangle.Contains);
-        overlay.on('pointerdown', () => this.closeHelpPopup());
+        overlay.on('pointerdown', () => { AudioManager.play('snd_click'); this.closeHelpPopup(); });
         root.add(overlay);
 
         root.add(this.drawCard(this.add.graphics(), px - panelW / 2, py - panelH / 2, panelW, panelH, 32));
@@ -271,7 +271,7 @@ export default class Menu extends BaseScene {
         root.add(closeBg);
 
         const closeHit = this.add.zone(closeX, closeY, 60, 60).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        closeHit.on('pointerdown', () => this.closeHelpPopup());
+        closeHit.on('pointerdown', () => { AudioManager.play('snd_click'); this.closeHelpPopup(); });
         root.add(closeHit);
 
         root.setScale(0.9).setAlpha(0);

@@ -7,6 +7,7 @@ import { THEME } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { Mascot } from '../ui/Mascot';
+import { Feel } from '../utils/Feel';
 import { Ads } from '../../services/Ads';
 import FPS from '../model/FPS';
 
@@ -236,9 +237,14 @@ export default class End extends BaseScene {
         const m = new Mascot(this, this.CX, this.H * 0.745, Math.floor(this.H * 0.03));
         if (this.isNewBest) {
             this.time.delayedCall(600, () => { m.setMood('happy'); m.hop(0.7); });
-            this.time.delayedCall(700, () => this.spawnConfetti(50));
+            this.time.delayedCall(700, () => {
+                this.spawnConfetti(50);
+                AudioManager.play('snd_reward');
+                Feel.success();
+            });
         } else if (this.cleared >= 5) {
             m.setMood('happy', 1500);
+            this.time.delayedCall(400, () => AudioManager.play('snd_success'));
         } else if (this.reason !== 'quit') {
             m.setMood('sad', 1500);
         }
@@ -291,6 +297,7 @@ export default class End extends BaseScene {
                 const x = Phaser.Math.Between(Math.floor(this.W * 0.15), Math.floor(this.W * 0.85));
                 const y = Phaser.Math.Between(Math.floor(this.H * 0.04), Math.floor(this.H * 0.18));
                 this.spawnBurst(x, y, THEME.CANDY, 14, 80, 230);
+                AudioManager.play('snd_tap', 1.2 + i * 0.12);
             });
         }
     }

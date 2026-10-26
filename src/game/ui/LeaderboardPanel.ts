@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { AudioManager } from '../managers/AudioManager';
 import { THEME } from '../constants/Colors';
 import { LeaderboardEntry, Firebase } from '../../services/Firebase';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
@@ -144,7 +145,7 @@ export class LeaderboardPanel {
         this.root.add(closeTxt);
 
         const closeHit = this.scene.add.zone(closeX, closeY, 52, 52).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        closeHit.on('pointerdown', () => this.dismiss());
+        closeHit.on('pointerdown', () => { AudioManager.play('snd_click'); this.dismiss(); });
         this.root.add(closeHit);
 
         // Pop-in
