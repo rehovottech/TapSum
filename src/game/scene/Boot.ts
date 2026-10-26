@@ -30,8 +30,7 @@ export default class Boot extends BaseScene {
 
     preload(): void {
         this.load.path = 'assets/sprite/';
-        this.load
-            .atlas('logo', `logo${GlobVar.suffix}.png`, `logo${GlobVar.suffix}.json`);
+        this.load.image('studio-logo', 'studio-logo.png');
 
         // Load Bitmap
         this.load.path = 'assets/font/';
@@ -133,23 +132,15 @@ export default class Boot extends BaseScene {
     }
 
     private showLogo(): void {
-        let scale = this.H * 0.13;
+        // Studio mark, sized by screen height but never wider than half the screen
+        const size = Math.min(this.H * 0.15, this.W * 0.25);
 
         this.logoContiner = this.add.container();
-            const logo = this.add.sprite(this.CX, this.H * 0.4, 'logo', 'r_logo.png')
+            const logo = this.add.image(this.CX, this.H * 0.4, 'studio-logo')
                 .setOrigin(0.5).setAlpha(0);
-            logo.setScale(scale / logo.displayHeight);
-
-            const title = this.add.sprite(
-                this.CX,
-                logo.y + logo.displayHeight * 0.5 + 20,
-                'logo', 'r_stitle.png',
-            ).setOrigin(0.5).setAlpha(0);
-            title.setScale(logo.scale);
+            logo.setScale(size / logo.height);
         this.logoContiner!.add(logo);
-        this.logoContiner!.add(title);
 
-        this.tweens.add({ targets: logo,  alpha: 1, delay: 150, duration: 500, ease: 'Cubic.InOut' });
-        this.tweens.add({ targets: title, alpha: 1, delay: 250, duration: 500, ease: 'Cubic.InOut' });
+        this.tweens.add({ targets: logo, alpha: 1, delay: 150, duration: 500, ease: 'Cubic.InOut' });
     }
 }
