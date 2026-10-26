@@ -7,6 +7,7 @@ import { THEME } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { Mascot } from '../ui/Mascot';
+import { Ads } from '../../services/Ads';
 import FPS from '../model/FPS';
 
 interface EndData {
@@ -31,6 +32,7 @@ export default class End extends BaseScene {
     private tapped = 0;
     private recent: number[] = [];
     private rankText?: Phaser.GameObjects.BitmapText;
+    private leaving = false;
 
     constructor() {
         super({ key: SCENES.End });
@@ -47,11 +49,13 @@ export default class End extends BaseScene {
         this.tapped     = data?.tapped    ?? 0;
         this.recent     = data?.recent    ?? [];
         this.isNewBest  = this.finalScore > 0 && this.finalScore >= this.bestScore;
+        this.leaving    = false;
     }
 
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.End}`);
         AudioManager.init();
+        Ads.noteGameEnded();
 
         this.createSkyBg(0.93);
         const content = this.add.container(0, 0);
@@ -262,16 +266,19 @@ export default class End extends BaseScene {
         const bigY = smY - smH / 2 - this.H * 0.018 - bigH / 2;
 
         this.createButton(this.CX, bigY, innerW, bigH, 'PLAY AGAIN', this.H * 0.036,
-            THEME.GO, THEME.GO_DARK, () => {
-                AudioManager.play('snd_click');
-                this.fadeToScene(SCENES.Game);
-            });
+            THEME.GO, THEME.GO_DARK, () => this.leaveTo(SCENES.Game));
 
         this.createButton(this.CX, smY, innerW, smH, 'MENU', this.H * 0.024,
-            THEME.CARD, THEME.CARD_SHADOW, () => {
-                AudioManager.play('snd_click');
-                this.fadeToScene(SCENES.Menu);
-            }, THEME.INK);
+            THEME.CARD, THEME.CARD_SHADOW, () => this.leaveTo(SCENES.Menu), THEME.INK);
+    }
+
+    /** A paced interstitial may play first; extra taps are ignored meanwhile. */
+    private async leaveTo(key: string): Promise<void> {
+        if (this.leaving) return;
+        this.leaving = true;
+        AudioManager.play('snd_click');
+        await Ads.maybeInterstitial();
+        this.fadeToScene(key);
     }
 
     // ── Celebration burst ────────────────────────────────────────────────────

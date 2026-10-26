@@ -35,6 +35,7 @@ import { Firebase } from './services/Firebase';
 import { PurchasesManager } from './services/Purchases';
 import { AudioManager } from './game/managers/AudioManager';
 import { NotificationManager } from './services/Notification';
+import { Ads } from './services/Ads';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
 import PhaserGame from './components/Phaser';
@@ -55,8 +56,11 @@ class App extends React.Component{
         // Init Firebase
         Firebase.init();
 
-        // Init purchases/donations (also evaluates the 2-day auto donate popup)
+        // Init purchases/donations (the coffee button in Menu opens the donate popup)
         PurchasesManager.initialize().catch(() => {});
+
+        // Init ads (Unity LevelPlay, child-directed); no-op on web or until IDs are configured
+        Ads.init().catch(() => {});
 
         // Init notifications and schedule 3-day play reminder
         NotificationManager.initialize().catch(() => {});

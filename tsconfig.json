@@ -19,7 +19,11 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
-        "jsx": "react-jsx"
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "paths": {
+            "@capacitor/core": ["./node_modules/@capacitor/core"]
+        }
     },
     "include": [
         "src"

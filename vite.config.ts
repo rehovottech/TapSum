@@ -11,7 +11,7 @@ export default defineConfig({
         legacy()
     ],
     resolve: {
-        dedupe: ['react', 'react-dom', '@ionic/react', '@ionic/core', 'ionicons'],
+        dedupe: ['react', 'react-dom', '@ionic/react', '@ionic/core', '@capacitor/core', 'ionicons'],
     },
     test: {
         globals: true,

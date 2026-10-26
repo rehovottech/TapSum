@@ -40,6 +40,10 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // Unity LevelPlay ad networks (mediation SDK comes from @rehovottech/capacitor-ads)
+    implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'
+    implementation 'com.unity3d.ads-mediation:admob-adapter:5.18.0'
 }
 
 apply from: 'capacitor.build.gradle'

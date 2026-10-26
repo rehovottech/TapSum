@@ -10,6 +10,7 @@ import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { Firebase } from '../../services/Firebase';
 import { Mascot } from '../ui/Mascot';
 import { Feel } from '../utils/Feel';
+import { Ads } from '../../services/Ads';
 import FPS from '../model/FPS';
 
 interface GameData {
@@ -56,6 +57,7 @@ export default class Game extends BaseScene {
     private timerDuration = GAME_CONFIG.TIMER_BASE_SEC * 1000;
     private roundActive   = false;
     private gameOver      = false;
+    private continueUsed  = false;   // rewarded "keep going" is offered once per run
     private paused        = false;
     private lives         = GAME_CONFIG.LIVES;
     private roundsCleared = 0;
@@ -109,6 +111,7 @@ export default class Game extends BaseScene {
         this.tapsThisRound = 0;
         this.history       = [];
         this.gameOver      = false;
+        this.continueUsed  = false;
         this.roundActive   = false;
         this.paused        = false;
         this.pauseOverlay  = undefined;
@@ -956,19 +959,96 @@ export default class Game extends BaseScene {
         this.track('life_lost', { round: this.round, reason, lives_left: this.lives });
 
         if (this.lives <= 0) {
-            this.triggerGameOver(reason);
+            if (this.canOfferContinue()) {
+                AudioManager.play('snd_fail');
+                this.cameras.main.shake(200, 0.006);
+                this.time.delayedCall(450, () => this.showContinueOffer(reason));
+            } else {
+                this.triggerGameOver(reason);
+            }
             return;
         }
 
         AudioManager.play('snd_fail');
         this.cameras.main.shake(200, 0.006);
-        this.revealTotal(reason);
+        this.carryOn(reason);
+    }
 
+    /** Show the real total, then start the next round from it. */
+    private carryOn(reason: FailReason): void {
+        this.revealTotal(reason);
         this.time.delayedCall(GAME_CONFIG.REVEAL_MS, () => {
             if (this.gameOver) return;
             this.round++;
             this.startRound();
         });
+    }
+
+    // ── Out of hearts: opt-in rewarded ad for one more heart ────────────────
+
+    private canOfferContinue(): boolean {
+        return !this.continueUsed && !this.inTutorial() && Ads.rewardedAvailable();
+    }
+
+    private showContinueOffer(reason: FailReason): void {
+        if (this.gameOver) return;
+        if (this.paused) this.closePause();
+
+        const sheetH = Math.floor(this.H * 0.4);
+        const sheetY = this.H - sheetH;
+        const pad    = Math.floor(this.W * 0.062);
+        const innerW = this.W - pad * 2;
+        const bh     = Math.floor(this.H * 0.08);
+        const smH    = Math.floor(this.H * 0.066);
+        const radius = Math.floor(this.W * 0.08);
+
+        const overlay = this.add.container(0, 0).setDepth(50);
+        const scrim = this.add.rectangle(this.CX, this.CY, this.W, this.H, THEME.SCRIM, 0.35).setInteractive();
+
+        const sheet = this.add.graphics();
+        sheet.fillStyle(THEME.CARD, 1);
+        sheet.fillRoundedRect(0, sheetY, this.W, sheetH + radius, radius);
+        sheet.fillStyle(THEME.PIP_OFF, 1);
+        sheet.fillRoundedRect(this.CX - 30, sheetY + 18, 60, 8, 4);
+
+        const title = this.label(this.CX, sheetY + sheetH * 0.16, 'Keep going?', this.H * 0.045);
+        const sub   = this.label(this.CX, sheetY + sheetH * 0.29, 'Watch a short ad to get one more heart.', this.H * 0.016, 0x52697b);
+
+        let busy = false;
+        const close = () => { overlay.destroy(); };
+
+        const watch = this.createButton(this.CX, sheetY + sheetH * 0.5, innerW, bh, 'WATCH AD  +1 HEART',
+            this.H * 0.028, THEME.GO, THEME.GO_DARK, async () => {
+                if (busy) return;
+                busy = true;
+                AudioManager.play('snd_click');
+                this.continueUsed = true;
+                const watched = await Ads.showRewarded('continue', 8000);
+                close();
+                if (!this.scene.isActive() || this.gameOver) return;
+                if (!watched) { this.triggerGameOver(reason); return; }
+
+                this.track('continue_used', { round: this.round, score: this.score });
+                this.lives = 1;
+                this.redrawHearts(false);
+                this.mascot.setMood('happy', 900);
+                this.carryOn(reason);
+            });
+
+        const skip = this.createButton(this.CX, sheetY + sheetH * 0.76, innerW, smH, 'NO THANKS',
+            this.H * 0.022, THEME.SURFACE, THEME.CARD_SHADOW, () => {
+                if (busy) return;
+                busy = true;
+                AudioManager.play('snd_click');
+                close();
+                this.triggerGameOver(reason);
+            }, THEME.INK);
+
+        const sheetC = this.add.container(0, sheetH, [sheet, title, sub, watch, skip]);
+        overlay.add([scrim, sheetC]);
+        scrim.setAlpha(0);
+        this.tweens.add({ targets: sheetC, y: 0, duration: 220, ease: 'Cubic.Out' });
+        this.tweens.add({ targets: scrim, alpha: 1, duration: 180 });
     }
 
     /** Shows the correct running total so the player can keep going from it. */
