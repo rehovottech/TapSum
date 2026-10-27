@@ -439,3 +439,6 @@ node_modules/
 
 # Sublime Text
 *.sublime-workspace
+
+# Signing keys (never commit)
+exclude/keystore/
