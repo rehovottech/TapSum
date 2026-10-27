@@ -34,7 +34,7 @@ export class NotificationManager {
                 notifications: [
                     {
                         id: PLAY_REMINDER_ID,
-                        title: 'TapSum',
+                        title: 'Tap Sum',
                         body: "You haven't played in a while — come back and beat your best score! 🎯",
                         schedule: {
                             at: fireAt,

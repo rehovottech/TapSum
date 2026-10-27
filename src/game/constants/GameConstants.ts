@@ -30,7 +30,6 @@ export interface ProfileRules {
     ages:         string;
     blurb:        string;
     color:        number;
-    leaderboard:  string;
     /** Number size by round: the first band whose upTo >= round applies. */
     ranges:       { upTo: number; min: number; max: number }[];
     /** Chance (0–100) that a number is TAKE AWAY, by round. */
@@ -45,21 +44,21 @@ const INF = Number.MAX_SAFE_INTEGER;
 export const PROFILES: Record<ProfileId, ProfileRules> = {
     little: {
         id: 'little', name: 'Little Learner', ages: 'Ages 5-8', blurb: 'Small numbers, more time',
-        color: 0xffb703, leaderboard: 'tapsum_little',
+        color: 0xffb703,
         ranges:    [{ upTo: 10, min: 1, max: 5 }, { upTo: 20, min: 1, max: 9 }, { upTo: 40, min: 2, max: 12 }, { upTo: INF, min: 5, max: 20 }],
         negatives: [{ upTo: 10, chance: 0 }, { upTo: 25, chance: 15 }, { upTo: INF, chance: 25 }],
         timerBaseSec: 10, timerStepSec: 1, timerMaxSec: 15,
     },
     explorer: {
         id: 'explorer', name: 'Explorer', ages: 'Ages 9-12', blurb: 'Adding and taking away',
-        color: 0x1e90e8, leaderboard: 'tapsum',
+        color: 0x1e90e8,
         ranges:    [{ upTo: 10, min: 1, max: 10 }, { upTo: 20, min: 1, max: 15 }, { upTo: 40, min: 5, max: 25 }, { upTo: 80, min: 15, max: 50 }, { upTo: INF, min: 50, max: 100 }],
         negatives: [{ upTo: 15, chance: 25 }, { upTo: 30, chance: 35 }, { upTo: INF, chance: 50 }],
         timerBaseSec: 7, timerStepSec: 2, timerMaxSec: 15,
     },
     adult: {
         id: 'adult', name: 'Brain Trainer', ages: 'Teens & adults', blurb: 'Bigger numbers, faster',
-        color: 0x8b5cf6, leaderboard: 'tapsum_adult',
+        color: 0x8b5cf6,
         ranges:    [{ upTo: 10, min: 1, max: 15 }, { upTo: 20, min: 5, max: 25 }, { upTo: 40, min: 10, max: 50 }, { upTo: 80, min: 20, max: 99 }, { upTo: INF, min: 50, max: 150 }],
         negatives: [{ upTo: 10, chance: 35 }, { upTo: INF, chance: 50 }],
         timerBaseSec: 6, timerStepSec: 1, timerMaxSec: 12,

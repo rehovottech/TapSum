@@ -11,6 +11,7 @@ import { Firebase } from '../../services/Firebase';
 import { Mascot } from '../ui/Mascot';
 import { Feel } from '../utils/Feel';
 import { Ads } from '../../services/Ads';
+import { NotificationManager } from '../../services/Notification';
 import FPS from '../model/FPS';
 
 interface GameData {
@@ -134,6 +135,9 @@ export default class Game extends BaseScene {
     create(): void {
         GlobVar.consolelog(`Scene: ${SCENES.Game}`);
         AudioManager.init();
+
+        // Each session pushes the "come back and play" reminder 3 days forward (GAME_ESSENTIALS § 6)
+        NotificationManager.schedulePlayReminder().catch(() => {});
 
         this.createSkyBg(0.9);
         this.createTopBar();

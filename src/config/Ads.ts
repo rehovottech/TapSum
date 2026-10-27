@@ -11,6 +11,13 @@
  * non-personalised, and the AD_ID permission is removed in AndroidManifest.xml.
  * LevelPlay dashboard: mark the app as child-directed; AdMob max ad content rating = G.
  */
+/**
+ * Audience profile (docs/GAME_ESSENTIALS.md § 1). Tap Sum is a Kids game: child-directed ad requests,
+ * no consent card, no tracking prompt, no advertising ID, and the grown-up check before purchases
+ * and links out of the app.
+ */
+export const AUDIENCE: 'kids' | 'general' = 'kids';
+
 export const ADS_CONFIG = {
     TEST_MODE: true,
     android: {
@@ -22,6 +29,17 @@ export const ADS_CONFIG = {
         appKey:       '29038d2bd',
         interstitial: 'rsy5rqhtr7bkded1',
         rewarded:     'ngp1uyg1x9a1mdhx',
+    },
+    /**
+     * Web (Rehovot portal): Google H5 Games Ads (docs/GAME_ESSENTIALS.md § 1). appKey = the AdSense
+     * publisher id shared by every game on the portal. The placement names are adBreak() labels only,
+     * nothing to create in AdSense. TEST_MODE serves Google's H5 test ads. As a Kids game, Tap Sum gets
+     * non-personalised ads; tag the site child-directed in AdSense before it goes on the portal.
+     */
+    web: {
+        appKey:       'ca-pub-6155959110986539',
+        interstitial: 'level_complete',
+        rewarded:     'reward',
     },
     /** Interstitial pacing (shown only when leaving the End screen) */
     interstitialAfterGames: 2,     // never during the first N finished games

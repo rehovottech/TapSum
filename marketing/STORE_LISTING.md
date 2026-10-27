@@ -17,7 +17,8 @@ The text below is also in `android/metadata` and `ios/metadata` (fastlane format
 | Version | Android: the live build is versionCode 12, so the next upload must use **13** (set in `android/app/build.gradle`) |
 | Orientation | Portrait only |
 | Price | Free. Ads, plus an optional "buy us a coffee" donation |
-| Privacy policy | https://www.rehovottech.com/privacy **[CONFIRM: it must mention Unity LevelPlay, Unity Ads, AdMob and Firebase, and children's data]** |
+| Privacy policy | https://policy.rehovottech.com/general/privacy (shared by every Rehovot game; its § 8 covers games made for children) |
+| Terms of service | https://policy.rehovottech.com/general/terms |
 | Support / marketing URL | https://www.rehovottech.com **[CONFIRM: a page with a contact email]** |
 
 ---
@@ -113,9 +114,10 @@ What the app already does to comply (see the ads work in `src/services/Ads.ts`):
 
 ### Graphics
 - **Icon:** `ios/app-icon_1024.png` (no transparency)
-- **iPhone 6.9":** `ios/screenshots/iphone-6.9in_1320x2868/` (required)
+- **iPhone 6.9":** `ios/screenshots/iphone-6.9in_1320x2868/`
 - **iPhone 6.5":** `ios/screenshots/iphone-6.5in_1284x2778/`
-- **iPad:** not included. Either make the app iPhone-only in Xcode, or capture iPad screenshots from the simulator.
+- **iPhone 6.1"/6.3":** `ios/screenshots/iphone-6.3in_1206x2622/`
+- **iPad 13":** `ios/screenshots/ipad-13in_2064x2752/`. Smaller iPad sizes are scaled from this one by App Store Connect.
 
 ### Also needed for iOS (code)
 - Purchases: a **parental gate** before the donation popup. Apple requires one for purchases in apps that children use.

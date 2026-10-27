@@ -2,9 +2,8 @@ import * as Phaser from 'phaser';
 import { GlobVar } from '../../utils/Global';
 import FPS from '../model/FPS';
 import { THEME } from '../constants/Colors';
-import { Capacitor } from '@capacitor/core';
-import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { LeaderboardPanel } from '../ui/LeaderboardPanel';
+import { AudioManager } from '../managers/AudioManager';
 
 export default abstract class BaseScene extends Phaser.Scene {
     protected sceneClose = false;
@@ -239,25 +238,69 @@ export default abstract class BaseScene extends Phaser.Scene {
         });
     }
 
+    // ── Yes / no popup ──────────────────────────────────────────────────────
+
+    /** Game-style popup: title, short text and two buttons. Calls back once with the choice. */
+    protected confirmPopup(
+        title: string, body: string, yesText: string, noText: string,
+        onChoose: (yes: boolean) => void,
+    ): void {
+        const panelW = Math.floor(this.W * 0.84);
+        const pad    = Math.floor(this.H * 0.04);
+        const btnH   = Math.floor(this.H * 0.07);
+        const gap    = Math.floor(this.H * 0.025);
+
+        const root = this.add.container(0, 0).setDepth(70);
+
+        // Scrim blocks taps on the scene underneath
+        const overlay = this.add.graphics();
+        overlay.fillStyle(THEME.SCRIM, 0.45);
+        overlay.fillRect(0, 0, this.W, this.H);
+        overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.W, this.H), Phaser.Geom.Rectangle.Contains);
+        root.add(overlay);
+
+        const titleText = this.label(this.CX, 0, title, this.H * 0.03).setOrigin(0.5, 0)
+            .setMaxWidth(panelW - pad * 2);
+        const bodyText = this.add.bitmapText(this.CX, 0, 'coiny-bmp', body, Math.floor(this.H * 0.021), 1)
+            .setOrigin(0.5, 0).setMaxWidth(panelW - pad * 2).setTint(0x52697b);
+
+        const panelH = pad + titleText.height + gap + bodyText.height + gap * 1.6 + btnH + pad;
+        const top = this.CY - panelH / 2;
+        titleText.setY(top + pad);
+        bodyText.setY(titleText.y + titleText.height + gap);
+        root.add([this.drawCard(this.add.graphics(), this.CX - panelW / 2, top, panelW, panelH, 32), titleText, bodyText]);
+
+        let chosen = false;
+        const choose = (yes: boolean) => {
+            if (chosen) return;
+            chosen = true;
+            this.tweens.add({
+                targets: root, alpha: 0, duration: 160,
+                onComplete: () => { root.destroy(); onChoose(yes); },
+            });
+        };
+
+        const btnW = (panelW - pad * 2 - gap) / 2;
+        const btnY = top + panelH - pad - btnH / 2;
+        root.add(this.createButton(this.CX - (btnW + gap) / 2, btnY, btnW, btnH, noText, this.H * 0.022,
+            0xe6eef2, THEME.CARD_SHADOW, () => { AudioManager.play('snd_click'); choose(false); }));
+        root.add(this.createButton(this.CX + (btnW + gap) / 2, btnY, btnW, btnH, yesText, this.H * 0.022,
+            THEME.GO, THEME.GO_DARK, () => { AudioManager.play('snd_click'); choose(true); }));
+
+        root.setAlpha(0);
+        this.tweens.add({ targets: root, alpha: 1, duration: 220 });
+    }
+
     // ── Leaderboard ─────────────────────────────────────────────────────────
 
-    /** Web: the in-game Firebase panel. Android / iOS: the Play Games / Game Center leaderboard. */
+    /** The in-game General leaderboard (every platform); on Android / iOS it also links to Play Games / Game Center. */
     protected openLeaderboard(): void {
-        if (!LeaderboardManager.native) {
-            new LeaderboardPanel(this);
-            return;
-        }
-        LeaderboardManager.open().then((opened) => {
-            if (!opened && this.scene.isActive()) {
-                const service = Capacitor.getPlatform() === 'ios' ? 'Game Center' : 'Play Games';
-                this.toast(`Sign in to ${service} to see the leaderboard`);
-            }
-        });
+        new LeaderboardPanel(this);
     }
 
     /** Short message pill near the bottom of the screen that fades away. */
-    protected toast(text: string): void {
-        const y = this.H * 0.86;
+    toast(text: string): void {
+        const y = this.H * 0.935;
         const msg = this.label(this.CX, y, text, this.H * 0.018, 0xffffff);
         const w = msg.width + this.W * 0.08;
         const h = Math.floor(this.H * 0.05);

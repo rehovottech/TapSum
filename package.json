@@ -26,6 +26,7 @@
     "@ionic/react": "^8.5.0",
     "@ionic/react-router": "^8.5.0",
     "@rehovottech/capacitor-ads": "file:../../plugins/rehovot-ads/rehovot-ads-packages",
+    "@rehovottech/capacitor-app-update": "file:../../plugins/rehovot-app-update",
     "@rehovottech/capacitor-purchases": "file:../../plugins/rehovot-purchase",
     "@rehovottech/firebase": "file:../../plugins/rehovot-firebase",
     "@rehovottech/game-service": "file:../../plugins/rehovot-game-service",

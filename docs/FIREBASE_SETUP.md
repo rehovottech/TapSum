@@ -1,21 +1,27 @@
-# Firebase setup: one config per platform
+# Firebase setup: three shared projects
 
-How Tap Sum wires up Firebase. To set up another Rehovot game, copy the steps below.
+How every Rehovot game wires up Firebase analytics and the General leaderboard. Turns is the reference. To set up another game, follow the checklist below.
 
-## The model
+## The three projects
 
-| Platform | Analytics | Leaderboard |
-|---|---|---|
-| Web | Web SDK, web config (`src/config/Firebase.ts`) | Firebase (web config, anonymous auth) |
-| Android | **Native**, `android/app/google-services.json` | Google Play Games (not Firebase) |
-| iOS | **Native**, `ios/App/App/GoogleService-Info.plist` | Game Center (not Firebase) |
+All Rehovot games share **three** Firebase projects, one per platform. A new game doesn't get its own project: it's added as an **app** inside each of the three.
 
-- **Analytics:** each platform reports to its own Firebase app or project.
-- **Leaderboard:**
-  - **Web** uses the Firebase leaderboard through the **web config** (`@rehovottech/firebase`, anonymous sign-in).
-  - **Android and iOS** use Play Games / Game Center instead. See [GAME_ESSENTIALS.md § 4](GAME_ESSENTIALS.md#4-leaderboards).
-  - The web SDK still starts on mobile, but nothing signs in there.
+| Project | Used for | Each game adds | Config in the game |
+|---|---|---|---|
+| **`rehovt-web-games`** | Web analytics **and every game's General leaderboard** (Firestore + anonymous Auth) | a **Web app** | `src/config/Firebase.ts` |
+| **`rehovt-android-games`** | Android analytics only | an **Android app** (the game's package name) | `android/app/google-services.json` |
+| **`rehovt-ios-games`** | iOS analytics only | an **iOS app** (the game's bundle ID) | `ios/App/App/GoogleService-Info.plist` |
+
+- **Analytics:** each platform reports to its own project. Inside it, each game is its own app or data stream, so games never mix. Filter by app or stream in GA4.
+- **General leaderboard:** lives only in `rehovt-web-games`. Android and iOS connect to it with the game's **web config** (`src/config/Firebase.ts`), only for the leaderboard; their analytics stays native. That's what puts web, Android and iOS players on one board. See [GAME_ESSENTIALS.md § 7](GAME_ESSENTIALS.md#7-leaderboards-general-board-web--mobile--platform-boards).
+- **No leaderboards in the Android or iOS projects.** Their Firestore isn't used. On mobile, the platform boards are Play Games and Game Center.
 - **Platform tag:** every event and user carries `app_platform` = `web` | `android` | `ios`.
+
+| Platform | Analytics | General board | Platform board |
+|---|---|---|---|
+| Web | Web SDK → `rehovt-web-games` | `rehovt-web-games` | — |
+| Android | **Native** → `rehovt-android-games` | `rehovt-web-games` (web config) | Google Play Games |
+| iOS | **Native** → `rehovt-ios-games` | `rehovt-web-games` (web config) | Game Center |
 
 **Why native analytics on mobile:**
 - **iOS:** the GA4 web tag sends nothing from iOS, because the WebView origin is `capacitor://`.
@@ -26,24 +32,58 @@ How Tap Sum wires up Firebase. To set up another Rehovot game, copy the steps be
 - `ad_storage`, `ad_user_data` and `ad_personalization` are denied from launch.
 - Google signals are off.
 
+## Leaderboards in `rehovt-web-games`
+
+Every game's General boards live in the same Firestore, kept apart by their **board ID**:
+
+- **Board IDs start with the game's name:** `turns_stars`, `turns_time_attack`, `turns_daily_streak`, `tapsum_little`, `tapsum`, `tapsum_adult`, …. Entries are stored at `leaderboards/{boardId}/entries/{playerId}`. A new board appears with its first score; there's nothing to create.
+- **Pick a new, unique prefix for each game**, so two games can never write to the same board.
+- **One rules file for the whole project.** A deploy replaces the project's entire rules, so all games share **one** `firestore.rules`.
+  - **Master copy:** `/Volumes/T7/Work/Office/Firebase/rehovt-web-games/firestore.rules`, a shared folder that belongs to no game. Its `.firebaserc` points at `rehovt-web-games`; deploy only from there.
+  - **New game:** add its boards to `maxScore()` in that file, with each board's highest possible score, then deploy:
+    ```bash
+    cd /Volumes/T7/Work/Office/Firebase/rehovt-web-games && firebase deploy --only firestore:rules
+    ```
+  - **Never deploy `rehovt-web-games` rules from a game's folder.** That would replace every other game's limits.
+- **What the rules allow:**
+  - any signed-in player can read the boards;
+  - a player can only write their own entry;
+  - a score can never go down, and can't be above the board's `maxScore()`;
+  - boards that aren't listed in `maxScore()` only get the first three checks.
+
+## Status
+
+| Game | Web + General board | Android analytics | iOS analytics |
+|---|---|---|---|
+| **Turns** | `rehovt-web-games` ✅ | `turns-d1448` → move to `rehovt-android-games` | `turns-d1448` → move to `rehovt-ios-games` |
+| **Tap Sum** | `rehovotgames` → move to `rehovt-web-games` | `rehovotgames` → move to `rehovt-android-games` | `rehovot-ios-games` → move to `rehovt-ios-games` |
+
+**Moving a game:**
+1. Add it as an app in the target project.
+2. Replace its config: the web config, `google-services.json` or the plist.
+3. Add its boards to the master `firestore.rules` and deploy.
+
+Moving the web config to `rehovt-web-games` starts that game's General board fresh: old scores stay in the old project. Analytics history also stays in the old GA4 property.
+
 ## Checklist for a new game
 
-1. **Firebase console:**
-   - Add a **Web app** to the web project and copy its config.
-   - Add an **Android app** with the game's package name and download `google-services.json`.
-   - Add an **iOS app** with the bundle ID and download `GoogleService-Info.plist`.
+1. **Firebase console:** add the game as an app in each of the three projects. Don't create a new project.
+   - **`rehovt-web-games`:** add a **Web app** and copy its config.
+   - **`rehovt-android-games`:** add an **Android app** with the game's package name, and download `google-services.json`.
+   - **`rehovt-ios-games`:** add an **iOS app** with the bundle ID, and download `GoogleService-Info.plist`.
    - Keep copies in `exclude/data/`.
 2. **Packages:**
    ```bash
    npm i firebase@^12 @capacitor-firebase/analytics@^8 @rehovottech/firebase@file:../../plugins/rehovot-firebase
    ```
-3. **Web config:** put it in `src/config/Firebase.ts`. Change `apiKey`, `appId` and `measurementId` per game.
+3. **Web config:** put the game's **own** web app config in `src/config/Firebase.ts`. Its `appId` and `measurementId` are per game; don't copy another game's, or the two games' web analytics mix. The same config is used on every platform for the General board.
+   - **Board IDs:** pick a prefix for the game and add each board's limit to `maxScore()` in `/Volumes/T7/Work/Office/Firebase/rehovt-web-games/firestore.rules`, then deploy it from that shared folder (see [Leaderboards](#leaderboards-in-rehovt-web-games)).
 4. **Service:** copy `src/services/Firebase.ts` (see [The service](#the-service)).
 5. **Vite:** add the vite changes (see [Vite](#vite)).
 6. **Android:** add the Android steps (see [Android](#android)).
 7. **iOS:** add the iOS steps (see [iOS](#ios)). The iOS project must use **CocoaPods**.
 8. **Build and sync:** `npm run build && npx cap sync`.
-9. **GA4 console:** do this in **each** property the game uses.
+9. **GA4 console:** each of the three projects has its own GA4 property. These settings are per **property**, so they're done once and then cover every game.
    - Turn **Google signals off**.
    - Add custom dimensions `app_platform`: one **event**-scoped and one **user**-scoped.
 10. **Verify:** check events in **DebugView** on each platform (see [Verify](#verify)).
@@ -62,7 +102,7 @@ const NATIVE_ANALYTICS = APP_PLATFORM === 'ios' || APP_PLATFORM === 'android';
 init():
     const prepare = NATIVE_ANALYTICS ? this.prepareNativeAnalytics() : this.prepareChildSafeAnalytics();
     prepare.catch(warn)
-        // the web SDK still starts on every platform; analytics and the Firebase leaderboard are used on web only
+        // the web SDK starts on every platform: web analytics on web, the General leaderboard everywhere
         .then(() => RehovotFirebase.initialize({ ...FirebaseConfig, analyticsEnabled: !NATIVE_ANALYTICS }));
 
 prepareNativeAnalytics():           // iOS / Android
@@ -84,7 +124,7 @@ logEvent(name, params):
                      : RehovotFirebase.Analytics.logEvent(name, p);
 ```
 
-The full file is in Tap Sum. Copy it as is; it has no game-specific code apart from the leaderboard IDs.
+The full file is in Turns (`src/services/Firebase.ts`), including the General-board calls (`signInAnonymous`, `submitScore`, `getTopPlayers`, `getPlayerRank`). Copy it as is; it has no game-specific code. The board IDs live in `src/config/GameServices.ts`.
 
 ## Vite
 

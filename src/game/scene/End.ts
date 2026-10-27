@@ -73,7 +73,7 @@ export default class End extends BaseScene {
         this.cameras.main.fadeIn(350);
         this.celebrationBurst();
 
-        if (!LeaderboardManager.native) this.fetchAndShowRank();
+        this.fetchAndShowRank();
     }
 
     update(): void {
@@ -210,26 +210,15 @@ export default class End extends BaseScene {
         scoreNum.setScale(0);
         this.tweens.add({ targets: scoreNum, scaleX: 1, scaleY: 1, delay: 350, duration: 350, ease: 'Back.Out' });
 
-        // Web: world rank row (filled once Firestore answers).
-        // Android / iOS: a row that opens the Play Games / Game Center leaderboard.
-        const native = LeaderboardManager.native;
+        // World rank row on the General board (filled once Firestore answers)
         const rowY = top + tileH + this.H * 0.03;
         const rowH = Math.floor(this.H * 0.065);
         content.add(this.drawCard(this.add.graphics(), pad, rowY, innerW, rowH, 20, 0xe6eef2, THEME.CARD_SHADOW));
-        content.add(this.add.bitmapText(pad + this.W * 0.05, rowY + rowH / 2, 'coiny-bmp', native ? 'Leaderboard' : 'World rank', Math.floor(this.H * 0.02), 0)
+        content.add(this.add.bitmapText(pad + this.W * 0.05, rowY + rowH / 2, 'coiny-bmp', 'World rank', Math.floor(this.H * 0.02), 0)
             .setOrigin(0, 0.5).setTint(THEME.INK));
-        this.rankText = this.add.bitmapText(this.W - pad - this.W * 0.05, rowY + rowH / 2, 'coiny-bmp', native ? 'OPEN' : '...', Math.floor(this.H * 0.024), 0)
-            .setOrigin(1, 0.5).setTint(native ? THEME.GO_DARK : THEME.INK);
+        this.rankText = this.add.bitmapText(this.W - pad - this.W * 0.05, rowY + rowH / 2, 'coiny-bmp', '...', Math.floor(this.H * 0.024), 0)
+            .setOrigin(1, 0.5).setTint(THEME.INK);
         content.add(this.rankText);
-        if (native) {
-            const hit = this.add.zone(pad + innerW / 2, rowY + rowH / 2, innerW, rowH).setInteractive({ useHandCursor: true });
-            hit.on('pointerdown', () => {
-                if (this.leaving) return;
-                AudioManager.play('snd_click');
-                this.openLeaderboard();
-            });
-            content.add(hit);
-        }
 
         // Best line
         const bestY = rowY + rowH + this.H * 0.04;

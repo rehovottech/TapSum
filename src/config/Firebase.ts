@@ -1,20 +1,23 @@
 import type { FirebaseConfigInput } from '@rehovottech/firebase';
 
 /**
- * Firebase web-app config, used by @rehovottech/firebase (the Firebase JS SDK in the WebView).
+ * Firebase web config (docs/FIREBASE_SETUP.md), used on EVERY platform:
+ *  - Web: analytics + the General leaderboard.
+ *  - Android / iOS: only the General leaderboard (shared with web, so one world ranking). Their
+ *    analytics is native and uses its own config: android/app/google-services.json and
+ *    ios/App/App/GoogleService-Info.plist.
+ * Don't switch projects per platform here, or the General leaderboard splits.
  *
- * Web uses it for Analytics, anonymous auth and the leaderboard. Android and iOS use Play Games /
- * Game Center for leaderboards (game/managers/LeaderboardManager.ts), and
- * native Analytics with their own projects (ios/App/App/GoogleService-Info.plist,
- * android/app/google-services.json). Each event carries an `app_platform` parameter / user property
- * (android | ios | web), set in services/Firebase.ts.
+ * Project rehovt-web-games, Tap Sum's own Web app ("TapSum"), shared with every Rehovot game's
+ * General leaderboard. Android analytics: rehovotgames ("Rehovot Android Games");
+ * iOS analytics: rehovot-ios-games ("Rehovot IOS Games").
  */
 export const FirebaseConfig: FirebaseConfigInput = {
-    apiKey: "AIzaSyBHv5cLgIAqEaBVnWX3IWAMMFrwr6ZLtUY",
-    authDomain: "rehovotgames.firebaseapp.com",
-    projectId: "rehovotgames",
-    storageBucket: "rehovotgames.firebasestorage.app",
-    messagingSenderId: "947127481548",
-    appId: "1:947127481548:web:bf312c2f0402caac76be69",
-    measurementId: "G-9CZ2C319HG"
+    apiKey: "AIzaSyBkNHhbVBekowh2nZNMkfMasAjql1eZ1t8",
+    authDomain: "rehovt-web-games.firebaseapp.com",
+    projectId: "rehovt-web-games",
+    storageBucket: "rehovt-web-games.firebasestorage.app",
+    messagingSenderId: "521325950905",
+    appId: "1:521325950905:web:9b4e624fe0f7f373126868",
+    measurementId: "G-395JTXHKEP"
 };

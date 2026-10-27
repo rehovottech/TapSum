@@ -17,12 +17,20 @@ export interface LeaderboardEntry {
 
 const DEFAULT_PLAYER_NAME = 'Player';
 
+/** Generated, never-editable name per player (kids' game: nothing typed in), e.g. "Player 7K2Q". */
+export function playerName(uid: string | null | undefined): string {
+    return uid ? `${DEFAULT_PLAYER_NAME} ${uid.slice(-4).toUpperCase()}` : DEFAULT_PLAYER_NAME;
+}
+
+/** Older builds stored the bare default name - show the generated one instead. */
+const shownName = (name: string | null | undefined, uid: string) => (!name || name === DEFAULT_PLAYER_NAME ? playerName(uid) : name);
+
 // Every event and user is tagged with its platform
 const APP_PLATFORM = Capacitor.getPlatform();   // 'android' | 'ios' | 'web'
 
 // Each platform reports to its own Firebase project: iOS and Android use native Firebase Analytics
 // (GoogleService-Info.plist / google-services.json), web uses the web SDK through
-// @rehovottech/firebase (src/config/Firebase.ts). The Firebase leaderboard is web-only (LeaderboardManager).
+// @rehovottech/firebase (src/config/Firebase.ts). The web SDK still runs on mobile for the General leaderboard.
 const NATIVE_ANALYTICS = APP_PLATFORM === 'ios' || APP_PLATFORM === 'android';
 
 class FireBaseService {
@@ -130,14 +138,18 @@ class FireBaseService {
 
     // ── Leaderboard ──────────────────────────────────────────────────────────
 
-    public async submitScore(gameId: string, score: number): Promise<void> {
-        await this.signInAnonymous();
+    /** Returns true when the score was stored. */
+    public async submitScore(gameId: string, score: number): Promise<boolean> {
+        const uid = await this.signInAnonymous();
+        if (!uid) return false;
         try {
             await RehovotFirebase.Leaderboard.submitScore(gameId, score, {
-                displayName: DEFAULT_PLAYER_NAME,
+                displayName: playerName(uid),
             });
+            return true;
         } catch (e) {
             console.warn('Firebase: submitScore failed', e);
+            return false;
         }
     }
 
@@ -147,7 +159,7 @@ class FireBaseService {
             const players = await RehovotFirebase.Leaderboard.getTopPlayers(gameId, count);
             return players.map((p, i) => ({
                 uid: p.playerId,
-                name: p.displayName ?? DEFAULT_PLAYER_NAME,
+                name: shownName(p.displayName, p.playerId),
                 bestScore: p.score,
                 updatedAt: Date.parse(p.updatedAt) || Date.now(),
                 rank: i + 1,
@@ -176,7 +188,7 @@ class FireBaseService {
             if (!profile) return null;
             return {
                 uid: profile.playerId,
-                name: profile.displayName ?? DEFAULT_PLAYER_NAME,
+                name: shownName(profile.displayName, profile.playerId),
                 bestScore: profile.score,
                 updatedAt: Date.parse(profile.updatedAt) || Date.now(),
             };

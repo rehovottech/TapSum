@@ -4,6 +4,7 @@ import { THEME } from '../constants/Colors';
 import { LeaderboardEntry, Firebase } from '../../services/Firebase';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { SaveManager } from '../managers/SaveManager';
+import type BaseScene from '../scene/BaseScene';
 
 const ROW_H        = 72;
 const PANEL_PAD    = 28;
@@ -92,8 +93,11 @@ export class LeaderboardPanel {
 
         // Scrollable list area — shortened to leave room for the pinned "you" row
         const pinnedRowH     = ROW_H + 20;
+        // Android / iOS: room at the bottom for the "Open Play Games / Game Center" button
+        const platformBtnH   = LeaderboardManager.platformBoardAvailable ? Math.floor(H * 0.055) : 0;
+        const platformGap    = platformBtnH ? platformBtnH + 30 : 0;
         this.listAreaTop     = headerY + 28;
-        this.listAreaH       = panelH - (this.listAreaTop - (py - panelH / 2)) - PANEL_PAD - 60 - pinnedRowH;
+        this.listAreaH       = panelH - (this.listAreaTop - (py - panelH / 2)) - PANEL_PAD - 60 - pinnedRowH - platformGap;
         this.pinnedAreaY     = this.listAreaTop + this.listAreaH + 90;
 
         this.listContainer = this.scene.add.container(0, 0);
@@ -133,6 +137,10 @@ export class LeaderboardPanel {
         this.root.add(this.dragZone);
         this.bindScrollEvents();
 
+        if (platformBtnH) {
+            this.addPlatformButton(px, py + panelH / 2 - PANEL_PAD - platformBtnH / 2, panelW - PANEL_PAD * 2, platformBtnH);
+        }
+
         // Close button
         const closeX = px + panelW / 2 - 35;
         const closeY = py - panelH / 2 + 35;
@@ -154,6 +162,29 @@ export class LeaderboardPanel {
             targets: this.root, scaleX: 1, scaleY: 1, alpha: 1,
             duration: 320, ease: 'Back.Out',
         });
+    }
+
+    /** Opens this profile's Play Games / Game Center board; a toast if sign-in is declined. */
+    private addPlatformButton(x: number, y: number, w: number, h: number): void {
+        const { H } = this.dims();
+        const name = LeaderboardManager.platformName;
+        const bg = this.scene.add.graphics();
+        bg.fillStyle(THEME.CARD_SHADOW, 1);
+        bg.fillRoundedRect(x - w / 2, y - h / 2 + 4, w, h, h / 2);
+        bg.fillStyle(THEME.INK, 1);
+        bg.fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
+        const label = this.scene.add.bitmapText(x, y, 'coiny-bmp', `OPEN ${name.toUpperCase()}`, Math.floor(H * 0.02), 0)
+            .setOrigin(0.5).setTint(0xffffff);
+        const hit = this.scene.add.zone(x, y, w, h).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        hit.on('pointerdown', () => {
+            AudioManager.play('snd_click');
+            LeaderboardManager.openPlatformBoard().then((opened) => {
+                if (!opened && this.scene.sys.isActive()) {
+                    (this.scene as BaseScene).toast(`Sign in to ${name} to see its leaderboard`);
+                }
+            });
+        });
+        this.root.add([bg, label, hit]);
     }
 
     // ── Load data ────────────────────────────────────────────────────────────
@@ -216,7 +247,8 @@ export class LeaderboardPanel {
                 }
 
                 const nameColor = isMe ? 0x52691e : THEME.INK;
-                const nameTxt   = isMe ? 'You' : `Player ${i + 1}`; //(p.name ?? `Player ${i + 1}`).substring(0, 10);
+                // Generated, never-editable names (e.g. "Player 7K2Q"): nothing a kid typed in
+                const nameTxt   = isMe ? 'You' : (p.name || `Player ${i + 1}`).substring(0, 14);
                 this.listContainer.add(
                     this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt, fs, 0).setOrigin(0, 0.5)
                     .setTint(nameColor)

@@ -51,13 +51,14 @@ const add = (cls, css, html = '') => { const d = document.createElement('div'); 
 add('hill', { left: -0.25 * W + 'px', top: H * 0.86 + 'px', width: W * 1.0 + 'px', height: H * 0.3 + 'px', background: '#a8e6b8' });
 add('hill', { left: 0.35 * W + 'px', top: H * 0.89 + 'px', width: W * 1.0 + 'px', height: H * 0.3 + 'px', background: '#7fd396' });
 const tiles = { '+1': ['#ffc531', '#14304a'], '+10': ['#1e90e8', '#fff'], '+100': ['#ff8a2b', '#14304a'], '-1': ['#ff6b6b', '#fff'] };
-// Tiles hug the phone's side edges (x < 0.5 = left edge, otherwise right edge); y is a fraction of H
-const phoneL = (W - (sw + 2 * bez)) / 2, phoneR = phoneL + sw + 2 * bez;
+// Tiles hug the device's side edges (x < 0.5 = left edge, otherwise right edge); y is a fraction of the
+// device height, so tiles sit beside the screen content instead of over the caption or the top buttons
+const phoneL = (W - (sw + 2 * bez)) / 2, phoneR = phoneL + sw + 2 * bez, devH = sh + 2 * bez;
 (P.tiles || []).forEach(([label, x, y, s, rot]) => {
   const [bg, fg] = tiles[label];
   const tw = s * 1.5 * u;
   const left = x < 0.5 ? phoneL - tw * 0.62 : phoneR - tw * 0.38;
-  add('tile', { left: left + 'px', top: y * H + 'px', width: tw + 'px', height: s * u + 'px', background: bg, color: fg,
+  add('tile', { left: left + 'px', top: dTop + y * devH + 'px', width: tw + 'px', height: s * u + 'px', background: bg, color: fg,
     fontSize: s * 0.42 * u + 'px', transform: `rotate(${rot}deg)` }, label);
 });
 document.fonts.ready.then(() => document.getElementById('img').decode().then(() => document.body.dataset.ready = 1));

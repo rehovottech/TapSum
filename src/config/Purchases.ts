@@ -1,4 +1,5 @@
 import type { PurchasesConfig } from '@rehovottech/capacitor-purchases';
+import { AUDIENCE } from './Ads';
 
 const RAZORPAY_KEY = String(import.meta.env.VITE_RAZORPAY_KEY ?? "");
 const DONATE_STORE_KEY = {
@@ -37,12 +38,14 @@ export const PurchasesConfigData: PurchasesConfig = {
         },
     },
     donation: {
-        // Automatic popup once the app has been opened 3 days in a row, then at most every 30 days
-        // (and only after another 3-day streak). The coffee button in Menu opens it any time.
-        // Kids play Tap Sum (Families policy), so every purchase goes through a grown-up number gate.
+        // Support popup (docs/GAME_ESSENTIALS.md § 4): once the app has been opened 3 days in a row,
+        // then at most every 30 days (after another 3-day streak). Menu shows it once no other popup
+        // is open (PurchasesManager.remindIfDue), not at launch. The coffee button opens it any time.
+        // Kids game: every purchase goes through the grown-up check (Families policy).
         enabled: true,
         showAfterConsecutiveDays: 3,
-        parentalGate: true,
+        showOnInitialize: false,
+        parentalGate: AUDIENCE === 'kids',
         title: '❤️ Buy us a Coffee',
         message: 'Your support helps us keep building free games like Tap Sum.',
         buttonText: 'Support',

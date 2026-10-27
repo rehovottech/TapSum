@@ -21,6 +21,7 @@ def capacitor_pods
   pod 'CapacitorScreenOrientation', :path => '../../node_modules/@capacitor/screen-orientation'
   pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
   pod 'RehovottechCapacitorAds', :path => '../../../../plugins/rehovot-ads/rehovot-ads-packages'
+  pod 'RehovottechCapacitorAppUpdate', :path => '../../../../plugins/rehovot-app-update'
   pod 'RehovottechCapacitorPurchases', :path => '../../../../plugins/rehovot-purchase'
   pod 'RehovottechGameService', :path => '../../../../plugins/rehovot-game-service'
 end

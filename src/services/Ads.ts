@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
+import { Howler } from 'howler';
 import { CapacitorAds } from '@rehovottech/capacitor-ads';
-import { ADS_CONFIG } from '../config/Ads';
+import { ADS_CONFIG, AUDIENCE } from '../config/Ads';
 import { AudioManager } from '../game/managers/AudioManager';
 import { Firebase } from './Firebase';
 
@@ -18,7 +19,8 @@ const writeNum = (key: string, value: number): void => {
 };
 
 /**
- * Unity LevelPlay mediation (Unity Ads + AdMob) through the shared Rehovot ads plugin.
+ * Unity LevelPlay mediation (Unity Ads + AdMob) on Android / iOS, Google H5 Games Ads on the web
+ * portal, both through the shared Rehovot ads plugin.
  * The plugin preloads both formats after init and reloads after every show; this class
  * mirrors readiness and applies Tap Sum's rules:
  *  - every request is child-directed and non-personalised (Families policy / COPPA);
@@ -33,13 +35,16 @@ class AdsManager {
     private rewardedCheck?: Promise<boolean>;
 
     private get cfg() {
-        return Capacitor.getPlatform() === 'ios' ? ADS_CONFIG.ios : ADS_CONFIG.android;
+        const platform = Capacitor.getPlatform();
+        return platform === 'ios' ? ADS_CONFIG.ios : platform === 'android' ? ADS_CONFIG.android : ADS_CONFIG.web;
     }
 
-    /** True on device once the ad IDs are configured; the web build never shows ads. */
+    /** On device once the ad IDs are configured; on web with an AdSense publisher id (H5 Games Ads). */
     get supported(): boolean {
         if ((window as any).__ADS_SIMULATE__) return true;
-        return Capacitor.isNativePlatform() && !this.cfg.appKey.startsWith('REPLACE');
+        return Capacitor.isNativePlatform()
+            ? !this.cfg.appKey.startsWith('REPLACE')
+            : ADS_CONFIG.web.appKey.startsWith('ca-pub-');
     }
 
     async init(): Promise<void> {
@@ -47,8 +52,20 @@ class AdsManager {
         try {
             CapacitorAds.addListener('rewardedLoaded', () => { this.rewardedReady = true; });
             CapacitorAds.addListener('interstitialLoaded', () => { this.interstitialReady = true; });
-            // Child-directed for everyone: no personalisation, no consent prompt, no ATT.
-            await CapacitorAds.setConsent({ childDirected: true, gdprConsent: false, doNotSell: true }).catch(() => {});
+            if (!Capacitor.isNativePlatform()) {
+                // H5 ads play inside the page, over the game's own audio
+                const mute = (muted: boolean) => () => Howler.mute(muted);
+                CapacitorAds.addListener('interstitialOpened', mute(true));
+                CapacitorAds.addListener('rewardedOpened', mute(true));
+                CapacitorAds.addListener('interstitialClosed', mute(false));
+                CapacitorAds.addListener('rewardedClosed', mute(false));
+            }
+            // Kids: child-directed, no personalisation, no consent prompt, no ATT.
+            // General would need Turns' consent card first; until then it stays non-personalised.
+            const consent = AUDIENCE === 'kids'
+                ? { childDirected: true, gdprConsent: false, doNotSell: true }
+                : { gdprConsent: false, doNotSell: true };
+            await CapacitorAds.setConsent(consent).catch(() => {});
             await CapacitorAds.initialize({
                 appKey: this.cfg.appKey,
                 testMode: ADS_CONFIG.TEST_MODE,
@@ -67,7 +84,7 @@ class AdsManager {
 
     /** LevelPlay Test Suite: lists the integrated networks and loads test ads (TEST_MODE builds only). */
     openTestSuite(): void {
-        if (this.ready && ADS_CONFIG.TEST_MODE) CapacitorAds.openTestSuite().catch(() => {});
+        if (this.ready && ADS_CONFIG.TEST_MODE && Capacitor.isNativePlatform()) CapacitorAds.openTestSuite().catch(() => {});
     }
 
     /** Re-sync the cached readiness flags with the plugin. */

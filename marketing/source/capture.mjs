@@ -1,5 +1,7 @@
 // Captures raw Tap Sum screens from the web build (http://localhost:8080) with Playwright + local Chrome.
 // usage: node capture.mjs <outDir> <width> <height> <dpr> [only]
+// NATIVE=1 makes Capacitor report 'ios' (fake WebKit bridge), so the game uses its native full-screen layout
+// instead of the web portrait box. Needed for iPad captures; native plugin calls just fail and are ignored.
 import { chromium } from 'playwright-core';
 import fs from 'fs';
 
@@ -13,6 +15,9 @@ const browser = await chromium.launch({
 
 async function open(profile = 'explorer', best = '240') {
     const ctx = await browser.newContext({ viewport: { width: +W, height: +H }, deviceScaleFactor: +DPR, isMobile: true, hasTouch: true });
+    if (process.env.NATIVE) {
+        await ctx.addInitScript(() => { window.webkit = { messageHandlers: { bridge: { postMessage() {} } } }; });
+    }
     await ctx.addInitScript(([profile, best]) => {
         localStorage.setItem('tapsum_profile', profile);
         localStorage.setItem('tapsum_tutorial_done', 'true');
@@ -26,6 +31,8 @@ async function open(profile = 'explorer', best = '240') {
     await p.goto('http://localhost:8080/');
     await p.waitForFunction(() => window.game?.scene.isActive('Menu'), null, { timeout: 30000 });
     await p.waitForTimeout(1200);
+    // The fake bridge can't answer the purchases plugin, so add the coffee button a real install shows
+    if (process.env.NATIVE) await p.evaluate(() => window.game.scene.getScene('Menu').createDonateButton());
     return { ctx, p };
 }
 
@@ -142,7 +149,9 @@ const shots = {
             if (!e.children.list.some((o) => o.type === 'Rectangle')) e.spawnConfetti(50);
         });
         await p.waitForTimeout(1100);
-        await p.evaluate(() => { const e = window.game.scene.getScene('End'); e.rankText?.setText('#12'); e.scene.pause(); });
+        // Don't freeze the scene during the gold "new best" camera flash
+        await p.waitForFunction(() => !window.game.scene.getScene('End').cameras.main.flashEffect.isRunning);
+        await p.evaluate(() => { const e = window.game.scene.getScene('End'); if (!window.webkit) e.rankText?.setText('#12'); e.scene.pause(); });
         await shot(p, 'best');
         await ctx.close();
     },
@@ -163,6 +172,8 @@ const shots = {
 
 for (const [name, fn] of Object.entries(shots)) {
     if (only && !only.split(',').includes(name)) continue;
+    // Native apps show Play Games / Game Center instead of the in-game leaderboard panel
+    if (process.env.NATIVE && name === 'leaderboard') continue;
     try { await fn(); } catch (e) { console.log('FAIL', name, e.message); }
 }
 await browser.close();

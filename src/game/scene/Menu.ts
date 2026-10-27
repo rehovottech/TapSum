@@ -6,6 +6,8 @@ import { THEME } from '../constants/Colors';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
 import { PurchasesManager } from '../../services/Purchases';
+import { UpdateManager } from '../../services/Update';
+import { PRIVACY_URL, TERMS_URL } from '../../config/Links';
 import { Firebase } from '../../services/Firebase';
 import { Mascot } from '../ui/Mascot';
 import { ProfilePicker } from '../ui/ProfilePicker';
@@ -43,6 +45,8 @@ export default class Menu extends BaseScene {
         }
 
         this.checkPurchaseButton();
+        this.supportPrompt();
+        this.updatePrompt();
 
         this.fpsView = new FPS(this);
 
@@ -208,6 +212,44 @@ export default class Menu extends BaseScene {
         );
     }
 
+    // ── Automatic popups (docs/GAME_ESSENTIALS.md § 4 and § 5) ──────────────
+
+    /** Profile picker, help, leaderboard, a yes/no popup or a plugin popup is showing. */
+    private isPopupOpen(): boolean {
+        return PurchasesManager.popupOpen || this.children.list.some((o) => (o as Phaser.GameObjects.Container).depth >= 50);
+    }
+
+    /** Support popup: ~1 s after Menu appears, if it's due (3-day streak) and nothing else is open. */
+    private supportPrompt(): void {
+        this.time.delayedCall(1000, () => {
+            if (!this.sys.isActive() || this.isPopupOpen()) return;
+            PurchasesManager.remindIfDue();
+        });
+    }
+
+    /** Update alert: checked once per launch, 3 s after Menu appears; waits while another popup is open. */
+    private updatePrompt(): void {
+        this.time.delayedCall(3000, async () => {
+            await UpdateManager.check();
+            const show = () => {
+                if (UpdateManager.pending === null || !this.sys.isActive()) return;
+                if (this.isPopupOpen()) { this.time.delayedCall(1500, show); return; }
+                this.confirmPopup(
+                    'New version available!',
+                    'A new version of Tap Sum is ready with fixes and improvements.',
+                    'UPDATE', 'LATER',
+                    (yes) => { if (yes) UpdateManager.update(); else UpdateManager.later(); },
+                );
+            };
+            show();
+        });
+    }
+
+    /** Privacy policy / terms (§ 8). Leaving the app needs a grown-up first in this Kids game. */
+    private async openLink(url: string): Promise<void> {
+        if (await PurchasesManager.askGrownUp()) window.open(url, '_blank');
+    }
+
     private toggleHelpPopup(): void {
         if (this.helpPopup) {
             this.closeHelpPopup();
@@ -219,7 +261,7 @@ export default class Menu extends BaseScene {
 
     private openHelpPopup(): void {
         const panelW = Math.floor(this.W * 0.86);
-        const panelH = Math.floor(this.H * 0.66);
+        const panelH = Math.floor(this.H * 0.72);
         const px = this.W / 2;
         const py = this.H / 2;
 
@@ -257,6 +299,15 @@ export default class Menu extends BaseScene {
                 .setTint(i === 1 ? THEME.ADD : THEME.INK);
             root.add(text);
             cursorY += text.height + lineSpacing;
+        });
+
+        // Privacy policy and terms of service, along the bottom of the panel
+        const linkY = py + panelH / 2 - Math.floor(this.H * 0.04);
+        [['Privacy policy', PRIVACY_URL, -1], ['Terms of service', TERMS_URL, 1]].forEach(([text, url, side]) => {
+            const link = this.label(px + (side as number) * panelW * 0.22, linkY, text as string, this.H * 0.019, 0x1e90e8);
+            link.setInteractive({ useHandCursor: true });
+            link.on('pointerdown', () => { AudioManager.play('snd_click'); this.openLink(url as string); });
+            root.add(link);
         });
 
         const closeX = px + panelW / 2 - 40;
