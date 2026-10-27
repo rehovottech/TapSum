@@ -51,6 +51,35 @@ Every game's General boards live in the same Firestore, kept apart by their **bo
   - a score can never go down, and can't be above the board's `maxScore()`;
   - boards that aren't listed in `maxScore()` only get the first three checks.
 
+### How the master connects to each game
+
+No file or code links them. The games and the rules meet only inside Firebase:
+
+```
+ /Volumes/T7/Work/Office/Firebase/rehovt-web-games/firestore.rules   (master, on the Mac)
+                 │
+                 │  firebase deploy --only firestore:rules   (only when someone runs it)
+                 ▼
+ ┌──────────── Firebase project "rehovt-web-games" (Google's servers) ────────────┐
+ │  Live Firestore rules  ← checked by Google on every read and write             │
+ │  leaderboards/turns_stars/entries/…                                            │
+ │  leaderboards/tapsum/entries/…                                                 │
+ └────────────────────────────────────────────────────────────────────────────────┘
+        ▲                                     ▲
+        │ projectId: "rehovt-web-games"       │ projectId: "rehovt-web-games"
+  Turns (src/config/Firebase.ts)        Tap Sum (src/config/Firebase.ts)
+  writes board "turns_stars"            writes board "tapsum"
+```
+
+1. **Project ID:** each game's `src/config/Firebase.ts` has `projectId: "rehovt-web-games"`. That sends its scores to the shared Firestore. The game holds no copy of the rules.
+2. **Board ID:** a score lands at `leaderboards/<boardId>/entries/<player>`. Google runs the **live** rules, and `maxScore('<boardId>')` finds that board's line. The ID comes from `firebase: '…'` in the game's `src/config/GameServices.ts`.
+
+What follows:
+- **No app update needed:** a rules deploy applies to every game at once.
+- **The master file only matters at deploy time.** Editing it changes nothing until you deploy; the live rules stay in Firebase even if the file is lost (keep it in git or backed up).
+- **Board IDs must match exactly** in `GameServices.ts` and `maxScore()`. A board that isn't listed still works, with only the basic checks (sign-in, own entry, score never goes down).
+- **What's live:** Firebase console ▸ `rehovt-web-games` ▸ Firestore ▸ **Rules**, with the history of every deploy.
+
 ## Status
 
 | Game | Web + General board | Android analytics | iOS analytics |
