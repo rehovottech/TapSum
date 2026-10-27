@@ -8,10 +8,12 @@ import { defineConfig } from 'vite'
 export default defineConfig({
     plugins: [
         react(),
-        legacy()
+        // Firebase 12 uses BigInt literals, so the modern bundle targets BigInt-capable browsers
+        // (all supported WebViews: iOS 15+, Android System WebView). Older browsers get the legacy bundle.
+        legacy({ modernTargets: ['chrome >= 87', 'edge >= 88', 'firefox >= 78', 'safari >= 14', 'ios >= 14'] })
     ],
     resolve: {
-        dedupe: ['react', 'react-dom', '@ionic/react', '@ionic/core', '@capacitor/core', 'ionicons'],
+        dedupe: ['react', 'react-dom', '@ionic/react', '@ionic/core', '@capacitor/core', 'ionicons', 'firebase'],
     },
     test: {
         globals: true,

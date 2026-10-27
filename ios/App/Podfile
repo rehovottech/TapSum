@@ -1,0 +1,40 @@
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '15.0'
+# LevelPlay ships static binaries, so frameworks must link statically
+use_frameworks! :linkage => :static
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorFirebaseAnalytics', :path => '../../node_modules/@capacitor-firebase/analytics'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+  pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
+  pod 'CapacitorPreferences', :path => '../../node_modules/@capacitor/preferences'
+  pod 'CapacitorScreenOrientation', :path => '../../node_modules/@capacitor/screen-orientation'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+  pod 'RehovottechCapacitorAds', :path => '../../../../plugins/rehovot-ads/rehovot-ads-packages'
+  pod 'RehovottechCapacitorPurchases', :path => '../../../../plugins/rehovot-purchase'
+end
+
+target 'App' do
+  capacitor_pods
+  # Native Firebase Analytics for iOS (GoogleService-Info.plist, project rehovot-ios-games),
+  # without the advertising ID (IDFA): Tap Sum is child-directed.
+  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../node_modules/@capacitor-firebase/analytics'
+  # Ad networks mediated by Unity LevelPlay (the SDK itself comes with @rehovottech/capacitor-ads).
+  # Same adapter versions as Turns; check LevelPlay > Integration Manager when updating.
+  pod 'IronSourceUnityAdsAdapter', '~> 5.9'
+  pod 'IronSourceAdMobAdapter', '~> 5.9'
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end

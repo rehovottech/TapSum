@@ -1,4 +1,3 @@
-import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
@@ -11,7 +10,6 @@ export class NotificationManager {
     static async initialize(): Promise<void> {
         if (!Capacitor.isNativePlatform()) return;
         await NotificationManager.requestPermissions();
-        await NotificationManager.setupPushNotifications();
         await NotificationManager.schedulePlayReminder();
     }
 
@@ -54,49 +52,12 @@ export class NotificationManager {
 
     private static async requestPermissions(): Promise<void> {
         try {
-            const pushResult = await PushNotifications.requestPermissions();
-            if (pushResult.receive !== 'granted') {
-                console.warn('Push notification permission denied');
-            }
-
             const localResult = await LocalNotifications.requestPermissions();
             if (localResult.display !== 'granted') {
                 console.warn('Local notification permission denied');
             }
         } catch (e) {
             console.error('Notification permission error:', e);
-        }
-    }
-
-    private static async setupPushNotifications(): Promise<void> {
-        try {
-            const status = await PushNotifications.checkPermissions();
-            if (status.receive !== 'granted') return;
-
-            await PushNotifications.register();
-
-            await PushNotifications.removeAllListeners();
-
-            // FCM token received — send this to your backend to send targeted notifications
-            PushNotifications.addListener('registration', (token: Token) => {
-                console.log('FCM Token:', token.value);
-            });
-
-            PushNotifications.addListener('registrationError', (err: any) => {
-                console.error('FCM registration error:', err.error);
-            });
-
-            // Notification received while app is in foreground
-            PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-                console.log('Push notification received:', notification.title);
-            });
-
-            // User tapped a notification
-            PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
-                console.log('Push notification tapped:', action.notification.title);
-            });
-        } catch (e) {
-            console.error('Push notification setup error:', e);
         }
     }
 

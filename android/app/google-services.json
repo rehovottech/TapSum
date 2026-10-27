@@ -1,29 +1,251 @@
 {
-    "project_info": {
-        "project_number": "947127481548",
-        "project_id": "rehovotgames",
-        "storage_bucket": "rehovotgames.firebasestorage.app"
-    },
-    "client": [
-        {
-            "client_info": {
-                "mobilesdk_app_id": "1:947127481548:android:91caf08c179f4b3b76be69",
-                "android_client_info": {
-                    "package_name": "com.rehovot.game.tapsum"
-                }
-            },
-            "oauth_client": [],
-            "api_key": [
-                {
-                    "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
-                }
-            ],
-            "services": {
-                "appinvite_service": {
-                    "other_platform_oauth_client": []
-                }
-            }
+  "project_info": {
+    "project_number": "947127481548",
+    "firebase_url": "https://rehovotgames-default-rtdb.firebaseio.com",
+    "project_id": "rehovotgames",
+    "storage_bucket": "rehovotgames.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:874d85475379f1bc76be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.edu.blendbuddy"
         }
-    ],
-    "configuration_version": "1"
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:1346df380bc65d2776be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.edu.ezhuthisai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:d7fee1a01b3190c676be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.edu.quizlytic"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:976a6a1323b3bfc676be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.edu.signaryabc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:808af9c92e4c790976be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.edu.tamilagaram"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:6aabe1d7b63c13ba76be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.game.puzzle.turns"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:91caf08c179f4b3b76be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.game.tapsum"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-842g0c2dd6ljc6emk875g4oi4ao02d36.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rehovot.game.tapsum",
+            "certificate_hash": "404c320bc529f2714c5534c04ca2cae7bbfc89b2"
+          }
+        },
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947127481548:android:2209035602a1240f76be69",
+        "android_client_info": {
+          "package_name": "com.rehovot.learning.tamilagaram"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy5Ejk0add3W11vjnumEHaa7gn19uPEmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "947127481548-8h3ofblapp181oqbk3n5vneb710lrcmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }
