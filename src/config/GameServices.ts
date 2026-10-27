@@ -19,19 +19,19 @@ export const LEADERBOARDS: Record<ProfileId, { title: string; firebase: string; 
     little: {
         title: 'Little Learner',
         firebase: 'tapsum_little',
-        android: 'REPLACE_WITH_PLAY_LEADERBOARD_ID',
+        android: 'CgkIzOnJqcgbEAIQBQ',
         ios: 'com.rehovot.game.tapsum.little',
     },
     explorer: {
         title: 'Explorer',
         firebase: 'tapsum',
-        android: 'REPLACE_WITH_PLAY_LEADERBOARD_ID',
+        android: 'CgkIzOnJqcgbEAIQBg',
         ios: 'com.rehovot.game.tapsum.explorer',
     },
     adult: {
         title: 'Brain Trainer',
         firebase: 'tapsum_adult',
-        android: 'REPLACE_WITH_PLAY_LEADERBOARD_ID',
+        android: 'CgkIzOnJqcgbEAIQBw',
         ios: 'com.rehovot.game.tapsum.adult',
     },
 };
