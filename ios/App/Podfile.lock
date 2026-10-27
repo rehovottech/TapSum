@@ -98,6 +98,8 @@ PODS:
     - IronSourceSDK/Ads (~> 9.6)
   - RehovottechCapacitorPurchases (1.0.0):
     - Capacitor
+  - RehovottechGameService (1.0.0):
+    - Capacitor
   - UnityAds (4.21.0):
     - UnityCoherenceLib (~> 0.2.0)
   - UnityCoherenceLib (0.2.0)
@@ -118,6 +120,7 @@ DEPENDENCIES:
   - IronSourceUnityAdsAdapter (~> 5.9)
   - RehovottechCapacitorAds (from `../../../../plugins/rehovot-ads/rehovot-ads-packages`)
   - RehovottechCapacitorPurchases (from `../../../../plugins/rehovot-purchase`)
+  - RehovottechGameService (from `../../../../plugins/rehovot-game-service`)
 
 SPEC REPOS:
   trunk:
@@ -162,6 +165,8 @@ EXTERNAL SOURCES:
     :path: "../../../../plugins/rehovot-ads/rehovot-ads-packages"
   RehovottechCapacitorPurchases:
     :path: "../../../../plugins/rehovot-purchase"
+  RehovottechGameService:
+    :path: "../../../../plugins/rehovot-game-service"
 
 SPEC CHECKSUMS:
   Capacitor: 22e541237135648c9aa736232bb4d2eec35fddcb
@@ -189,9 +194,10 @@ SPEC CHECKSUMS:
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   RehovottechCapacitorAds: 982b1044bb333e44648fd6c85bb009510f7e0ed0
   RehovottechCapacitorPurchases: 8808786b0acb485a59617cf71b9663c0e488333e
+  RehovottechGameService: 2778fcaecc5aa4f3253795e2a8bbe3f9b4c573ef
   UnityAds: caaccd3367f77a9a64b061404c5cc8eb2df20103
   UnityCoherenceLib: 9f7a49d0b53897b6627ad2ecf3b8369d015c66f4
 
-PODFILE CHECKSUM: d8de0ad6a720790a60e8dad074cabf2d647ededa
+PODFILE CHECKSUM: 9b6f66d353431d08bf822a654f76c28a41f30061
 
 COCOAPODS: 1.16.2

@@ -3,7 +3,7 @@ import BaseScene from './BaseScene';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { THEME } from '../constants/Colors';
-import { Firebase } from '../../services/Firebase';
+import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { AudioManager } from '../managers/AudioManager';
 import FPS from '../model/FPS';
 
@@ -55,8 +55,9 @@ export default class Boot extends BaseScene {
         this.showLogo();
         this.finishLoading();
 
-        // Kick off service initializations in the background.
-        Firebase.signInAnonymous().catch(() => {});
+        // Kick off service initializations in the background
+        // (web: Firebase sign-in for its leaderboard; Android: Play Games sign-in check).
+        LeaderboardManager.init().catch(() => {});
     }
 
     update(): void {

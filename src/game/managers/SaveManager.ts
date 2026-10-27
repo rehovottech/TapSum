@@ -36,7 +36,11 @@ export const SaveManager = {
     // ── Best score (per profile) ────────────────────────────────────────────
 
     getBestScore(): number {
-        return parseInt(read(bestKey(this.getProfile().id)) ?? '0', 10) || 0;
+        return this.getBestScoreFor(this.getProfile().id);
+    },
+
+    getBestScoreFor(id: ProfileId): number {
+        return parseInt(read(bestKey(id)) ?? '0', 10) || 0;
     },
 
     setBestScore(score: number): void {

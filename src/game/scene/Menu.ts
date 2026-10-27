@@ -6,7 +6,6 @@ import { THEME } from '../constants/Colors';
 import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
 import { PurchasesManager } from '../../services/Purchases';
-import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 import { Firebase } from '../../services/Firebase';
 import { Mascot } from '../ui/Mascot';
 import { ProfilePicker } from '../ui/ProfilePicker';
@@ -193,7 +192,7 @@ export default class Menu extends BaseScene {
             THEME.CARD, THEME.CARD_SHADOW,
             () => {
                 AudioManager.play('snd_click');
-                new LeaderboardPanel(this);
+                this.openLeaderboard();
             },
             THEME.INK,
         );

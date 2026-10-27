@@ -22,7 +22,7 @@ const APP_PLATFORM = Capacitor.getPlatform();   // 'android' | 'ios' | 'web'
 
 // Each platform reports to its own Firebase project: iOS and Android use native Firebase Analytics
 // (GoogleService-Info.plist / google-services.json), web uses the web SDK through
-// @rehovottech/firebase (src/config/Firebase.ts). Auth and the leaderboard share the web config.
+// @rehovottech/firebase (src/config/Firebase.ts). The Firebase leaderboard is web-only (LeaderboardManager).
 const NATIVE_ANALYTICS = APP_PLATFORM === 'ios' || APP_PLATFORM === 'android';
 
 class FireBaseService {

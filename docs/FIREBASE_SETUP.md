@@ -4,14 +4,17 @@ How Tap Sum wires up Firebase. To set up another Rehovot game, copy the steps be
 
 ## The model
 
-| Platform | Analytics | Auth + leaderboard |
+| Platform | Analytics | Leaderboard |
 |---|---|---|
-| Web | Web SDK, web config (`src/config/Firebase.ts`) | Web config |
-| Android | **Native**, `android/app/google-services.json` | Web config |
-| iOS | **Native**, `ios/App/App/GoogleService-Info.plist` | Web config |
+| Web | Web SDK, web config (`src/config/Firebase.ts`) | Firebase (web config, anonymous auth) |
+| Android | **Native**, `android/app/google-services.json` | Google Play Games (not Firebase) |
+| iOS | **Native**, `ios/App/App/GoogleService-Info.plist` | Game Center (not Firebase) |
 
 - **Analytics:** each platform reports to its own Firebase app or project.
-- **Auth and the leaderboard:** all three platforms share the **web config** through `@rehovottech/firebase`, the Firebase JS SDK running in the WebView. Players on every platform therefore share one leaderboard.
+- **Leaderboard:**
+  - **Web** uses the Firebase leaderboard through the **web config** (`@rehovottech/firebase`, anonymous sign-in).
+  - **Android and iOS** use Play Games / Game Center instead. See [GAME_ESSENTIALS.md § 4](GAME_ESSENTIALS.md#4-leaderboards).
+  - The web SDK still starts on mobile, but nothing signs in there.
 - **Platform tag:** every event and user carries `app_platform` = `web` | `android` | `ios`.
 
 **Why native analytics on mobile:**
@@ -59,7 +62,7 @@ const NATIVE_ANALYTICS = APP_PLATFORM === 'ios' || APP_PLATFORM === 'android';
 init():
     const prepare = NATIVE_ANALYTICS ? this.prepareNativeAnalytics() : this.prepareChildSafeAnalytics();
     prepare.catch(warn)
-        // the web SDK still starts on every platform (auth + leaderboard); analytics only on web
+        // the web SDK still starts on every platform; analytics and the Firebase leaderboard are used on web only
         .then(() => RehovotFirebase.initialize({ ...FirebaseConfig, analyticsEnabled: !NATIVE_ANALYTICS }));
 
 prepareNativeAnalytics():           // iOS / Android

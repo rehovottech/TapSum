@@ -22,6 +22,7 @@ def capacitor_pods
   pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
   pod 'RehovottechCapacitorAds', :path => '../../../../plugins/rehovot-ads/rehovot-ads-packages'
   pod 'RehovottechCapacitorPurchases', :path => '../../../../plugins/rehovot-purchase'
+  pod 'RehovottechGameService', :path => '../../../../plugins/rehovot-game-service'
 end
 
 target 'App' do

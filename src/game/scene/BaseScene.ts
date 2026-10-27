@@ -2,6 +2,9 @@ import * as Phaser from 'phaser';
 import { GlobVar } from '../../utils/Global';
 import FPS from '../model/FPS';
 import { THEME } from '../constants/Colors';
+import { Capacitor } from '@capacitor/core';
+import { LeaderboardManager } from '../managers/LeaderboardManager';
+import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 
 export default abstract class BaseScene extends Phaser.Scene {
     protected sceneClose = false;
@@ -233,6 +236,40 @@ export default abstract class BaseScene extends Phaser.Scene {
             targets: target,
             scaleX: 1.35, scaleY: 1.35,
             duration: 110, yoyo: true, ease: 'Power2',
+        });
+    }
+
+    // ── Leaderboard ─────────────────────────────────────────────────────────
+
+    /** Web: the in-game Firebase panel. Android / iOS: the Play Games / Game Center leaderboard. */
+    protected openLeaderboard(): void {
+        if (!LeaderboardManager.native) {
+            new LeaderboardPanel(this);
+            return;
+        }
+        LeaderboardManager.open().then((opened) => {
+            if (!opened && this.scene.isActive()) {
+                const service = Capacitor.getPlatform() === 'ios' ? 'Game Center' : 'Play Games';
+                this.toast(`Sign in to ${service} to see the leaderboard`);
+            }
+        });
+    }
+
+    /** Short message pill near the bottom of the screen that fades away. */
+    protected toast(text: string): void {
+        const y = this.H * 0.86;
+        const msg = this.label(this.CX, y, text, this.H * 0.018, 0xffffff);
+        const w = msg.width + this.W * 0.08;
+        const h = Math.floor(this.H * 0.05);
+        const bg = this.add.graphics();
+        bg.fillStyle(THEME.INK, 0.92);
+        bg.fillRoundedRect(this.CX - w / 2, y - h / 2, w, h, h / 2);
+
+        const pill = this.add.container(0, 0, [bg, msg]).setDepth(200).setAlpha(0);
+        this.tweens.add({ targets: pill, alpha: 1, duration: 180 });
+        this.tweens.add({
+            targets: pill, alpha: 0, delay: 2200, duration: 300,
+            onComplete: () => pill.destroy(),
         });
     }
 }

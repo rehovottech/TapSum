@@ -1,10 +1,10 @@
 import type { FirebaseConfigInput } from '@rehovottech/firebase';
 
 /**
- * One Firebase web-app config for every platform (web, Android and iOS).
+ * Firebase web-app config, used by @rehovottech/firebase (the Firebase JS SDK in the WebView).
  *
- * @rehovottech/firebase is the Firebase JS SDK running in the WebView, so every platform shares this
- * config for auth and the leaderboard. Only web sends Analytics through it; iOS and Android use
+ * Web uses it for Analytics, anonymous auth and the leaderboard. Android and iOS use Play Games /
+ * Game Center for leaderboards (game/managers/LeaderboardManager.ts), and
  * native Analytics with their own projects (ios/App/App/GoogleService-Info.plist,
  * android/app/google-services.json). Each event carries an `app_platform` parameter / user property
  * (android | ios | web), set in services/Firebase.ts.

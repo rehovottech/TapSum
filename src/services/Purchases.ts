@@ -24,8 +24,8 @@ class PurchasesManagerClass {
             }
         });
 
-        // No automatic donate popup: Tap Sum is played by kids (Families policy),
-        // so the popup only opens from the coffee button in Menu.
+        // Counts this launch; the donate popup opens by itself after a 3-day streak (config/Purchases.ts),
+        // otherwise from the coffee button in Menu. Purchases sit behind a parental gate.
         await Purchases.initialize(PurchasesConfigData);
     }
 

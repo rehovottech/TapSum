@@ -31,3 +31,6 @@ project(':rehovottech-capacitor-ads').projectDir = new File('../../../plugins/re
 
 include ':rehovottech-capacitor-purchases'
 project(':rehovottech-capacitor-purchases').projectDir = new File('../node_modules/@rehovottech/capacitor-purchases/android')
+
+include ':rehovottech-game-service'
+project(':rehovottech-game-service').projectDir = new File('../node_modules/@rehovottech/game-service/android')

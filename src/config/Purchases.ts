@@ -37,9 +37,12 @@ export const PurchasesConfigData: PurchasesConfig = {
         },
     },
     donation: {
-        // No automatic reminder popup: Tap Sum is played by kids (Families policy).
-        // The donate popup only opens from the coffee button in Menu.
-        enabled: false,
+        // Automatic popup once the app has been opened 3 days in a row, then at most every 30 days
+        // (and only after another 3-day streak). The coffee button in Menu opens it any time.
+        // Kids play Tap Sum (Families policy), so every purchase goes through a grown-up number gate.
+        enabled: true,
+        showAfterConsecutiveDays: 3,
+        parentalGate: true,
         title: '❤️ Buy us a Coffee',
         message: 'Your support helps us keep building free games like Tap Sum.',
         buttonText: 'Support',

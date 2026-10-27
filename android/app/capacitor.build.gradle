@@ -19,6 +19,7 @@ dependencies {
     implementation project(':capacitor-status-bar')
     implementation project(':rehovottech-capacitor-ads')
     implementation project(':rehovottech-capacitor-purchases')
+    implementation project(':rehovottech-game-service')
 
 }
 

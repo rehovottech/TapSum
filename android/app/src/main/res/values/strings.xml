@@ -4,4 +4,6 @@
     <string name="title_activity_main">Tap Sum</string>
     <string name="package_name">com.rehovot.game.tapsum</string>
     <string name="custom_url_scheme">com.rehovot.game.tapsum</string>
+    <!-- Play Console > Play Games Services > Configuration > Project ID (numeric) -->
+    <string name="game_services_project_id" translatable="false">REPLACE_WITH_PLAY_GAMES_PROJECT_ID</string>
 </resources>
