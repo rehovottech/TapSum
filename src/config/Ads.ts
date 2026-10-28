@@ -19,7 +19,7 @@
 export const AUDIENCE: 'kids' | 'general' = 'kids';
 
 export const ADS_CONFIG = {
-    TEST_MODE: true,
+    TEST_MODE: false,
     android: {
         appKey:       '290389935',
         interstitial: '5h3xprwr9zq0bja8',
