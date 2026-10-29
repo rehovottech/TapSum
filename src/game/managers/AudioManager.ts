@@ -30,6 +30,10 @@ const SFX_VOL   = 0.5;
 const IS_IOS = Capacitor.getPlatform() === 'ios'
     || /iPad|iPhone|iPod/.test(navigator.userAgent)
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = Capacitor.getPlatform() === 'android' || /Android/i.test(navigator.userAgent);
+// html5 music streaming on desktop browsers only: the iOS and Android WebViews ignore an
+// <audio> element's volume (music plays at 100%), so MUSIC_VOL and mute need Web Audio there.
+const MUSIC_HTML5 = !IS_IOS && !IS_ANDROID;
 
 class AudioManagerClass {
     private sounds               = new Map<string, Howl>();
@@ -54,13 +58,12 @@ class AudioManagerClass {
             }));
         });
 
-        // Music — html5 mode avoids large ArrayBuffer decode on low-end Android devices.
-        // Not on iOS: WebKit ignores an <audio> element's volume (always 100%), so
-        // MUSIC_VOL and mute only work there through Web Audio.
+        // Music — html5 streaming only on desktop (see MUSIC_HTML5). On mobile the one track
+        // is decoded into memory by Web Audio, which is what makes MUSIC_VOL and mute work.
         this.bgMusic = new Howl({
             src:    [MUSIC_SRC],
             loop:   true,
-            html5:  !IS_IOS,
+            html5:  MUSIC_HTML5,
             volume: SaveManager.isSoundEnabled() ? MUSIC_VOL : 0,
         });
 
