@@ -1,12 +1,13 @@
 export const GAME_CONFIG = {
     SCORE_PER_ROUND: 10,
 
-    // Per-round timer (scales with round count)
-    // rounds  1–9: 7s | 10–19: 9s | 20–29: 11s | 30+: 15s
-    TIMER_BASE_SEC:    7,
+    // Per-round timer: sized to the taps the total needs, so a big total gets
+    // more time (profile thinkSec + tapSec per tap, between minSec and maxSec).
+    // tapSec tightens by TIMER_TAP_RAMP every TIMER_STEP_ROUNDS rounds, down to
+    // TIMER_TAP_FLOOR of itself: early rounds stay relaxed, pressure builds slowly.
     TIMER_STEP_ROUNDS: 10,
-    TIMER_STEP_SEC:    2,
-    TIMER_MAX_SEC:     15,
+    TIMER_TAP_RAMP:    0.05,
+    TIMER_TAP_FLOOR:   0.75,
 
     // Hearts: a wrong answer costs one heart; the run ends at zero
     LIVES: 3,
@@ -36,9 +37,8 @@ export interface ProfileRules {
     ranges:       { upTo: number; min: number; max: number }[];
     /** Chance (0–100) that a number is TAKE AWAY, by round. */
     negatives:    { upTo: number; chance: number }[];
-    timerBaseSec: number;
-    timerStepSec: number;
-    timerMaxSec:  number;
+    /** Round timer (see GAME_CONFIG.TIMER_*): reading and adding time, plus time per tap. */
+    timer:        { thinkSec: number; tapSec: number; minSec: number; maxSec: number };
 }
 
 const INF = Number.MAX_SAFE_INTEGER;
@@ -49,21 +49,25 @@ export const PROFILES: Record<ProfileId, ProfileRules> = {
         color: 0xffb703,
         ranges:    [{ upTo: 10, min: 1, max: 5 }, { upTo: 20, min: 1, max: 9 }, { upTo: 40, min: 2, max: 12 }, { upTo: INF, min: 5, max: 20 }],
         negatives: [{ upTo: 10, chance: 0 }, { upTo: 25, chance: 15 }, { upTo: INF, chance: 25 }],
-        timerBaseSec: 10, timerStepSec: 1, timerMaxSec: 15,
+        // rounds 1–9: 10s, +1s every 10 rounds, 15s from round 50
+        // ~1.1 s per tap early on: plenty for counting taps out loud
+        timer: { thinkSec: 4, tapSec: 1.0, minSec: 8, maxSec: 25 },
     },
     explorer: {
         id: 'explorer', name: 'Explorer', ages: 'Ages 9-12', blurb: 'Adding and taking away',
         color: 0x1e90e8,
         ranges:    [{ upTo: 10, min: 1, max: 10 }, { upTo: 20, min: 1, max: 15 }, { upTo: 40, min: 5, max: 25 }, { upTo: 80, min: 15, max: 50 }, { upTo: INF, min: 50, max: 100 }],
         negatives: [{ upTo: 15, chance: 25 }, { upTo: 30, chance: 35 }, { upTo: INF, chance: 50 }],
-        timerBaseSec: 7, timerStepSec: 2, timerMaxSec: 15,
+        // rounds 1–9: 7s, +2s every 10 rounds, 15s from round 40
+        timer: { thinkSec: 3, tapSec: 0.7, minSec: 6, maxSec: 18 },
     },
     adult: {
         id: 'adult', name: 'Brain Trainer', ages: 'Teens & adults', blurb: 'Bigger numbers, faster',
         color: 0x8b5cf6,
         ranges:    [{ upTo: 10, min: 1, max: 15 }, { upTo: 20, min: 5, max: 25 }, { upTo: 40, min: 10, max: 50 }, { upTo: 80, min: 20, max: 99 }, { upTo: INF, min: 50, max: 150 }],
         negatives: [{ upTo: 10, chance: 35 }, { upTo: INF, chance: 50 }],
-        timerBaseSec: 6, timerStepSec: 1, timerMaxSec: 12,
+        // rounds 1–9: 6s, +1s every 10 rounds, 12s from round 60
+        timer: { thinkSec: 2.5, tapSec: 0.5, minSec: 5, maxSec: 14 },
     },
 };
 

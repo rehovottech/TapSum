@@ -56,7 +56,7 @@ export default class Game extends BaseScene {
     private tapsThisRound = 0;
     private history: number[] = [];
     private timeLeft      = 0;
-    private timerDuration = GAME_CONFIG.TIMER_BASE_SEC * 1000;
+    private timerDuration = 0;
     private roundActive   = false;
     private gameOver      = false;
     private continueUsed  = false;   // rewarded "keep going" is offered once per run
@@ -120,7 +120,6 @@ export default class Game extends BaseScene {
         this.paused        = false;
         this.pauseOverlay  = undefined;
         this.timeLeft      = 0;
-        this.timerDuration = GAME_CONFIG.TIMER_BASE_SEC * 1000;
         this.lastHintRemaining = -1;
         this.buttons       = [];
         this.lives         = GAME_CONFIG.LIVES;
@@ -134,7 +133,7 @@ export default class Game extends BaseScene {
         this.lastTapAmount = 0;
         this.hintPill      = undefined;
         this.doneBtn       = undefined;
-        this.timerDuration = this.profile.timerBaseSec * 1000;
+        this.timerDuration = this.profile.timer.minSec * 1000;
     }
 
     create(): void {
@@ -828,9 +827,18 @@ export default class Game extends BaseScene {
     }
 
     private calculateTaskTime(): number {
-        const p     = this.profile;
-        const extra = Math.floor(this.round / GAME_CONFIG.TIMER_STEP_ROUNDS) * p.timerStepSec;
-        return Math.min(p.timerMaxSec, p.timerBaseSec + extra) * 1000;
+        const { thinkSec, tapSec, minSec, maxSec } = this.profile.timer;
+        const ramp = Math.floor(this.round / GAME_CONFIG.TIMER_STEP_ROUNDS) * GAME_CONFIG.TIMER_TAP_RAMP;
+        const perTap = tapSec * Math.max(GAME_CONFIG.TIMER_TAP_FLOOR, 1 - ramp);
+        const sec = thinkSec + perTap * (this.tapsToBuild(this.targetTotal) + 1);   // +1 for DONE
+        return Phaser.Math.Clamp(sec, minSec, maxSec) * 1000;
+    }
+
+    /** Taps to build a total the plain way: one tap per unit of each digit (+1s, +10s, ...). */
+    private tapsToBuild(total: number): number {
+        let taps = 0;
+        for (let n = Math.abs(total); n > 0; n = Math.floor(n / 10)) taps += n % 10;
+        return taps;
     }
 
     private formatDelta(v: number): string {
