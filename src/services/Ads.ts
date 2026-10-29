@@ -25,13 +25,15 @@ const writeNum = (key: string, value: number): void => {
  * mirrors readiness and applies Tap Sum's rules:
  *  - every request is child-directed and non-personalised (Families policy / COPPA);
  *  - rewarded ads are opt-in only (the "keep going" offer);
- *  - interstitials only when leaving the End screen, paced by ADS_CONFIG.
+ *  - interstitials only when leaving the End screen, paced by ADS_CONFIG;
+ *  - premium (Remove Ads) players never see an interstitial.
  */
 class AdsManager {
     private ready = false;
     private rewardedReady = false;
     private interstitialReady = false;
     private showing = false;
+    private premium = false;
     private rewardedCheck?: Promise<boolean>;
 
     private get cfg() {
@@ -85,6 +87,11 @@ class AdsManager {
     /** LevelPlay Test Suite: lists the integrated networks and loads test ads (TEST_MODE builds only). */
     openTestSuite(): void {
         if (this.ready && ADS_CONFIG.TEST_MODE && Capacitor.isNativePlatform()) CapacitorAds.openTestSuite().catch(() => {});
+    }
+
+    /** Premium owned: no more interstitials (continues already skip the rewarded ad). */
+    setPremium(value: boolean): void {
+        this.premium = value;
     }
 
     /** Re-sync the cached readiness flags with the plugin. */
@@ -143,7 +150,7 @@ class AdsManager {
 
     /** Call when the player leaves the End screen; shows an interstitial only when pacing allows. Never rejects. */
     async maybeInterstitial(): Promise<void> {
-        if (!this.ready || this.showing) return;
+        if (!this.ready || this.showing || this.premium) return;
         if (readNum(KEYS.GAMES_ENDED) <= ADS_CONFIG.interstitialAfterGames) return;
         if (readNum(KEYS.GAMES_SINCE) < ADS_CONFIG.interstitialEveryGames) return;
         if (Date.now() - readNum(KEYS.LAST_AT) < ADS_CONFIG.interstitialMinGapSec * 1000) return;

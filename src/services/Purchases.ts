@@ -1,6 +1,7 @@
 import { Purchases } from '@rehovottech/capacitor-purchases';
 import { PurchasesConfigData } from '../config/Purchases';
 import { AUDIENCE } from '../config/Ads';
+import { Ads } from './Ads';
 
 const setInput = (enabled: boolean): void => {
     window.game?.scene.getScenes(true).forEach((scene) => {
@@ -17,10 +18,15 @@ class PurchasesManagerClass {
         if (!this.initPromise) {
             Purchases.addListener("popupOpened", () => { this.popupOpen = true; setInput(false); });
             Purchases.addListener("popupClosed", () => { this.popupOpen = false; setInput(true); });
+            // Premium removes ads: bought now, or restored from an earlier install
+            Purchases.addListener("premiumUnlocked", () => Ads.setPremium(true));
+            Purchases.addListener("restoreCompleted", (r) => { if (r.premiumActive) Ads.setPremium(true); });
 
             // Counts this launch (and the day streak). The support popup itself is shown by Menu
             // through remindIfDue(), never at launch (showOnInitialize: false).
-            this.initPromise = Purchases.initialize(PurchasesConfigData);
+            this.initPromise = Purchases.initialize(PurchasesConfigData).then(async () => {
+                Ads.setPremium(await Purchases.isPremium().catch(() => false));
+            });
         }
         return this.initPromise;
     }
@@ -48,6 +54,52 @@ class PurchasesManagerClass {
             console.warn('Purchases: grown-up check failed', e);
             return false;
         }
+    }
+
+    /** Premium (`premium_unlock`): no interstitials, and continues skip the rewarded ad. Never rejects. */
+    async isPremium(): Promise<boolean> {
+        try {
+            await this.initialize();
+            const premium = await Purchases.isPremium();
+            Ads.setPremium(premium);
+            return premium;
+        } catch (e) {
+            console.warn('Purchases: premium check failed', e);
+            return false;
+        }
+    }
+
+    /** Opens the premium purchase (grown-up check first in kids' builds). True when premium is owned afterwards. */
+    async buyPremium(): Promise<boolean> {
+        try {
+            await this.initialize();
+            // With the grown-up check, showPremium() returns as soon as the gate opens;
+            // the purchase finishes later, so wait for the popup to close either way.
+            let handle: { remove: () => Promise<void> } | undefined;
+            const closed = new Promise<void>((resolve) => {
+                handle = Purchases.addListener('popupClosed', () => resolve());
+            });
+            try {
+                await Purchases.showPremium();
+                await closed;
+            } finally {
+                await handle?.remove();
+            }
+        } catch (e) {
+            console.warn('Purchases: premium purchase failed', e);
+        }
+        return this.isPremium();
+    }
+
+    /** Restore purchases (App Store requires a button for it). True when premium is owned afterwards. */
+    async restore(): Promise<boolean> {
+        try {
+            await this.initialize();
+            await Purchases.restore();
+        } catch (e) {
+            console.warn('Purchases: restore failed', e);
+        }
+        return this.isPremium();
     }
 
     async hasSupported(): Promise<boolean> {

@@ -11,6 +11,7 @@ import { Firebase } from '../../services/Firebase';
 import { Mascot } from '../ui/Mascot';
 import { Feel } from '../utils/Feel';
 import { Ads } from '../../services/Ads';
+import { PurchasesManager } from '../../services/Purchases';
 import { NotificationManager } from '../../services/Notification';
 import FPS from '../model/FPS';
 
@@ -64,6 +65,8 @@ export default class Game extends BaseScene {
     private roundsCleared = 0;
     private streak        = 0;
     private worriedShown  = false;
+    private roundNote     = '';      // pill shown when the round after a lost heart starts
+    private premium       = false;   // premium owned: continues skip the rewarded ad
     private tutorial      = false;
     private profile!: ProfileRules;
     private lastTapAmount: IncrementAmount | 0 = 0;
@@ -124,6 +127,8 @@ export default class Game extends BaseScene {
         this.roundsCleared = 0;
         this.streak        = 0;
         this.worriedShown  = false;
+        this.roundNote     = '';
+        this.premium       = false;
         this.profile       = SaveManager.getProfile();
         this.tutorial      = !SaveManager.isTutorialDone();
         this.lastTapAmount = 0;
@@ -138,6 +143,7 @@ export default class Game extends BaseScene {
 
         // Each session pushes the "come back and play" reminder 3 days forward (GAME_ESSENTIALS § 6)
         NotificationManager.schedulePlayReminder().catch(() => {});
+        PurchasesManager.isPremium().then((v) => { this.premium = v; });
 
         this.createSkyBg(0.9);
         this.createTopBar();
@@ -874,7 +880,15 @@ export default class Game extends BaseScene {
             this.showHint(this.tutorialHint());
         } else {
             this.hideHint();
-            this.showTape();
+            // The note sits where the tape does, and it already says where the chain stands
+            if (this.roundNote) {
+                this.tape.setAlpha(0);
+                this.showHint(this.roundNote);
+                this.roundNote = '';
+                this.time.delayedCall(1400, () => this.hideHint());
+            } else {
+                this.showTape();
+            }
         }
         this.resetTray();
         this.restoreButtonColors();
@@ -950,7 +964,7 @@ export default class Game extends BaseScene {
         this.track('streak', { length: this.streak, round: this.round });
     }
 
-    // ── Wrong answer: lose a heart, show the real total, carry on ───────────
+    // ── Wrong answer: lose a heart, show the real total, keep or restart the chain ──
 
     private onFail(reason: FailReason): void {
         if (!this.roundActive || this.gameOver) return;
@@ -962,43 +976,102 @@ export default class Game extends BaseScene {
         this.mascot.setMood('sad', GAME_CONFIG.REVEAL_MS).wobble();
         this.track('life_lost', { round: this.round, reason, lives_left: this.lives });
 
-        if (this.lives <= 0) {
-            if (this.canOfferContinue()) {
-                AudioManager.play('snd_fail');
-                this.cameras.main.shake(200, 0.006);
-                this.time.delayedCall(450, () => this.showContinueOffer(reason));
-            } else {
-                this.triggerGameOver(reason);
-            }
+        if (this.lives <= 0 && !this.canOfferContinue()) {
+            this.triggerGameOver(reason);
             return;
         }
 
         AudioManager.play('snd_fail');
         this.cameras.main.shake(200, 0.006);
-        this.carryOn(reason);
+        this.revealTotal(reason);
+
+        if (this.lives <= 0) {
+            this.time.delayedCall(450, () => this.showContinueOffer(reason));
+        } else if (this.canOfferKeepChain()) {
+            this.time.delayedCall(GAME_CONFIG.OFFER_DELAY_MS, () => this.showKeepChainOffer());
+        } else {
+            this.time.delayedCall(GAME_CONFIG.REVEAL_MS, () => this.nextRound(false));
+        }
     }
 
-    /** Show the real total, then start the next round from it. */
-    private carryOn(reason: FailReason): void {
-        this.revealTotal(reason);
-        this.time.delayedCall(GAME_CONFIG.REVEAL_MS, () => {
-            if (this.gameOver) return;
-            this.round++;
-            this.startRound();
+    /** Next round, either adding onto the old total or a new chain from 0. */
+    private nextRound(keepChain: boolean): void {
+        if (this.gameOver) return;
+        if (keepChain) {
+            this.roundNote = `Keep going from ${this.targetTotal}`;
+        } else {
+            this.targetTotal  = 0;
+            this.currentDelta = 0;   // keeps the failed number off the tape
+            this.history      = [];
+            this.roundNote    = 'New chain! Start from 0';
+        }
+        this.track(keepChain ? 'chain_kept' : 'chain_reset', { round: this.round, premium: this.premium });
+        this.round++;
+        this.startRound();
+    }
+
+    // ── Lost a heart: keep the chain (rewarded ad, or free with premium) ────
+
+    private canOfferKeepChain(): boolean {
+        return !this.inTutorial() && (this.premium || Ads.rewardedAvailable());
+    }
+
+    private showKeepChainOffer(): void {
+        this.showContinueSheet({
+            title:    'Keep your chain?',
+            sub:      'Carry on from the total, or start again from 0.',
+            adLabel:  'WATCH AD  CONTINUE',
+            freeLabel: 'CONTINUE',
+            noLabel:  'NEW CHAIN',
+            adReason: 'keep_chain',
+            onContinue: () => this.nextRound(true),
+            onDecline:  () => this.nextRound(false),
         });
     }
 
-    // ── Out of hearts: opt-in rewarded ad for one more heart ────────────────
+    // ── Out of hearts: one more heart and the chain, once per run ───────────
 
     private canOfferContinue(): boolean {
-        return !this.continueUsed && !this.inTutorial() && Ads.rewardedAvailable();
+        return !this.continueUsed && !this.inTutorial() && (this.premium || Ads.rewardedAvailable());
     }
 
     private showContinueOffer(reason: FailReason): void {
+        this.continueUsed = true;
+        this.showContinueSheet({
+            title:    'Keep going?',
+            sub:      'Get one more heart and carry on from the total.',
+            adLabel:  'WATCH AD  +1 HEART',
+            freeLabel: 'CONTINUE  +1 HEART',
+            noLabel:  'NO THANKS',
+            adReason: 'continue',
+            onContinue: () => {
+                this.track('continue_used', { round: this.round, score: this.score, premium: this.premium });
+                this.lives = 1;
+                this.redrawHearts(false);
+                AudioManager.play('snd_reward');
+                Feel.success();
+                this.mascot.setMood('happy', 900);
+                this.nextRound(true);
+            },
+            onDecline: () => this.triggerGameOver(reason),
+        });
+    }
+
+    /**
+     * Bottom sheet with a continue button (rewarded ad, or no ad with premium), a decline
+     * button, and a link to buy premium. A skipped or failed ad counts as declining.
+     */
+    private showContinueSheet(o: {
+        title: string; sub: string;
+        adLabel: string; freeLabel: string; noLabel: string;
+        adReason: string;
+        onContinue: () => void;
+        onDecline: () => void;
+    }): void {
         if (this.gameOver) return;
         if (this.paused) this.closePause();
 
-        const sheetH = Math.floor(this.H * 0.4);
+        const sheetH = Math.floor(this.H * 0.44);
         const sheetY = this.H - sheetH;
         const pad    = Math.floor(this.W * 0.062);
         const innerW = this.W - pad * 2;
@@ -1015,51 +1088,63 @@ export default class Game extends BaseScene {
         sheet.fillStyle(THEME.PIP_OFF, 1);
         sheet.fillRoundedRect(this.CX - 30, sheetY + 18, 60, 8, 4);
 
-        const title = this.label(this.CX, sheetY + sheetH * 0.16, 'Keep going?', this.H * 0.045);
-        const sub   = this.label(this.CX, sheetY + sheetH * 0.29, 'Watch a short ad to get one more heart.', this.H * 0.016, 0x52697b);
+        const title = this.label(this.CX, sheetY + sheetH * 0.14, o.title, this.H * 0.045);
+        const sub   = this.label(this.CX, sheetY + sheetH * 0.26, o.sub, this.H * 0.016, 0x52697b);
 
         let busy = false;
         const close = () => { overlay.destroy(); };
+        const finish = (kept: boolean) => {
+            close();
+            if (!this.scene.isActive() || this.gameOver) return;
+            if (kept) o.onContinue(); else o.onDecline();
+        };
 
-        const watch = this.createButton(this.CX, sheetY + sheetH * 0.5, innerW, bh, 'WATCH AD  +1 HEART',
+        const go = this.createButton(this.CX, sheetY + sheetH * 0.45, innerW, bh, this.premium ? o.freeLabel : o.adLabel,
             this.H * 0.028, THEME.GO, THEME.GO_DARK, async () => {
                 if (busy) return;
                 busy = true;
                 AudioManager.play('snd_click');
-                this.continueUsed = true;
-                const watched = await Ads.showRewarded('continue', 8000);
-                close();
-                if (!this.scene.isActive() || this.gameOver) return;
-                if (!watched) { this.triggerGameOver(reason); return; }
-
-                this.track('continue_used', { round: this.round, score: this.score });
-                this.lives = 1;
-                this.redrawHearts(false);
-                AudioManager.play('snd_reward');
-                Feel.success();
-                this.mascot.setMood('happy', 900);
-                this.carryOn(reason);
+                finish(this.premium || await Ads.showRewarded(o.adReason, 8000));
             });
 
-        const skip = this.createButton(this.CX, sheetY + sheetH * 0.76, innerW, smH, 'NO THANKS',
+        const no = this.createButton(this.CX, sheetY + sheetH * 0.67, innerW, smH, o.noLabel,
             this.H * 0.022, THEME.SURFACE, THEME.CARD_SHADOW, () => {
                 if (busy) return;
                 busy = true;
                 AudioManager.play('snd_click');
-                close();
-                this.triggerGameOver(reason);
+                finish(false);
             }, THEME.INK);
 
-        const sheetC = this.add.container(0, sheetH, [sheet, title, sub, watch, skip]);
+        const items: Phaser.GameObjects.GameObject[] = [sheet, title, sub, go, no];
+
+        if (!this.premium) {
+            const buy = this.label(this.CX, sheetY + sheetH * 0.84, 'No ads? Continue with Premium', this.H * 0.017, THEME.MUTED)
+                .setInteractive({ useHandCursor: true });
+            buy.on('pointerdown', async () => {
+                if (busy) return;
+                busy = true;
+                AudioManager.play('snd_click');
+                this.track('premium_offer_tapped', { reason: o.adReason, round: this.round });
+                const bought = await PurchasesManager.buyPremium();
+                if (!this.scene.isActive() || this.gameOver) return;
+                if (!bought) { busy = false; return; }
+                this.premium = true;
+                AudioManager.play('snd_reward');
+                finish(true);
+            });
+            items.push(buy);
+        }
+
+        const sheetC = this.add.container(0, sheetH, items);
         overlay.add([scrim, sheetC]);
         scrim.setAlpha(0);
         this.tweens.add({ targets: sheetC, y: 0, duration: 220, ease: 'Cubic.Out' });
         this.tweens.add({ targets: scrim, alpha: 1, duration: 180 });
     }
 
-    /** Shows the correct running total so the player can keep going from it. */
+    /** Shows what the running total should have been. */
     private revealTotal(reason: FailReason): void {
-        this.targetLabel.setText('THE TOTAL IS').setTint(THEME.INK);
+        this.targetLabel.setText('IT WAS').setTint(THEME.INK);
         this.targetText.setText(`${this.targetTotal}`).setTint(THEME.INK).setScale(1);
         const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
         this.targetText.setScale(fit * 0.6);

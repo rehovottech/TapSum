@@ -12,6 +12,8 @@ export const GAME_CONFIG = {
     LIVES: 3,
     // How long the correct total stays on screen after a lost heart
     REVEAL_MS: 1600,
+    // Pause after a lost heart before the "keep your chain?" sheet slides up
+    OFFER_DELAY_MS: 600,
 
     // Increment buttons unlock the first time the running total reaches them
     // (+1 is always open). The round that unlocks one gets extra time.

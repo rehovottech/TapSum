@@ -16,6 +16,7 @@ import FPS from '../model/FPS';
 export default class Menu extends BaseScene {
     private soundBtn?: Phaser.GameObjects.Container;
     private helpPopup?: Phaser.GameObjects.Container;
+    private donateBtn?: Phaser.GameObjects.Container;
 
     constructor() {
         super({ key: SCENES.Menu });
@@ -23,6 +24,7 @@ export default class Menu extends BaseScene {
 
     init(): void {
         this.initScene();
+        this.donateBtn = undefined;
     }
 
     create(){
@@ -261,7 +263,7 @@ export default class Menu extends BaseScene {
 
     private openHelpPopup(): void {
         const panelW = Math.floor(this.W * 0.86);
-        const panelH = Math.floor(this.H * 0.72);
+        const panelH = Math.floor(this.H * 0.76);
         const px = this.W / 2;
         const py = this.H / 2;
 
@@ -309,6 +311,31 @@ export default class Menu extends BaseScene {
             link.on('pointerdown', () => { AudioManager.play('snd_click'); this.openLink(url as string); });
             root.add(link);
         });
+
+        // Restore purchases (App Store requirement): brings back premium on a new device or reinstall
+        const restore = this.label(px, linkY - Math.floor(this.H * 0.045), 'Restore purchases', this.H * 0.019, 0x1e90e8);
+        restore.setInteractive({ useHandCursor: true });
+        let restoring = false;
+        restore.on('pointerdown', async () => {
+            if (restoring) return;
+            restoring = true;
+            AudioManager.play('snd_click');
+            restore.setText('Restoring...');
+            const premium = await PurchasesManager.restore();
+            if (!restore.active) return;
+            restore.setText(premium ? 'Premium restored!' : 'Nothing to restore');
+            if (premium) {
+                AudioManager.play('snd_reward');
+                this.donateBtn?.destroy();
+                this.donateBtn = undefined;
+            }
+            this.time.delayedCall(2000, () => {
+                if (!restore.active) return;
+                restore.setText('Restore purchases');
+                restoring = false;
+            });
+        });
+        root.add(restore);
 
         const closeX = px + panelW / 2 - 40;
         const closeY = py - panelH / 2 + 40;
@@ -423,6 +450,7 @@ export default class Menu extends BaseScene {
         const size = Math.floor(this.H * 0.056);
 
         const btn = this.add.container(x, y);
+        this.donateBtn = btn;
 
         const bg = this.add.graphics();
         bg.fillStyle(THEME.CARD_SHADOW, 1);
