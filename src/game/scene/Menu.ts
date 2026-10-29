@@ -436,10 +436,16 @@ export default class Menu extends BaseScene {
         });
     }
 
-    // ── Donate button (coffee mug icon) ─────────────────────────────────────
+    // ── Remove Ads + Coffee button (coffee mug icon) ────────────────────────
 
+    /** Shown until premium is owned (past coffee donors still see ads, so they get it too). */
     private async checkPurchaseButton(): Promise<void> {
-        if (!(await PurchasesManager.hasSupported())) {
+        const hide = () => { this.donateBtn?.destroy(); this.donateBtn = undefined; };
+        PurchasesManager.onPremium = hide;
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            if (PurchasesManager.onPremium === hide) PurchasesManager.onPremium = undefined;
+        });
+        if (!(await PurchasesManager.isPremium()) && this.sys.isActive()) {
             this.createDonateButton();
         }
     }

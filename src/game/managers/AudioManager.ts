@@ -26,6 +26,11 @@ const MUSIC_SRC = 'assets/audio/background-music.mp3';
 const MUSIC_VOL = 0.1;
 const SFX_VOL   = 0.5;
 
+// iOS app, or iPhone / iPad Safari (iPadOS reports itself as a Mac with touch)
+const IS_IOS = Capacitor.getPlatform() === 'ios'
+    || /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 class AudioManagerClass {
     private sounds               = new Map<string, Howl>();
     private bgMusic:               Howl | null = null;
@@ -49,11 +54,13 @@ class AudioManagerClass {
             }));
         });
 
-        // Music — html5 mode avoids large ArrayBuffer decode on low-end Android devices
+        // Music — html5 mode avoids large ArrayBuffer decode on low-end Android devices.
+        // Not on iOS: WebKit ignores an <audio> element's volume (always 100%), so
+        // MUSIC_VOL and mute only work there through Web Audio.
         this.bgMusic = new Howl({
             src:    [MUSIC_SRC],
             loop:   true,
-            html5:  true,
+            html5:  !IS_IOS,
             volume: SaveManager.isSoundEnabled() ? MUSIC_VOL : 0,
         });
 

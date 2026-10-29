@@ -11,16 +11,19 @@ const setInput = (enabled: boolean): void => {
 
 class PurchasesManagerClass {
     private initPromise?: Promise<void>;
-    /** True while a plugin popup (donate / grown-up check) is open. */
+    /** True while a plugin popup (Remove Ads + Coffee / grown-up check) is open. */
     popupOpen = false;
+    /** Called once premium is bought or restored (Menu hides the coffee button). */
+    onPremium?: () => void;
 
     initialize(): Promise<void> {
         if (!this.initPromise) {
             Purchases.addListener("popupOpened", () => { this.popupOpen = true; setInput(false); });
             Purchases.addListener("popupClosed", () => { this.popupOpen = false; setInput(true); });
             // Premium removes ads: bought now, or restored from an earlier install
-            Purchases.addListener("premiumUnlocked", () => Ads.setPremium(true));
-            Purchases.addListener("restoreCompleted", (r) => { if (r.premiumActive) Ads.setPremium(true); });
+            const unlocked = () => { Ads.setPremium(true); this.onPremium?.(); };
+            Purchases.addListener("premiumUnlocked", unlocked);
+            Purchases.addListener("restoreCompleted", (r) => { if (r.premiumActive) unlocked(); });
 
             // Counts this launch (and the day streak). The support popup itself is shown by Menu
             // through remindIfDue(), never at launch (showOnInitialize: false).
@@ -56,7 +59,7 @@ class PurchasesManagerClass {
         }
     }
 
-    /** Premium (`premium_unlock`): no interstitials, and continues skip the rewarded ad. Never rejects. */
+    /** Premium (Remove Ads + Coffee): no interstitials, and continues skip the rewarded ad. Never rejects. */
     async isPremium(): Promise<boolean> {
         try {
             await this.initialize();
@@ -102,10 +105,6 @@ class PurchasesManagerClass {
         return this.isPremium();
     }
 
-    async hasSupported(): Promise<boolean> {
-        const [donated, premium] = await Promise.all([Purchases.hasDonated(), Purchases.isPremium()]);
-        return donated || premium;
-    }
 }
 
 export const PurchasesManager = new PurchasesManagerClass();

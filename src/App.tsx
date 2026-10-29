@@ -56,7 +56,7 @@ class App extends React.Component{
         // Init Firebase
         Firebase.init();
 
-        // Init purchases/donations (the coffee button in Menu opens the donate popup)
+        // Init purchases (the coffee button in Menu opens "Remove Ads + Buy us a Coffee")
         PurchasesManager.initialize().catch(() => {});
 
         // Init ads (Unity LevelPlay, child-directed); no-op on web or until IDs are configured
