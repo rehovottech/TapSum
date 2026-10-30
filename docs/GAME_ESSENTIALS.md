@@ -1,6 +1,6 @@
 # Every-game essentials
 
-What every Rehovot game ships with. Turns (a general game with ads) and Tap Sum (a kids' game) are the reference implementations. [FIREBASE_SETUP.md](FIREBASE_SETUP.md) has the full Firebase steps.
+What every Rehovot game ships with. Turns (a general game with ads) and Tap Sum (a kids' game) are the reference implementations. [FIREBASE_SETUP.md](FIREBASE_SETUP.md) has the full Firebase steps. [AD_ESSENTIALS.md](AD_ESSENTIALS.md) has the full ads setup (LevelPlay, Unity Ads, AdMob).
 
 ## At a glance
 
@@ -15,6 +15,7 @@ What every Rehovot game ships with. Turns (a general game with ads) and Tap Sum 
 | 6 | **Local notifications** | Local reminders only, no push | Turns, Tap Sum |
 | 7 | **Leaderboards** | **General board** = web + Android + iOS combined, in `rehovt-web-games`. On mobile, **plus** the platform's own board (Play Games / Game Center) | Turns |
 | 8 | **Privacy policy & terms** | One shared policy and terms for every game | Turns |
+| 9 | **Audio: mobile music volume** | ⚠️ Music on iOS and Android must use Web Audio (`html5: false`). Their WebViews ignore `<audio>` volume, so html5 music plays at full volume | Turns |
 
 **First decision for every game: its audience and whether it has ads.** That decides § 1 (Kids or General ads) and § 3 (Buy a coffee or Remove Ads + coffee).
 
@@ -60,6 +61,7 @@ export const AUDIENCE: 'kids' | 'general' = 'general';
 - Rewarded ads are always optional, and the reward is shown before the player chooses.
 - No ad ever appears during a puzzle. Ads only show between games, or when the player taps a rewarded button.
 - Buying the Remove Ads + Coffee pack (§ 3b) turns off interstitials and banners. Rewarded ads stay available because the player chooses them.
+- **iOS: music must survive an ad.** Native ads take over the iOS audio session and can leave the Howler `AudioContext` suspended, so the music stays silent after the ad closes (until a cold start). Wrap every rewarded and interstitial show with `AudioManager.pauseForAd()` before and `AudioManager.recoverAfterAd()` in `finally` (native only; on web `Howler.mute` handles it). `recoverAfterAd()` resumes the context with retries (0.3 s, 1 s, 2 s), then restarts the music; if it is still suspended, the next tap restarts it. Plain `pauseMusic()` / `resumeMusic()` is not enough. Test on a real iPhone: play music, watch an ad, and check the music returns.
 
 **Sketch (`src/game/services/Ads.ts`):**
 
@@ -504,6 +506,32 @@ All Rehovot games share **one** Privacy Policy and **one** Terms of Service:
 
 ---
 
+## 9. Audio: music volume on mobile
+
+> **Important: never play music with Howler `html5: true` on iOS or Android.** The iOS WebView (and Safari) and the Android WebView ignore the volume of `<audio>` elements, so html5 music always plays at **full volume**. `MUSIC_VOL`, fade-ins, cross-fades, and any mute that works by setting the volume to 0 all silently stop working. This shipped as a bug on iOS in another Rehovot game, and on Android in Turns (music louder than the sound effects).
+
+**The rule (Turns: `src/game/managers/AudioManager.ts`)**
+- **iOS and Android** (the apps, iPhone/Android browsers, and iPadOS Safari, which reports itself as a Mac): play music through **Web Audio**, `html5: false`.
+- **Desktop web only:** `html5: true` is fine. Desktop browsers respect the volume, and streaming saves memory.
+- Web Audio decodes a whole track into memory (about 40–60 MB for a 2-minute stereo track). So on mobile, **unload** a track once it stops (`howl.unload()`), keeping at most one music track decoded.
+- Switch music off by **pausing**, not by setting the volume to 0.
+- Sound effects always use Web Audio (no `html5`), so they are fine on every platform.
+
+```ts
+const IS_IOS = Capacitor.getPlatform() === 'ios'
+    || /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
+const IS_ANDROID = Capacitor.getPlatform() === 'android' || /Android/i.test(navigator.userAgent);
+const MUSIC_HTML5 = !IS_IOS && !IS_ANDROID;
+new Howl({ src: [musicSrc], loop: true, html5: MUSIC_HTML5, volume: MUSIC_VOL });
+```
+
+On iOS, Web Audio follows the silent switch. With the switch on silent, music is silent too, the same as sound effects.
+
+**Test on a real iPhone and a real Android phone, not only in a desktop browser:** music is clearly quieter than sound effects, fades in on start, cross-fades between tracks, and Music off in Settings silences it.
+
+---
+
 ## Release checklist (per game)
 
 - [ ] **Ads (§ 1):** `AUDIENCE` set, and the game matches its column. General: consent card, tracking prompt, `AD_ID`. Kids: child-directed consent, no `AD_ID`, no tracking prompt, rating G.
@@ -516,3 +544,4 @@ All Rehovot games share **one** Privacy Policy and **one** Terms of Service:
 - [ ] **Notifications (§ 6):** the 3-day reminder fires, with the right text and icon.
 - [ ] **Leaderboards (§ 7):** a score from each platform shows on the General board. The native IDs are in `GameServices.ts`, the Play Games project ID is set, the Game Center boards exist, and `/Volumes/T7/Work/Office/Firebase/rehovt-web-games/firestore.rules` has limits for every board (deployed to `rehovt-web-games`).
 - [ ] **Privacy (§ 8):** Settings opens the Privacy policy and the Terms of service, the store listings use the same two URLs, and the policy's § 3 table lists every SDK the game ships.
+- [ ] **Audio (§ 9):** on iOS and Android the music is quiet (respects `MUSIC_VOL`), fades in, and Music off silences it. Mobile music uses Web Audio (`html5: false`), never html5.
