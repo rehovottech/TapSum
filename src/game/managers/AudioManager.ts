@@ -139,6 +139,33 @@ class AudioManagerClass {
         }
     }
 
+    /** Native ads take over the iOS audio session; pause cleanly so the system doesn't cut the music mid-stream. */
+    pauseForAd(): void {
+        if (Capacitor.isNativePlatform()) this.pauseMusic();
+    }
+
+    /**
+     * After a native ad closes, the ad SDK may leave the AudioContext interrupted/suspended (iOS), silencing
+     * everything until a cold start. Resume with retries (iOS needs a moment after the ad view dismisses).
+     */
+    recoverAfterAd(): void {
+        if (!Capacitor.isNativePlatform()) return;
+        const ctx = (Howler as any).ctx as (AudioContext | undefined);
+        const restart = () => {
+            this._pausedByLifecycle = false;
+            if (SaveManager.isSoundEnabled() && this.bgMusic && !this.bgMusic.playing()) this._doPlayMusic();
+        };
+        const attempt = (i: number) => {
+            if (!ctx || ctx.state === 'running') { restart(); return; }
+            ctx.resume().catch(() => {}).then(() => {
+                if (ctx.state === 'running') restart();
+                else if (i < 3) setTimeout(() => attempt(i + 1), [300, 1000, 2000][i]);
+                else this._pendingMusic = true; // the next tap resumes it (onInteraction)
+            });
+        };
+        attempt(0);
+    }
+
     /** Wire up tab-visibility and Capacitor app-suspend events. Call once at app startup. */
     registerAppLifecycle(): void {
         if (this._lifecycleRegistered) return;

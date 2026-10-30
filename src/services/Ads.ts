@@ -170,16 +170,16 @@ class AdsManager {
         }
     }
 
-    // Mute music and block taps on the game while a full-screen ad is up.
+    // Pause music (native) and block taps on the game while a full-screen ad is up.
     private beginShow(): void {
         this.showing = true;
-        AudioManager.pauseMusic();
+        AudioManager.pauseForAd();
         this.setGameInput(false);
     }
 
     private endShow(): void {
         this.showing = false;
-        AudioManager.resumeMusic();
+        AudioManager.recoverAfterAd();
         this.setGameInput(true);
         this.refresh();
     }
