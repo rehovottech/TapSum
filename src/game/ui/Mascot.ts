@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser';
 import { THEME } from '../constants/Colors';
+import { OutfitId } from '../constants/Outfits';
+import { SaveManager } from '../managers/SaveManager';
 
 export type MascotMood = 'idle' | 'happy' | 'sad' | 'wow' | 'worried' | 'eat';
 
@@ -12,6 +14,7 @@ export class Mascot extends Phaser.GameObjects.Container {
     private r: number;
     private figure!: Phaser.GameObjects.Container;
     private face!: Phaser.GameObjects.Graphics;
+    private outfit?: Phaser.GameObjects.Graphics;
     private mood: MascotMood = 'idle';
     private blinking = false;
     private lookX = 0;
@@ -24,6 +27,7 @@ export class Mascot extends Phaser.GameObjects.Container {
         super(scene, x, y);
         this.r = size;
         this.build();
+        this.setOutfit(SaveManager.getOutfit());
         scene.add.existing(this);
         this.startIdle();
         this.once(Phaser.GameObjects.Events.DESTROY, () => {
@@ -45,6 +49,18 @@ export class Mascot extends Phaser.GameObjects.Container {
                 this.drawFace();
             });
         }
+        return this;
+    }
+
+    /** Puts an unlocked outfit on Summy ('none' takes it off). Defaults to the saved choice at creation. */
+    setOutfit(id: OutfitId): this {
+        this.outfit?.destroy();
+        this.outfit = undefined;
+        if (id === 'none') return this;
+        const g = this.scene.add.graphics();
+        this.drawOutfit(g, id);
+        this.figure.add(g);
+        this.outfit = g;
         return this;
     }
 
@@ -128,6 +144,75 @@ export class Mascot extends Phaser.GameObjects.Container {
 
         this.figure.add([feet, stem, leafL, leafR, torso, this.face]);
         this.drawFace();
+    }
+
+    private drawOutfit(g: Phaser.GameObjects.Graphics, id: OutfitId): void {
+        const r = this.r;
+        const top = -r * 0.86;      // where the head meets the hat
+        const ink = THEME.INK;
+        const tri = (cx: number, baseY: number, w: number, h: number) =>
+            g.fillTriangle(cx - w / 2, baseY, cx + w / 2, baseY, cx, baseY - h);
+        switch (id) {
+            case 'party': {
+                g.setAngle(-8);
+                g.fillStyle(0xffc933, 1);
+                tri(0, top + r * 0.08, r * 0.95, r * 1.05);
+                g.fillStyle(0xff5d8f, 1);
+                g.fillTriangle(-r * 0.2, top - r * 0.2, r * 0.2, top - r * 0.2, 0, top - r * 0.62);
+                g.fillStyle(0x3b8cf0, 1);
+                g.fillCircle(0, top - r * 1.0, r * 0.12);
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(-r * 0.12, top - r * 0.1, r * 0.05);
+                g.fillCircle(r * 0.16, top - r * 0.32, r * 0.05);
+                break;
+            }
+            case 'shades': {
+                const ex = r * 0.36, ey = -r * 0.18, w = r * 0.5, h = r * 0.36;
+                g.fillStyle(ink, 1);
+                g.fillRoundedRect(-ex - w / 2, ey - h / 2, w, h, r * 0.1);
+                g.fillRoundedRect(ex - w / 2, ey - h / 2, w, h, r * 0.1);
+                g.fillRect(-ex + w / 2 - 1, ey - r * 0.06, ex * 2 - w + 2, r * 0.1);
+                g.fillRect(-r * 1.0, ey - r * 0.06, r * 0.28, r * 0.1);
+                g.fillRect(r * 0.72, ey - r * 0.06, r * 0.28, r * 0.1);
+                g.fillStyle(0xffffff, 0.35);
+                g.fillRect(-ex - w * 0.3, ey - h * 0.35, w * 0.18, h * 0.25);
+                g.fillRect(ex - w * 0.3, ey - h * 0.35, w * 0.18, h * 0.25);
+                break;
+            }
+            case 'headphones': {
+                g.lineStyle(Math.max(4, r * 0.14), 0x3b4a66, 1);
+                g.beginPath();
+                g.arc(0, -r * 0.05, r * 1.05, Math.PI * 1.02, Math.PI * 1.98, false);
+                g.strokePath();
+                g.fillStyle(0xff5d8f, 1);
+                g.fillRoundedRect(-r * 1.2, -r * 0.35, r * 0.34, r * 0.7, r * 0.12);
+                g.fillRoundedRect(r * 0.86, -r * 0.35, r * 0.34, r * 0.7, r * 0.12);
+                break;
+            }
+            case 'crown': {
+                const bw = r * 1.1, bh = r * 0.3, by = top + r * 0.1;
+                g.fillStyle(0xf5b800, 1);
+                g.fillRect(-bw / 2, by - bh, bw, bh);
+                for (const sx of [-1, 0, 1]) tri(sx * bw * 0.36, by - bh, bw * 0.3, r * 0.42);
+                g.fillStyle(0xff4d6d, 1);
+                g.fillCircle(0, by - bh / 2, r * 0.07);
+                g.fillStyle(0x3b8cf0, 1);
+                g.fillCircle(-bw * 0.32, by - bh / 2, r * 0.05);
+                g.fillCircle(bw * 0.32, by - bh / 2, r * 0.05);
+                break;
+            }
+            case 'wizard': {
+                g.setAngle(6);
+                g.fillStyle(0x6a3fd6, 1);
+                g.fillEllipse(0, top + r * 0.1, r * 1.7, r * 0.3);
+                tri(0, top + r * 0.04, r * 1.0, r * 1.35);
+                g.fillStyle(0xffd23f, 1);
+                g.fillRect(-r * 0.5, top - r * 0.22, r * 1.0, r * 0.14);
+                g.fillCircle(r * 0.05, top - r * 0.75, r * 0.1);
+                g.fillCircle(-r * 0.2, top - r * 0.45, r * 0.06);
+                break;
+            }
+        }
     }
 
     private drawFace(): void {

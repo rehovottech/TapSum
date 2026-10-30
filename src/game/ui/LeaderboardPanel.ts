@@ -6,9 +6,9 @@ import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { SaveManager } from '../managers/SaveManager';
 import type BaseScene from '../scene/BaseScene';
 
-const ROW_H        = 72;
-const PANEL_PAD    = 28;
-const MEDAL_KEYS   = ['medal-gold', 'medal-silver', 'medal-bronze'];
+const MEDAL_KEYS = ['medal-gold', 'medal-silver', 'medal-bronze'];
+const MEDAL_TINT = [0xffe8a3, 0xe3e9ee, 0xf3d2b3];   // gold, silver, bronze row tints
+const YOU_EDGE   = 0x167a39;
 
 export class LeaderboardPanel {
     private scene: Phaser.Scene;
@@ -17,6 +17,12 @@ export class LeaderboardPanel {
     private pinnedContainer!: Phaser.GameObjects.Container;
     private maskShape!: Phaser.GameObjects.Graphics;
     private loadingText!: Phaser.GameObjects.BitmapText;
+    private dismissing = false;
+
+    // Layout (derived from the screen size in build())
+    private rowH = 0;
+    private rowStride = 0;
+    private pad = 0;
 
     // Scroll state
     private listAreaTop  = 0;
@@ -44,147 +50,155 @@ export class LeaderboardPanel {
         const panelH = Math.floor(H * 0.78);
         const px     = W / 2;
         const py     = H / 2;
+        const top    = py - panelH / 2;
+        this.pad       = Math.floor(W * 0.05);
+        this.rowH      = Math.floor(H * 0.058);
+        this.rowStride = this.rowH + Math.floor(H * 0.008);
+        const pad = this.pad;
+        const profile = SaveManager.getProfile();
 
-        // Dim overlay
+        // Dim overlay: tap outside to close
         const overlay = this.scene.add.graphics();
         overlay.fillStyle(THEME.SCRIM, 0.45);
         overlay.fillRect(0, 0, W, H);
+        overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, W, H), Phaser.Geom.Rectangle.Contains);
+        overlay.on('pointerdown', () => { AudioManager.play('snd_click'); this.dismiss(); });
         this.root.add(overlay);
 
-        // Panel shadow
-        const shadow = this.scene.add.graphics();
-        shadow.fillStyle(THEME.CARD_SHADOW, 1);
-        shadow.fillRoundedRect(px - panelW / 2, py - panelH / 2 + 8, panelW, panelH, 32);
-        this.root.add(shadow);
-
-        // Panel body
+        // Panel (shadow edge + body); swallows taps so they don't close the popup
         const panel = this.scene.add.graphics();
+        panel.fillStyle(THEME.CARD_SHADOW, 1);
+        panel.fillRoundedRect(px - panelW / 2, top + 8, panelW, panelH, 32);
         panel.fillStyle(THEME.CARD, 1);
-        panel.fillRoundedRect(px - panelW / 2, py - panelH / 2, panelW, panelH, 32);
+        panel.fillRoundedRect(px - panelW / 2, top, panelW, panelH, 32);
+        panel.setInteractive(new Phaser.Geom.Rectangle(px - panelW / 2, top, panelW, panelH), Phaser.Geom.Rectangle.Contains);
         this.root.add(panel);
 
-        // Title
-        const titleY = py - panelH / 2 + 52;
-        this.root.add(
-            this.scene.add.bitmapText(px, titleY, 'coiny-bmp', 'LEADERBOARD', Math.floor(H * 0.030), 0).setOrigin(0.5)
-            .setTint(THEME.INK),
-        );
-        this.root.add(
-            this.scene.add.bitmapText(px, titleY + Math.floor(H * 0.03), 'coiny-bmp', SaveManager.getProfile().name.toUpperCase(),
-                Math.floor(H * 0.014), 0).setOrigin(0.5).setTint(SaveManager.getProfile().color),
-        );
+        // Title and the profile this board belongs to
+        const titleY = top + Math.floor(H * 0.05);
+        this.root.add(this.text(px, titleY, 'LEADERBOARD', H * 0.03));
 
-        // Divider
-        const divY = titleY + Math.floor(H * 0.048);
-        const divG = this.scene.add.graphics();
-        divG.lineStyle(2, THEME.TRACK, 1);
-        divG.lineBetween(px - panelW / 2 + PANEL_PAD, divY, px + panelW / 2 - PANEL_PAD, divY);
-        this.root.add(divG);
+        const chipText = this.text(px, 0, profile.name.toUpperCase(), H * 0.014, THEME.WHITE);
+        const chipW = chipText.width + W * 0.08;
+        const chipH = Math.floor(H * 0.034);
+        const chipY = titleY + Math.floor(H * 0.045);
+        chipText.setY(chipY);
+        const chip = this.scene.add.graphics();
+        chip.fillStyle(0x000000, 0.12);
+        chip.fillRoundedRect(px - chipW / 2, chipY - chipH / 2 + 3, chipW, chipH, chipH / 2);
+        chip.fillStyle(profile.color, 1);
+        chip.fillRoundedRect(px - chipW / 2, chipY - chipH / 2, chipW, chipH, chipH / 2);
+        this.root.add([chip, chipText]);
 
-        // Header row
-        const headerY = divY + 22;
-        const colRank  = px - panelW / 2 + PANEL_PAD + 28;
-        const colName  = px - panelW / 2 + PANEL_PAD + 90;
-        const colScore = px + panelW / 2 - PANEL_PAD - 10;
+        // Column labels
+        const headerY = chipY + Math.floor(H * 0.04);
+        const { colRank, colName, colScore } = this.cols(px, panelW);
+        this.root.add(this.text(colRank,  headerY, '#',      H * 0.016, THEME.MUTED));
+        this.root.add(this.text(colName,  headerY, 'PLAYER', H * 0.016, THEME.MUTED).setOrigin(0, 0.5));
+        this.root.add(this.text(colScore, headerY, 'BEST',   H * 0.016, THEME.MUTED).setOrigin(1, 0.5));
 
-        this.root.add(this.scene.add.bitmapText(colRank,  headerY, 'coiny-bmp', '#', Math.floor(H * 0.02), 0).setOrigin(0.5).setTint(0x52697b));
-        this.root.add(this.scene.add.bitmapText(colName,  headerY, 'coiny-bmp', 'PLAYER', Math.floor(H * 0.02), 0).setOrigin(0, 0.5).setTint(0x52697b));
-        this.root.add(this.scene.add.bitmapText(colScore, headerY, 'coiny-bmp', 'BEST', Math.floor(H * 0.02), 0).setOrigin(1, 0.5).setTint(0x52697b));
-
-        // Scrollable list area — shortened to leave room for the pinned "you" row
-        const pinnedRowH     = ROW_H + 20;
-        // Android / iOS: room at the bottom for the "Open Play Games / Game Center" button
-        const platformBtnH   = LeaderboardManager.platformBoardAvailable ? Math.floor(H * 0.055) : 0;
-        const platformGap    = platformBtnH ? platformBtnH + 30 : 0;
-        this.listAreaTop     = headerY + 28;
-        this.listAreaH       = panelH - (this.listAreaTop - (py - panelH / 2)) - PANEL_PAD - 60 - pinnedRowH - platformGap;
-        this.pinnedAreaY     = this.listAreaTop + this.listAreaH + 90;
+        // Bottom block: platform board button (+ helper line) on Android / iOS, then the pinned "you" row above it
+        const bottomY  = py + panelH / 2 - pad;
+        const hasPlat  = LeaderboardManager.platformBoardAvailable;
+        const btnH     = Math.floor(H * 0.055);
+        let pinnedBottom = bottomY;
+        if (hasPlat) {
+            const btnY    = bottomY - btnH / 2;
+            const helperY = btnY - btnH / 2 - Math.floor(H * 0.024);
+            this.addPlatformButton(px, btnY, panelW * 0.7, btnH, helperY);
+            pinnedBottom = helperY - Math.floor(H * 0.026);
+        }
+        this.pinnedAreaY = pinnedBottom - this.rowH;
+        this.listAreaTop = headerY + Math.floor(H * 0.026);
+        this.listAreaH   = this.pinnedAreaY - Math.floor(H * 0.012) - this.listAreaTop;
 
         this.listContainer = this.scene.add.container(0, 0);
         this.root.add(this.listContainer);
 
-        // Geometry mask for clipping — only covers the scrollable list
+        // Geometry mask for clipping: only covers the scrollable list
         this.maskShape = this.scene.add.graphics();
-        this.maskShape.fillRect(
-            px - panelW / 2 + 4,
-            this.listAreaTop,
-            panelW - 8,
-            this.listAreaH,
-        );
+        this.maskShape.fillRect(px - panelW / 2 + 4, this.listAreaTop, panelW - 8, this.listAreaH);
         this.listContainer.setMask(this.maskShape.createGeometryMask());
 
-        // Divider above pinned row
-        const pinDivG = this.scene.add.graphics();
-        pinDivG.lineStyle(2, THEME.STAR, 0.6);
-        pinDivG.lineBetween(px - panelW / 2 + PANEL_PAD, this.pinnedAreaY - 4, px + panelW / 2 - PANEL_PAD, this.pinnedAreaY - 4);
-        this.root.add(pinDivG);
-
-        // Pinned container (not masked — always visible)
+        // Pinned container (not masked, always visible)
         this.pinnedContainer = this.scene.add.container(0, 0);
         this.root.add(this.pinnedContainer);
 
-        // Loading text
-        this.loadingText = this.scene.add.bitmapText(px, this.listAreaTop + this.listAreaH / 2, 'coiny-bmp', 'Loading…', Math.floor(H * 0.03), 0).setOrigin(0.5).setDepth(51).setTint(0x52697b);
+        this.loadingText = this.text(px, this.listAreaTop + this.listAreaH / 2, 'Loading...', H * 0.026, THEME.MUTED).setDepth(51);
         this.root.add(this.loadingText);
 
         // Drag zone for scrolling
-        this.dragZone = this.scene.add.zone(
-            px - panelW / 2 + 4,
-            this.listAreaTop,
-            panelW - 8,
-            this.listAreaH,
-        ).setOrigin(0, 0).setInteractive();
+        this.dragZone = this.scene.add.zone(px - panelW / 2 + 4, this.listAreaTop, panelW - 8, this.listAreaH)
+            .setOrigin(0, 0).setInteractive();
         this.root.add(this.dragZone);
         this.bindScrollEvents();
 
-        if (platformBtnH) {
-            this.addPlatformButton(px, py + panelH / 2 - PANEL_PAD - platformBtnH / 2, panelW - PANEL_PAD * 2, platformBtnH);
-        }
-
-        // Close button
-        const closeX = px + panelW / 2 - 35;
-        const closeY = py - panelH / 2 + 35;
+        // Close button: same cross as Settings and Wardrobe
+        const closeX = px + panelW / 2 - 40;
+        const closeY = top + 40;
         const closeBg = this.scene.add.graphics();
-        closeBg.fillStyle(0xe6eef2, 1);
-        closeBg.fillCircle(closeX, closeY, 22);
-        
-        const closeTxt = this.scene.add.bitmapText(closeX, closeY-3, 'krungthep-bmp', 'x', Math.floor(H * 0.020), 0).setOrigin(0.5).setTint(THEME.INK);
+        closeBg.fillStyle(THEME.SURFACE, 1);
+        closeBg.fillCircle(closeX, closeY, 26);
+        closeBg.lineStyle(5, THEME.INK, 1);
+        closeBg.lineBetween(closeX - 9, closeY - 9, closeX + 9, closeY + 9);
+        closeBg.lineBetween(closeX + 9, closeY - 9, closeX - 9, closeY + 9);
         this.root.add(closeBg);
-        this.root.add(closeTxt);
-
-        const closeHit = this.scene.add.zone(closeX, closeY, 52, 52).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const closeHit = this.scene.add.zone(closeX, closeY, 60, 60).setOrigin(0.5).setInteractive({ useHandCursor: true });
         closeHit.on('pointerdown', () => { AudioManager.play('snd_click'); this.dismiss(); });
         this.root.add(closeHit);
 
-        // Pop-in
-        this.root.setScale(0.85).setAlpha(0);
+        // Pop-in (just a fade with Reduce motion)
+        const calm = SaveManager.isReducedMotion();
+        this.root.setScale(calm ? 1 : 0.85).setAlpha(0);
         this.scene.tweens.add({
             targets: this.root, scaleX: 1, scaleY: 1, alpha: 1,
-            duration: 320, ease: 'Back.Out',
+            duration: calm ? 150 : 320, ease: 'Back.Out',
         });
     }
 
+    private text(x: number, y: number, str: string, size: number, tint: number = THEME.INK) {
+        return this.scene.add.bitmapText(x, y, 'coiny-bmp', str, Math.floor(size), 0).setOrigin(0.5).setTint(tint);
+    }
+
+    private cols(px: number, panelW: number) {
+        const left = px - panelW / 2 + this.pad;
+        return {
+            colRank:  left + this.rowH * 0.5,
+            colName:  left + this.rowH * 1.15,
+            colScore: px + panelW / 2 - this.pad - 14,
+        };
+    }
+
+    /** Rounded row with a darker bottom edge, the same chip look as the Wardrobe. */
+    private chip(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, face: number, edge: number = THEME.CARD_SHADOW): void {
+        g.fillStyle(edge, 1);
+        g.fillRoundedRect(x, y + 3, w, h, 16);
+        g.fillStyle(face, 1);
+        g.fillRoundedRect(x, y, w, h, 16);
+    }
+
     /** Opens this profile's Play Games / Game Center board; a toast if sign-in is declined. */
-    private addPlatformButton(x: number, y: number, w: number, h: number): void {
+    private addPlatformButton(x: number, y: number, w: number, h: number, helperY: number): void {
         const { H } = this.dims();
         const name = LeaderboardManager.platformName;
-        const bg = this.scene.add.graphics();
-        bg.fillStyle(THEME.CARD_SHADOW, 1);
-        bg.fillRoundedRect(x - w / 2, y - h / 2 + 4, w, h, h / 2);
-        bg.fillStyle(THEME.INK, 1);
-        bg.fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
-        const label = this.scene.add.bitmapText(x, y, 'coiny-bmp', `OPEN ${name.toUpperCase()}`, Math.floor(H * 0.02), 0)
-            .setOrigin(0.5).setTint(0xffffff);
-        const hit = this.scene.add.zone(x, y, w, h).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        hit.on('pointerdown', () => {
+        this.root.add(this.text(x, helperY, `Compare with friends on ${name}`, H * 0.0135, THEME.MUTED));
+
+        const btn = this.scene.add.container(x, y);
+        const face = this.scene.add.graphics();
+        this.chip(face, -w / 2, -h / 2, w, h, THEME.SURFACE);
+        const label = this.text(0, 0, `${name.toUpperCase()} BOARD`, H * 0.016);
+        btn.add([face, label]);
+        btn.setSize(w, h).setInteractive({ useHandCursor: true });
+        btn.on('pointerdown', () => {
             AudioManager.play('snd_click');
+            this.scene.tweens.add({ targets: btn, scaleX: 0.95, scaleY: 0.95, duration: 70, yoyo: true });
             LeaderboardManager.openPlatformBoard().then((opened) => {
                 if (!opened && this.scene.sys.isActive()) {
                     (this.scene as BaseScene).toast(`Sign in to ${name} to see its leaderboard`);
                 }
             });
         });
-        this.root.add([bg, label, hit]);
+        this.root.add(btn);
     }
 
     // ── Load data ────────────────────────────────────────────────────────────
@@ -195,6 +209,7 @@ export class LeaderboardPanel {
             LeaderboardManager.getPlayerRank(),
             LeaderboardManager.getPlayerProfile(),
         ]);
+        if (this.dismissing || !this.root.active) return;
         const uid = Firebase.getUid();
 
         this.loadingText.destroy();
@@ -207,92 +222,58 @@ export class LeaderboardPanel {
         const { W, H } = this.dims();
         const panelW   = Math.floor(W * 0.88);
         const px       = W / 2;
-
-        const colRank  = px - panelW / 2 + PANEL_PAD + 28;
-        const colName  = px - panelW / 2 + PANEL_PAD + 90;
-        const colScore = px + panelW / 2 - PANEL_PAD - 10;
-        const fs       = Math.floor(H * 0.026);
+        const rowX     = px - panelW / 2 + this.pad * 0.5;
+        const rowW     = panelW - this.pad;
+        const { colRank, colName, colScore } = this.cols(px, panelW);
+        const fs       = Math.floor(H * 0.022);
 
         if (players.length === 0) {
             this.listContainer.add(
-                this.scene.add.bitmapText(px, this.listAreaTop + 60, 'coiny-bmp', 'No scores yet — be the first!', fs, 0).setOrigin(0.5)
-                .setTint(0x52697b),
+                this.text(px, this.listAreaTop + this.rowH, 'No scores yet - be the first!', fs, THEME.MUTED),
             );
         } else {
             players.forEach((p, i) => {
-                const rowY  = this.listAreaTop + i * ROW_H + ROW_H / 2;
+                const rowY  = this.listAreaTop + i * this.rowStride;
+                const midY  = rowY + this.rowH / 2;
                 const isMe  = p.uid === myUid;
                 const rowBg = this.scene.add.graphics();
-
-                if (isMe) {
-                    rowBg.fillStyle(0xe6eef2, 1);
-                    rowBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
-                } else if (i % 2 === 0) {
-                    rowBg.fillStyle(0xe6eef2, 0.6);
-                    rowBg.fillRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8);
-                }
+                if (isMe)         this.chip(rowBg, rowX, rowY, rowW, this.rowH, THEME.ADD, YOU_EDGE);
+                else if (i < 3)   this.chip(rowBg, rowX, rowY, rowW, this.rowH, MEDAL_TINT[i]);
+                else              this.chip(rowBg, rowX, rowY, rowW, this.rowH, i % 2 === 0 ? THEME.SURFACE : THEME.CARD);
                 this.listContainer.add(rowBg);
 
                 if (i < 3) {
-                    const iconSize = ROW_H * 0.62;
+                    const iconSize = this.rowH * 0.7;
                     this.listContainer.add(
-                        this.scene.add.image(colRank, rowY, MEDAL_KEYS[i]).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
+                        this.scene.add.image(colRank, midY, MEDAL_KEYS[i]).setDisplaySize(iconSize, iconSize).setOrigin(0.5),
                     );
                 } else {
-                    const rankColor = 0x52697b;
-                    this.listContainer.add(
-                        this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', `${i + 1}`, fs, 0).setOrigin(0.5)
-                        .setTint(rankColor)
-                    );
+                    this.listContainer.add(this.text(colRank, midY, `${i + 1}`, fs, isMe ? THEME.WHITE : THEME.MUTED));
                 }
 
-                const nameColor = isMe ? 0x52691e : THEME.INK;
                 // Generated, never-editable names (e.g. "Player 7K2Q"): nothing a kid typed in
-                const nameTxt   = isMe ? 'You' : (p.name || `Player ${i + 1}`).substring(0, 14);
-                this.listContainer.add(
-                    this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', nameTxt, fs, 0).setOrigin(0, 0.5)
-                    .setTint(nameColor)
-                );
-
-                const scoreColor = isMe ? THEME.GOLD : THEME.INK;
-                this.listContainer.add(
-                    this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${p.bestScore}`, fs, 0).setOrigin(1, 0.5)
-                    .setTint(scoreColor)
-                );
+                const nameTxt = isMe ? 'You' : (p.name || `Player ${i + 1}`).substring(0, 14);
+                this.listContainer.add(this.text(colName, midY, nameTxt, fs, isMe ? THEME.WHITE : THEME.INK).setOrigin(0, 0.5));
+                this.listContainer.add(this.text(colScore, midY, `${p.bestScore}`, fs, isMe ? THEME.WHITE : THEME.GOLD).setOrigin(1, 0.5));
             });
 
-            this.listTotalH = players.length * ROW_H;
+            this.listTotalH = players.length * this.rowStride;
         }
 
         // ── Pinned "you" row ─────────────────────────────────────────────────
-        const rowY = this.pinnedAreaY + ROW_H / 2;
-
+        const midY = this.pinnedAreaY + this.rowH / 2;
         const pinBg = this.scene.add.graphics();
-        pinBg.fillStyle(0xe8f2c7, 1);
-        pinBg.fillRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
-        pinBg.lineStyle(2, THEME.STAR, 1);
-        pinBg.strokeRoundedRect(px - panelW / 2 + 8, rowY - ROW_H / 2 + 4, panelW - 16, ROW_H - 8, 12);
         this.pinnedContainer.add(pinBg);
 
-        const goldTint = 0x52691e;
-
         if (myRank > 0 && myProfile) {
+            this.chip(pinBg, rowX, this.pinnedAreaY, rowW, this.rowH, THEME.ADD, YOU_EDGE);
             const rankStr = myRank <= 999 ? `${myRank}` : '999+';
-            this.pinnedContainer.add(
-                this.scene.add.bitmapText(colRank, rowY, 'coiny-bmp', rankStr, fs, 0).setOrigin(0.5).setTint(goldTint)
-            );
-            this.pinnedContainer.add(
-                this.scene.add.bitmapText(colName, rowY, 'coiny-bmp', 'YOU', fs, 0).setOrigin(0, 0.5)
-                .setTint(THEME.ADD)
-            );
-            this.pinnedContainer.add(
-                this.scene.add.bitmapText(colScore, rowY, 'coiny-bmp', `${myProfile.bestScore}`, fs, 0).setOrigin(1, 0.5).setTint(goldTint)
-            );
+            this.pinnedContainer.add(this.text(colRank, midY, rankStr, fs, THEME.WHITE));
+            this.pinnedContainer.add(this.text(colName, midY, 'YOU', fs, THEME.WHITE).setOrigin(0, 0.5));
+            this.pinnedContainer.add(this.text(colScore, midY, `${myProfile.bestScore}`, fs, THEME.WHITE).setOrigin(1, 0.5));
         } else {
-            this.pinnedContainer.add(
-                this.scene.add.bitmapText(px, rowY, 'coiny-bmp', 'Play a game to appear here!', Math.floor(H * 0.022), 0).setOrigin(0.5)
-                .setTint(THEME.MUTED)
-            );
+            this.chip(pinBg, rowX, this.pinnedAreaY, rowW, this.rowH, THEME.SURFACE);
+            this.pinnedContainer.add(this.text(px, midY, 'Play a game to appear here!', H * 0.019, THEME.MUTED));
         }
     }
 
@@ -305,20 +286,23 @@ export class LeaderboardPanel {
             this.velocityY    = 0;
         });
 
-        this.scene.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-            if (!this.pointerDown) return;
-            const dy = p.y - this.lastPointerY;
-            this.velocityY    = dy;
-            this.lastPointerY = p.y;
-            this.applyScroll(-dy);
-        });
-
-        this.scene.input.on('pointerup', () => {
-            this.pointerDown = false;
-        });
+        this.scene.input.on('pointermove', this.onPointerMove, this);
+        this.scene.input.on('pointerup', this.onPointerUp, this);
 
         // Momentum update each frame
         this.scene.events.on(Phaser.Scenes.Events.UPDATE, this.updateMomentum, this);
+    }
+
+    private onPointerMove(p: Phaser.Input.Pointer): void {
+        if (!this.pointerDown) return;
+        const dy = p.y - this.lastPointerY;
+        this.velocityY    = dy;
+        this.lastPointerY = p.y;
+        this.applyScroll(-dy);
+    }
+
+    private onPointerUp(): void {
+        this.pointerDown = false;
     }
 
     private updateMomentum(): void {
@@ -336,7 +320,11 @@ export class LeaderboardPanel {
     // ── Dismiss ──────────────────────────────────────────────────────────────
 
     dismiss(): void {
+        if (this.dismissing) return;
+        this.dismissing = true;
         this.scene.events.off(Phaser.Scenes.Events.UPDATE, this.updateMomentum, this);
+        this.scene.input.off('pointermove', this.onPointerMove, this);
+        this.scene.input.off('pointerup', this.onPointerUp, this);
         this.scene.tweens.add({
             targets: this.root, scaleX: 0.85, scaleY: 0.85, alpha: 0,
             duration: 220, ease: 'Power2',

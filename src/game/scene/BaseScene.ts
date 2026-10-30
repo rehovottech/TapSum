@@ -2,6 +2,8 @@ import * as Phaser from 'phaser';
 import { GlobVar } from '../../utils/Global';
 import FPS from '../model/FPS';
 import { THEME } from '../constants/Colors';
+import { SCENERIES, Scenery } from '../constants/Outfits';
+import { SaveManager } from '../managers/SaveManager';
 import { LeaderboardPanel } from '../ui/LeaderboardPanel';
 import { AudioManager } from '../managers/AudioManager';
 
@@ -71,17 +73,75 @@ export default abstract class BaseScene extends Phaser.Scene {
         return gfx;
     }
 
-    /** Background fill with two rolling hills along the bottom. */
+    /** Background fill with two rolling hills, in the player's chosen scenery. */
     protected createSkyBg(hillTop = 0.86): void {
-        this.createGradientBg(THEME.BG_TOP, THEME.BG_BOTTOM);
+        const sc = SCENERIES.find((x) => x.id === SaveManager.getScenery()) ?? SCENERIES[0];
+        this.createGradientBg(sc.top, sc.bottom);
+        this.createSceneryDeco(sc.deco, hillTop);
 
         const hills = this.add.graphics();
         const y0 = this.H * hillTop;
-        hills.fillStyle(THEME.HILL_BACK, 1);
+        hills.fillStyle(sc.hillBack, 1);
         hills.fillEllipse(this.W * 0.2, y0 + this.H * 0.07, this.W * 1.1, this.H * 0.2);
-        hills.fillStyle(THEME.HILL_FRONT, 1);
+        hills.fillStyle(sc.hillFront, 1);
         hills.fillEllipse(this.W * 0.85, y0 + this.H * 0.1, this.W * 1.2, this.H * 0.22);
         hills.fillRect(0, y0 + this.H * 0.1, this.W, this.H);
+    }
+
+    /** Soft shapes behind everything; they drift or twinkle unless Reduce motion is on. */
+    private createSceneryDeco(deco: Scenery['deco'], hillTop: number): void {
+        if (deco === 'none') return;
+        const calm = SaveManager.isReducedMotion();
+        const rnd = new Phaser.Math.RandomDataGenerator(['tapsum-scenery']);   // same layout every visit
+        const count = deco === 'clouds' ? 4 : 14;
+        for (let i = 0; i < count; i++) {
+            const g = this.add.graphics();
+            const x = rnd.between(0, this.W);
+            const y = rnd.between(Math.floor(this.H * 0.04), Math.floor(this.H * (deco === 'clouds' ? 0.8 : hillTop)));
+            const r = rnd.between(Math.floor(this.H * 0.008), Math.floor(this.H * 0.02));
+            switch (deco) {
+                case 'clouds': {
+                    const w = this.W * 0.22;
+                    g.fillStyle(0xffffff, 0.7);
+                    g.fillEllipse(0, 0, w, w * 0.28);
+                    g.fillEllipse(-w * 0.2, -w * 0.08, w * 0.5, w * 0.3);
+                    g.fillEllipse(w * 0.15, -w * 0.1, w * 0.45, w * 0.32);
+                    break;
+                }
+                case 'bubbles':
+                    g.lineStyle(2, 0xffffff, 0.9);
+                    g.fillStyle(0xffffff, 0.35);
+                    g.fillCircle(0, 0, r);
+                    g.strokeCircle(0, 0, r);
+                    break;
+                case 'hearts':
+                    g.fillStyle(0xff8fc3, 0.45);
+                    g.fillCircle(-r * 0.5, -r * 0.3, r * 0.6);
+                    g.fillCircle(r * 0.5, -r * 0.3, r * 0.6);
+                    g.fillTriangle(-r * 1.05, -r * 0.05, r * 1.05, -r * 0.05, 0, r * 1.2);
+                    break;
+                case 'stars': {
+                    g.fillStyle(0xffffff, 0.9);
+                    const pts: Phaser.Math.Vector2[] = [];
+                    for (let k = 0; k < 10; k++) {
+                        const a = -Math.PI / 2 + (Math.PI / 5) * k;
+                        const rr = k % 2 === 0 ? r : r * 0.45;
+                        pts.push(new Phaser.Math.Vector2(Math.cos(a) * rr, Math.sin(a) * rr));
+                    }
+                    g.fillPoints(pts, true);
+                    break;
+                }
+            }
+            g.setPosition(x, y);
+            if (calm) continue;
+            if (deco === 'clouds') {
+                this.tweens.add({ targets: g, x: x + this.W * 0.08, duration: rnd.between(9000, 15000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            } else if (deco === 'bubbles') {
+                this.tweens.add({ targets: g, y: y - this.H * 0.04, duration: rnd.between(2500, 4500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            } else {
+                this.tweens.add({ targets: g, alpha: 0.35, duration: rnd.between(900, 2200), yoyo: true, repeat: -1, delay: rnd.between(0, 1500) });
+            }
+        }
     }
 
     /** Paper confetti falling from the top of the screen. */

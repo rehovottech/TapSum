@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import BaseScene from './BaseScene';
 import type { EndReason } from './Game';
+import { SaveManager } from '../managers/SaveManager';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
 import { THEME } from '../constants/Colors';
@@ -57,6 +58,8 @@ export default class End extends BaseScene {
         GlobVar.consolelog(`Scene: ${SCENES.End}`);
         AudioManager.init();
         Ads.noteGameEnded();
+        SaveManager.recordPlayDay();
+        const unlocked = SaveManager.addStars(this.cleared);
 
         this.createSkyBg(0.93);
         const content = this.add.container(0, 0);
@@ -74,6 +77,9 @@ export default class End extends BaseScene {
         this.celebrationBurst();
 
         this.fetchAndShowRank();
+        if (unlocked.length) {
+            this.time.delayedCall(900, () => this.toast(`New outfit: ${unlocked[unlocked.length - 1].name}!`));
+        }
     }
 
     update(): void {

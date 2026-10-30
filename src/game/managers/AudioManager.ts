@@ -23,8 +23,9 @@ const AUDIO_SRCS: Record<string, string> = {
 };
 
 const MUSIC_SRC = 'assets/audio/background-music.mp3';
-const MUSIC_VOL = 0.1;
-const SFX_VOL   = 0.5;
+// Full-slider levels. The sliders default to 50%, which gives the original mix (music 0.1, effects 0.5).
+const MUSIC_VOL = 0.2;
+const SFX_VOL   = 1.0;
 
 // iOS app, or iPhone / iPad Safari (iPadOS reports itself as a Mac with touch)
 const IS_IOS = Capacitor.getPlatform() === 'ios'
@@ -54,7 +55,7 @@ class AudioManagerClass {
                 src:     [src],
                 preload: true,
                 pool:    5,
-                volume:  SFX_VOL,
+                volume:  SFX_VOL * SaveManager.getSfxVolume(),
             }));
         });
 
@@ -64,7 +65,7 @@ class AudioManagerClass {
             src:    [MUSIC_SRC],
             loop:   true,
             html5:  MUSIC_HTML5,
-            volume: SaveManager.isSoundEnabled() ? MUSIC_VOL : 0,
+            volume: SaveManager.isSoundEnabled() ? this._musicLevel() : 0,
         });
 
         // Flush any playMusic() call that arrived before the first user gesture
@@ -80,7 +81,7 @@ class AudioManagerClass {
 
     /** rate > 1 raises the pitch (used for rising taps within a round). */
     play(key: string, rate = 1): void {
-        if (!SaveManager.isSoundEnabled()) return;
+        if (!SaveManager.isSoundEnabled() || SaveManager.getSfxVolume() <= 0) return;
         const snd = this.sounds.get(key);
         if (!snd) return;
         const id = snd.play();
@@ -184,15 +185,29 @@ class AudioManagerClass {
         }
     }
 
+    setMusicVolume(v: number): void {
+        SaveManager.setMusicVolume(v);
+        if (SaveManager.isSoundEnabled()) this.bgMusic?.volume(this._musicLevel());
+    }
+
+    setSfxVolume(v: number): void {
+        SaveManager.setSfxVolume(v);
+        this.sounds.forEach((snd) => snd.volume(SFX_VOL * SaveManager.getSfxVolume()));
+    }
+
+    private _musicLevel(): number {
+        return MUSIC_VOL * SaveManager.getMusicVolume();
+    }
+
     private _doPlayMusic(): void {
         if (!this.bgMusic || this.bgMusic.playing()) return;
         if (!SaveManager.isSoundEnabled()) return;
-        this.bgMusic.volume(MUSIC_VOL);
+        this.bgMusic.volume(this._musicLevel());
         this.bgMusic.play();
     }
 
     private _applyMusicVolume(enabled: boolean): void {
-        this.bgMusic?.volume(enabled ? MUSIC_VOL : 0);
+        this.bgMusic?.volume(enabled ? this._musicLevel() : 0);
     }
 }
 

@@ -990,7 +990,7 @@ export default class Game extends BaseScene {
         }
 
         AudioManager.play('snd_fail');
-        this.cameras.main.shake(200, 0.006);
+        if (!SaveManager.isReducedMotion()) this.cameras.main.shake(200, 0.006);
         this.revealTotal(reason);
 
         if (this.lives <= 0) {
@@ -1293,7 +1293,7 @@ export default class Game extends BaseScene {
 
         if (!voluntary) {
             AudioManager.play('snd_fail');
-            this.cameras.main.shake(320, 0.018);
+            if (!SaveManager.isReducedMotion()) this.cameras.main.shake(320, 0.018);
             this.cameras.main.flash(280, 255, 80, 70, false);
         }
 

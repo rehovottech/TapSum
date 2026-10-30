@@ -7,14 +7,17 @@ import { SaveManager } from '../managers/SaveManager';
 import { AudioManager } from '../managers/AudioManager';
 import { PurchasesManager } from '../../services/Purchases';
 import { UpdateManager } from '../../services/Update';
-import { PRIVACY_URL, TERMS_URL } from '../../config/Links';
 import { Firebase } from '../../services/Firebase';
 import { Mascot } from '../ui/Mascot';
+import { SettingsPanel } from '../ui/SettingsPanel';
+import { WardrobePanel } from '../ui/WardrobePanel';
 import { ProfilePicker } from '../ui/ProfilePicker';
 import FPS from '../model/FPS';
 
 export default class Menu extends BaseScene {
-    private soundBtn?: Phaser.GameObjects.Container;
+    private settings?: SettingsPanel;
+    private wardrobe?: WardrobePanel;
+    private mascot?: Mascot;
     private helpPopup?: Phaser.GameObjects.Container;
     private donateBtn?: Phaser.GameObjects.Container;
 
@@ -25,6 +28,8 @@ export default class Menu extends BaseScene {
     init(): void {
         this.initScene();
         this.donateBtn = undefined;
+        this.settings = undefined;
+        this.wardrobe = undefined;
     }
 
     create(){
@@ -36,9 +41,10 @@ export default class Menu extends BaseScene {
         this.createSkyBg();
         this.createTitle();
         this.createHowItWorks();
+        this.createStreakStrip();
         this.createMascotAndBest();
         this.createButtons();
-        this.createSoundToggle();
+        this.createSettingsButton();
         this.createProfileChip();
 
         // First launch: ask who's playing before anything else
@@ -81,52 +87,85 @@ export default class Menu extends BaseScene {
         this.label(this.CX, this.H * 0.205, 'Remember. Count. Tap!', this.H * 0.024, THEME.INK);
     }
 
-    // "+5, +3 → tap 8" in three beats
+    // "+5, +3 → tap 8" in three beats, left to right
     private createHowItWorks(): void {
         const pad = Math.floor(this.W * 0.075);
         const top = this.H * 0.25;
         const cardW = this.W - pad * 2;
-        const cardH = Math.floor(this.H * 0.3);
+        const cardH = Math.floor(this.H * 0.17);
         this.drawCard(this.add.graphics(), pad, top, cardW, cardH, 24);
 
-        const left = pad + Math.floor(this.W * 0.055);
-        const right = pad + cardW - Math.floor(this.W * 0.06);
-        this.add.bitmapText(left, top + this.H * 0.03, 'coiny-bmp', 'SAMPLE ROUND', Math.floor(this.H * 0.016), 0)
+        const inner = Math.floor(this.W * 0.05);
+        this.add.bitmapText(pad + inner, top + this.H * 0.03, 'coiny-bmp', 'SAMPLE ROUND', Math.floor(this.H * 0.016), 0)
             .setOrigin(0, 0.5).setTint(0x315bc3);
 
-        const rows = [
-            { y: top + this.H * 0.08,  caption: 'Remember this number', value: '+5', color: THEME.ADD },
-            { y: top + this.H * 0.16,  caption: 'Add the next one', value: '+3', color: THEME.ADD },
-            { y: top + this.H * 0.245, caption: 'Tap the total exactly', value: '8', color: THEME.INK },
+        const cells = [
+            { caption: 'Remember', value: '+5', color: THEME.ADD },
+            { caption: 'Add next', value: '+3', color: THEME.ADD },
+            { caption: 'Tap total', value: '8', color: THEME.INK },
         ];
+        const cellW = (cardW - inner * 2) / 3;
+        cells.forEach((c, i) => {
+            const cx = pad + inner + cellW * (i + 0.5);
+            this.add.bitmapText(cx, top + this.H * 0.085, 'coiny-bmp', c.value, Math.floor(this.H * (i === 2 ? 0.06 : 0.052)), 0)
+                .setOrigin(0.5).setTint(c.color);
+            this.add.bitmapText(cx, top + this.H * 0.142, 'coiny-bmp', c.caption, Math.floor(this.H * 0.015), 0)
+                .setOrigin(0.5).setTint(0x455c70);
+        });
+        // "=" between the second and third step
+        this.add.bitmapText(pad + inner + cellW * 2, top + this.H * 0.085, 'coiny-bmp', '=', Math.floor(this.H * 0.04), 0)
+            .setOrigin(0.5).setTint(0x657887);
+    }
 
-        const guide = this.add.graphics();
-        guide.lineStyle(2, 0x9caab0, 1);
-        guide.lineBetween(left + 6, rows[0].y, left + 6, rows[2].y);
-        rows.forEach((row, i) => {
-            const dot = this.add.graphics();
-            dot.fillStyle(row.color, 1);
-            dot.fillCircle(left + 6, row.y, 7);
-            dot.lineStyle(2, THEME.CARD, 1);
-            dot.strokeCircle(left + 6, row.y, 7);
-            this.add.bitmapText(left + 25, row.y - this.H * 0.022, 'coiny-bmp', row.caption, Math.floor(this.H * 0.016), 0)
-                .setOrigin(0, 0.5).setTint(0x455c70);
-            this.add.bitmapText(left + 25, row.y + this.H * 0.016, 'coiny-bmp', row.value,
-                Math.floor(this.H * (i === 2 ? 0.05 : 0.036)), 0)
-                .setOrigin(0, 0.5).setTint(row.color);
-            if (i < 2) {
-                const sign = i === 0 ? '+' : '=';
-                const midY = (row.y + rows[i + 1].y) / 2;
-                this.add.bitmapText(right - 4, midY, 'coiny-bmp', sign, Math.floor(this.H * 0.028), 0)
-                    .setOrigin(1, 0.5).setTint(0x657887);
+    // Daily streak: flame + count, then the last 7 days as dots (today ringed)
+    private createStreakStrip(): void {
+        const streak = SaveManager.getDayStreak();
+        const y = this.H * 0.485;
+        const pad = Math.floor(this.W * 0.075);
+        const w = this.W - pad * 2;
+        const h = Math.floor(this.H * 0.05);
+        this.drawCard(this.add.graphics(), pad, y - h / 2, w, h, h / 2);
+
+        // flame
+        const fx = pad + h * 0.55;
+        const flame = this.add.graphics();
+        const lit = streak > 0;
+        flame.fillStyle(lit ? 0xff7a1a : THEME.CARD_SHADOW, 1);
+        flame.fillTriangle(fx - h * 0.2, y + h * 0.05, fx + h * 0.2, y + h * 0.05, fx, y - h * 0.34);
+        flame.fillCircle(fx, y + h * 0.1, h * 0.2);
+        if (lit) {
+            flame.fillStyle(0xffd23f, 1);
+            flame.fillCircle(fx, y + h * 0.15, h * 0.1);
+        }
+        this.add.bitmapText(fx + h * 0.4, y, 'coiny-bmp', lit ? `${streak} DAY${streak === 1 ? '' : 'S'}` : 'START A STREAK',
+            Math.floor(this.H * 0.016), 0).setOrigin(0, 0.5).setTint(lit ? THEME.INK : THEME.MUTED);
+        if (lit && !SaveManager.getWeek()[6].played) {
+            this.tweens.add({ targets: flame, alpha: 0.55, duration: 700, yoyo: true, repeat: -1 });
+        }
+
+        // week dots, right-aligned
+        const r = h * 0.2;
+        const step = r * 3.1;
+        const startX = pad + w - h * 0.5 - step * 6;
+        SaveManager.getWeek().forEach((d, i) => {
+            const x = startX + step * i;
+            const g = this.add.graphics();
+            g.fillStyle(d.played ? 0xff7a1a : THEME.SURFACE, 1);
+            g.fillCircle(x, y - h * 0.08, r);
+            if (d.today) {
+                g.lineStyle(3, THEME.INK, 1);
+                g.strokeCircle(x, y - h * 0.08, r + 3);
             }
+            this.add.bitmapText(x, y + h * 0.3, 'coiny-bmp', d.label, Math.floor(this.H * 0.009), 0)
+                .setOrigin(0.5).setTint(THEME.MUTED);
         });
     }
 
     // Summy stands next to the personal best and reacts when tapped
     private createMascotAndBest(): void {
-        const y = this.H * 0.655;
-        const mascot = new Mascot(this, this.W * 0.25, y, Math.floor(this.H * 0.042));
+        const y = this.H * 0.635;
+        const mascot = new Mascot(this, this.W * 0.2, y, Math.floor(this.H * 0.042));
+        this.mascot = mascot;
         mascot.setSize(this.H * 0.1, this.H * 0.11).setInteractive({ useHandCursor: true });
         mascot.on('pointerdown', () => {
             AudioManager.play('snd_tap', 1.3);
@@ -135,11 +174,29 @@ export default class Menu extends BaseScene {
         });
 
         const best = SaveManager.getBestScore();
-        const x = this.W * 0.45;
+        const x = this.W * 0.33;
         this.add.bitmapText(x, y - this.H * 0.026, 'coiny-bmp', 'Personal best', Math.floor(this.H * 0.02), 0)
             .setOrigin(0, 0.5).setTint(THEME.MUTED);
         this.add.bitmapText(x, y + this.H * 0.022, 'coiny-bmp', `${best}`, Math.floor(this.H * 0.05), 0)
             .setOrigin(0, 0.5).setTint(THEME.GOLD);
+
+        // Wardrobe (outfits + scenes): unlocked with stars (1 per round cleared)
+        const bw = Math.floor(this.W * 0.22);
+        const bh = Math.floor(this.H * 0.06);
+        this.createButton(
+            this.W * 0.925 - bw / 2, y, bw, bh, 'WARDROBE', this.H * 0.013,
+            THEME.CARD, THEME.CARD_SHADOW,
+            () => {
+                if (this.wardrobe) return;
+                AudioManager.play('snd_click');
+                this.wardrobe = new WardrobePanel(this, this.W, this.H, (sceneryChanged) => {
+                    this.wardrobe = undefined;
+                    if (sceneryChanged) this.scene.restart();
+                    else this.mascot?.setOutfit(SaveManager.getOutfit());
+                });
+            },
+            THEME.INK,
+        );
     }
 
     // ── Who's playing ────────────────────────────────────────────────────────
@@ -247,11 +304,6 @@ export default class Menu extends BaseScene {
         });
     }
 
-    /** Privacy policy / terms (§ 8). Leaving the app needs a grown-up first in this Kids game. */
-    private async openLink(url: string): Promise<void> {
-        if (await PurchasesManager.askGrownUp()) window.open(url, '_blank');
-    }
-
     private toggleHelpPopup(): void {
         if (this.helpPopup) {
             this.closeHelpPopup();
@@ -303,40 +355,6 @@ export default class Menu extends BaseScene {
             cursorY += text.height + lineSpacing;
         });
 
-        // Privacy policy and terms of service, along the bottom of the panel
-        const linkY = py + panelH / 2 - Math.floor(this.H * 0.04);
-        [['Privacy policy', PRIVACY_URL, -1], ['Terms of service', TERMS_URL, 1]].forEach(([text, url, side]) => {
-            const link = this.label(px + (side as number) * panelW * 0.22, linkY, text as string, this.H * 0.019, 0x1e90e8);
-            link.setInteractive({ useHandCursor: true });
-            link.on('pointerdown', () => { AudioManager.play('snd_click'); this.openLink(url as string); });
-            root.add(link);
-        });
-
-        // Restore purchases (App Store requirement): brings back premium on a new device or reinstall
-        const restore = this.label(px, linkY - Math.floor(this.H * 0.045), 'Restore purchases', this.H * 0.019, 0x1e90e8);
-        restore.setInteractive({ useHandCursor: true });
-        let restoring = false;
-        restore.on('pointerdown', async () => {
-            if (restoring) return;
-            restoring = true;
-            AudioManager.play('snd_click');
-            restore.setText('Restoring...');
-            const premium = await PurchasesManager.restore();
-            if (!restore.active) return;
-            restore.setText(premium ? 'Premium restored!' : 'Nothing to restore');
-            if (premium) {
-                AudioManager.play('snd_reward');
-                this.donateBtn?.destroy();
-                this.donateBtn = undefined;
-            }
-            this.time.delayedCall(2000, () => {
-                if (!restore.active) return;
-                restore.setText('Restore purchases');
-                restoring = false;
-            });
-        });
-        root.add(restore);
-
         const closeX = px + panelW / 2 - 40;
         const closeY = py - panelH / 2 + 40;
         const closeBg = this.add.graphics();
@@ -380,58 +398,33 @@ export default class Menu extends BaseScene {
         });
     }
 
-    // Round white button with a speaker icon; a cross shows when muted
-    private createSoundToggle(): void {
-        const x = this.W * 0.89;
-        const y = this.H * 0.065;
+    // Gear button, top right; opens the Settings popup
+    private createSettingsButton(): void {
         const size = Math.floor(this.H * 0.056);
-
-        this.soundBtn = this.add.container(x, y);
-
+        const btn = this.add.container(this.W * 0.89, this.H * 0.065);
         const bg = this.add.graphics();
         bg.fillStyle(THEME.CARD_SHADOW, 1);
         bg.fillCircle(0, 3, size / 2);
         bg.fillStyle(THEME.CARD, 1);
         bg.fillCircle(0, 0, size / 2);
-        const icon = this.add.graphics();
-        this.soundBtn.add([bg, icon]);
-
-        const s = size * 0.2;
-        const refresh = () => {
-            const on = AudioManager.isSoundEnabled();
-            icon.clear();
-            icon.fillStyle(THEME.INK, 1);
-            icon.fillRect(-s * 1.4, -s * 0.5, s * 0.7, s);
-            icon.fillPoints([
-                new Phaser.Math.Vector2(-s * 0.75, -s * 0.5),
-                new Phaser.Math.Vector2(-s * 0.05, -s * 1.1),
-                new Phaser.Math.Vector2(-s * 0.05, s * 1.1),
-                new Phaser.Math.Vector2(-s * 0.75, s * 0.5),
-            ], true);
-            icon.lineStyle(Math.max(3, s * 0.3), on ? THEME.INK : THEME.SUB, 1);
-            if (on) {
-                icon.beginPath();
-                icon.arc(0, 0, s * 0.9, -0.9, 0.9, false);
-                icon.strokePath();
-                icon.beginPath();
-                icon.arc(0, 0, s * 1.5, -0.9, 0.9, false);
-                icon.strokePath();
-            } else {
-                icon.lineBetween(s * 0.4, -s * 0.6, s * 1.4, s * 0.6);
-                icon.lineBetween(s * 1.4, -s * 0.6, s * 0.4, s * 0.6);
-            }
-        };
-        refresh();
-
-        this.soundBtn.setSize(size, size).setInteractive({ useHandCursor: true });
-        this.soundBtn.on('pointerdown', () => {
-            AudioManager.toggleSound();
+        const gear = this.add.graphics();
+        const r = size * 0.24;
+        gear.fillStyle(THEME.INK, 1);
+        for (let i = 0; i < 8; i++) {
+            const a = (Math.PI / 4) * i;
+            gear.fillCircle(Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15, r * 0.34);
+        }
+        gear.fillCircle(0, 0, r);
+        gear.fillStyle(THEME.CARD, 1);
+        gear.fillCircle(0, 0, r * 0.45);
+        btn.add([bg, gear]);
+        btn.setSize(size, size).setInteractive({ useHandCursor: true });
+        btn.on('pointerdown', () => {
+            if (this.settings) return;
             AudioManager.play('snd_click');
-            refresh();
-            this.tweens.add({
-                targets: this.soundBtn,
-                scaleX: 0.85, scaleY: 0.85,
-                duration: 80, yoyo: true, ease: 'Power2',
+            this.settings = new SettingsPanel(this, this.W, this.H, () => { this.settings = undefined; }, () => {
+                this.donateBtn?.destroy();
+                this.donateBtn = undefined;
             });
         });
     }
