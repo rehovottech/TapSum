@@ -3,7 +3,7 @@
 // never play or cause crashes on low-end devices.
 import { Howl, Howler } from 'howler';
 import { App as CapApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { SaveManager } from './SaveManager';
 
 export const SOUND_KEYS = {
@@ -36,6 +36,24 @@ const IS_ANDROID = Capacitor.getPlatform() === 'android' || /Android/i.test(navi
 // <audio> element's volume (music plays at 100%), so MUSIC_VOL and mute need Web Audio there.
 const MUSIC_HTML5 = !IS_IOS && !IS_ANDROID;
 
+/**
+ * iOS app: after an ad SDK runs, WebKit's Web Audio freezes for the rest of the run (ctx.state still says 'running',
+ * its clock stops, nothing revives it) while native players keep working. So SFX and music play natively there
+ * (SceneDelegate.swift, plugin 'AudioSession') and Howler is unused. Android and web keep Howler.
+ */
+const NATIVE = Capacitor.getPlatform() === 'ios';
+const AudioSession = registerPlugin<{
+    reactivate(): Promise<{ active: boolean }>;
+    load(o: { keys: string[] }): Promise<unknown>;
+    play(o: { key: string; rate?: number; volume?: number }): Promise<unknown>;
+    playMusic(o: { track: string; volume: number; fade: number }): Promise<unknown>;
+    setMusicVolume(o: { volume: number; fade: number }): Promise<void>;
+    pauseMusic(): Promise<void>;
+    resumeMusic(): Promise<unknown>;
+}>('AudioSession');
+/** 'assets/audio/tap.mp3' -> 'tap' (the bundled file name the native side loads). */
+const fileOf = (src: string) => src.replace(/^.*\//, '').replace(/\.mp3$/, '');
+
 class AudioManagerClass {
     private sounds               = new Map<string, Howl>();
     private bgMusic:               Howl | null = null;
@@ -43,12 +61,16 @@ class AudioManagerClass {
     private _pendingMusic        = false;
     private _pausedByLifecycle   = false;
     private _lifecycleRegistered = false;
-    private _listenersAdded      = false;
+    private _nativeMusicOn       = false;
 
     /** Call once at app startup (idempotent). */
     init(): void {
         if (this._ready) return;
         this._ready = true;
+        if (NATIVE) {
+            void AudioSession.load({ keys: [...Object.values(AUDIO_SRCS), MUSIC_SRC].map(fileOf) }).catch(() => {});
+            return;
+        }
 
         // SFX — Web Audio API (no html5) for low-latency, overlapping replay via pool
         Object.entries(AUDIO_SRCS).forEach(([key, src]) => {
@@ -69,9 +91,6 @@ class AudioManagerClass {
             volume: SaveManager.isSoundEnabled() ? this._musicLevel() : 0,
         });
 
-        if (this._listenersAdded) return;
-        this._listenersAdded = true;
-
         // Flush any playMusic() call that arrived before the first user gesture
         const onInteraction = () => {
             if (this._pendingMusic) {
@@ -86,6 +105,11 @@ class AudioManagerClass {
     /** rate > 1 raises the pitch (used for rising taps within a round). */
     play(key: string, rate = 1): void {
         if (!SaveManager.isSoundEnabled() || SaveManager.getSfxVolume() <= 0) return;
+        if (NATIVE) {
+            const src = AUDIO_SRCS[key];
+            if (src) void AudioSession.play({ key: fileOf(src), rate, volume: SFX_VOL * SaveManager.getSfxVolume() }).catch(() => {});
+            return;
+        }
         const snd = this.sounds.get(key);
         if (!snd) return;
         const id = snd.play();
@@ -93,6 +117,12 @@ class AudioManagerClass {
     }
 
     playMusic(): void {
+        if (NATIVE) {
+            if (!SaveManager.isSoundEnabled()) return;
+            this._nativeMusicOn = true;
+            void AudioSession.playMusic({ track: fileOf(MUSIC_SRC), volume: this._musicLevel(), fade: 0 }).catch(() => {});
+            return;
+        }
         if (!this.bgMusic || this.bgMusic.playing()) return;
 
         // AudioContext is suspended until the first user gesture on iOS/Android WebView
@@ -105,6 +135,7 @@ class AudioManagerClass {
     }
 
     stopMusic(): void {
+        if (NATIVE) { this._nativeMusicOn = false; void AudioSession.pauseMusic().catch(() => {}); return; }
         this._pendingMusic = false;
         try { this.bgMusic?.stop(); } catch (_) {}
     }
@@ -126,6 +157,10 @@ class AudioManagerClass {
     }
 
     pauseMusic(): void {
+        if (NATIVE) {
+            if (this._nativeMusicOn) { this._pausedByLifecycle = true; void AudioSession.pauseMusic().catch(() => {}); }
+            return;
+        }
         if (this.bgMusic?.playing()) {
             this._pausedByLifecycle = true;
             try { this.bgMusic.pause(); } catch (_) {}
@@ -135,6 +170,7 @@ class AudioManagerClass {
     resumeMusic(): void {
         if (!this._pausedByLifecycle) return;
         this._pausedByLifecycle = false;
+        if (NATIVE) { if (SaveManager.isSoundEnabled()) void AudioSession.resumeMusic().catch(() => {}); return; }
         const ctx = (Howler as any).ctx as (AudioContext | undefined);
         const doResume = () => { try { this.bgMusic?.play(); } catch (_) {} };
         if (ctx && ctx.state !== 'running') {
@@ -150,12 +186,12 @@ class AudioManagerClass {
     }
 
     /**
-     * After a native ad closes, the ad SDK may leave the AudioContext interrupted/suspended (iOS), silencing
-     * everything until a cold start. Resume with retries (iOS needs a moment after the ad view dismisses).
+     * After a native ad closes: iOS re-activates the native session and restarts the music (native playback is
+     * unaffected). Android resumes the AudioContext with retries (it may be left suspended).
      */
     recoverAfterAd(): void {
         if (!Capacitor.isNativePlatform()) return;
-        if (IS_IOS) { this._rebuildAfterAd(); return; }
+        if (NATIVE) { AudioSession.reactivate().then(() => this.resumeMusic(), () => {}); return; }
         const ctx = (Howler as any).ctx as (AudioContext | undefined);
         const restart = () => {
             this._pausedByLifecycle = false;
@@ -170,27 +206,6 @@ class AudioManagerClass {
             });
         };
         attempt(0);
-    }
-
-    /**
-     * iOS: the ad SDK reconfigures/deactivates the AVAudioSession, which leaves the WebView's AudioContext dead
-     * while still reporting 'running' (resume() is a no-op), so everything stays silent. A fresh context fixes it:
-     * drop all Howler state and reload the SFX and the music.
-     */
-    private _rebuildAfterAd(): void {
-        setTimeout(() => {
-            try { this.bgMusic?.stop(); } catch (_) {}
-            try { Howler.unload(); } catch (_) {}
-            this.sounds.clear();
-            this.bgMusic = null;
-            this._pendingMusic = false;
-            this._pausedByLifecycle = false;
-            this._ready = false;
-            this.init();
-            const ctx = (Howler as any).ctx as (AudioContext | undefined);
-            const go = () => this._doPlayMusic();
-            if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {}).then(go); else go();
-        }, 500);
     }
 
     /** Wire up tab-visibility and Capacitor app-suspend events. Call once at app startup. */
@@ -213,6 +228,7 @@ class AudioManagerClass {
 
     setMusicVolume(v: number): void {
         SaveManager.setMusicVolume(v);
+        if (NATIVE) { if (SaveManager.isSoundEnabled()) void AudioSession.setMusicVolume({ volume: this._musicLevel(), fade: 0 }).catch(() => {}); return; }
         if (SaveManager.isSoundEnabled()) this.bgMusic?.volume(this._musicLevel());
     }
 
@@ -233,6 +249,7 @@ class AudioManagerClass {
     }
 
     private _applyMusicVolume(enabled: boolean): void {
+        if (NATIVE) { void AudioSession.setMusicVolume({ volume: enabled ? this._musicLevel() : 0, fade: 0 }).catch(() => {}); return; }
         this.bgMusic?.volume(enabled ? this._musicLevel() : 0);
     }
 }
