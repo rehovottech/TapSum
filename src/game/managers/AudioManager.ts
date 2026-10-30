@@ -43,6 +43,7 @@ class AudioManagerClass {
     private _pendingMusic        = false;
     private _pausedByLifecycle   = false;
     private _lifecycleRegistered = false;
+    private _listenersAdded      = false;
 
     /** Call once at app startup (idempotent). */
     init(): void {
@@ -67,6 +68,9 @@ class AudioManagerClass {
             html5:  MUSIC_HTML5,
             volume: SaveManager.isSoundEnabled() ? this._musicLevel() : 0,
         });
+
+        if (this._listenersAdded) return;
+        this._listenersAdded = true;
 
         // Flush any playMusic() call that arrived before the first user gesture
         const onInteraction = () => {
@@ -151,6 +155,7 @@ class AudioManagerClass {
      */
     recoverAfterAd(): void {
         if (!Capacitor.isNativePlatform()) return;
+        if (IS_IOS) { this._rebuildAfterAd(); return; }
         const ctx = (Howler as any).ctx as (AudioContext | undefined);
         const restart = () => {
             this._pausedByLifecycle = false;
@@ -165,6 +170,27 @@ class AudioManagerClass {
             });
         };
         attempt(0);
+    }
+
+    /**
+     * iOS: the ad SDK reconfigures/deactivates the AVAudioSession, which leaves the WebView's AudioContext dead
+     * while still reporting 'running' (resume() is a no-op), so everything stays silent. A fresh context fixes it:
+     * drop all Howler state and reload the SFX and the music.
+     */
+    private _rebuildAfterAd(): void {
+        setTimeout(() => {
+            try { this.bgMusic?.stop(); } catch (_) {}
+            try { Howler.unload(); } catch (_) {}
+            this.sounds.clear();
+            this.bgMusic = null;
+            this._pendingMusic = false;
+            this._pausedByLifecycle = false;
+            this._ready = false;
+            this.init();
+            const ctx = (Howler as any).ctx as (AudioContext | undefined);
+            const go = () => this._doPlayMusic();
+            if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {}).then(go); else go();
+        }, 500);
     }
 
     /** Wire up tab-visibility and Capacitor app-suspend events. Call once at app startup. */
