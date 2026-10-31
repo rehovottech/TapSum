@@ -22,7 +22,7 @@ export const PurchasesConfigData: PurchasesConfig = {
         web: {
             razorpayKey: RAZORPAY_KEY,
             products: {
-                premium: 299,
+                premium: 199,
             },
         },
     },
