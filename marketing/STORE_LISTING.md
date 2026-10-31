@@ -123,9 +123,18 @@ What the app already does to comply (see the ads work in `src/services/Ads.ts`):
 - Purchases: a **parental gate** before the donation popup. Apple requires one for purchases in apps that children use.
 - Ads: the LevelPlay iOS SKAdNetwork list in `Info.plist`, plus `GADApplicationIdentifier` for AdMob.
 
+### ⚠️ iOS Game Center: leaderboards and achievements are NOT set up yet
+- **Leaderboards (missing in App Store Connect):** the app already submits scores to Game Center, but the boards don't exist yet. Create 3 **Classic** leaderboards under App Store Connect ▸ Tap Sum ▸ Services ▸ Game Center ▸ Leaderboards (score format Integer, "High score", higher is better), using **exactly** these IDs from `src/config/GameServices.ts`:
+  - `com.rehovot.game.tapsum.little` (Little Learner)
+  - `com.rehovot.game.tapsum.explorer` (Explorer)
+  - `com.rehovot.game.tapsum.adult` (Brain Trainer)
+- **Achievements (not built):** the game has no achievements in code or in App Store Connect. Decide whether to add them. If so: create them in App Store Connect, add their IDs to `GameServices.ts`, and submit them from the game. Until then, don't mention achievements in the store text.
+- **Release:** turn Game Center on for the app version you submit, and add the new leaderboards to that version. Without this the **Leaderboard ▸ OPEN** button shows nothing, and the Leaderboard screenshot's claim won't hold on iOS.
+
 ---
 
 ## 4. Checklist
+- [ ] iOS: create the 3 Game Center leaderboards in App Store Connect (and decide on achievements). See the warning in section 3
 - [ ] Bump Android `versionCode` to 13 and build the release bundle
 - [ ] `src/config/Ads.ts`: set `TEST_MODE: false` for the store build
 - [ ] Unity Ads COPPA setting and AdMob content rating G
