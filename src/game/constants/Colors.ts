@@ -85,4 +85,7 @@ export const INCREMENT_SCHEME = {
     1000: { face: 0x8b5cf6, side: 0x6236c9, text: THEME.WHITE, border: 0xffc531 },
     // Take-away keeps the game's red = minus meaning
     [-1]: { face: 0xff6b6b, side: 0xd64a3d, text: THEME.WHITE, border: 0 },
+    [-10]:   { face: 0xff6b6b, side: 0xd64a3d, text: THEME.WHITE, border: 0 },
+    [-100]:  { face: 0xf0504f, side: 0xc23a36, text: THEME.WHITE, border: 0 },
+    [-1000]: { face: 0xd93a46, side: 0xa8262f, text: THEME.WHITE, border: 0xffc531 },
 } as const;

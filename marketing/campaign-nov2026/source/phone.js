@@ -1,7 +1,8 @@
 // Replica of the TapSum play screen (390x844 design units), driven by a state object each frame.
 function createPhone(root,opt={}){
   root.style.cssText+=';position:absolute;width:390px;height:844px;overflow:hidden;background:#efefef;font-family:Coiny,sans-serif;transform-origin:0 0';
-  const B=(id,x,y,w,h,txt,col,sh,fg,fs)=>`<div class="b" id="${opt.p||'p'}-${id}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px"><div class="bs" style="position:absolute;inset:0;border-radius:22px;background:${sh}"></div><div class="bf" style="position:absolute;left:0;right:0;top:0;bottom:9px;border-radius:22px;background:${col};color:${fg};font-size:${fs}px;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1">${txt}</div><div class="rp" style="position:absolute;left:50%;top:45%;width:20px;height:20px;margin:-10px;border-radius:50%;background:rgba(255,255,255,.75);opacity:0"></div></div>`;
+  // Same grid as the game: 4 place-value columns (1000 · 100 · 10 · 1), a take-away row, an add row, then a wide DONE bar
+  const B=(id,x,y,w,h,txt,col,sh,fg,fs,dir='column')=>`<div class="b" id="${opt.p||'p'}-${id}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px"><div class="bs" style="position:absolute;inset:0;border-radius:15px;background:${sh}"></div><div class="bf" style="position:absolute;left:0;right:0;top:0;bottom:4px;border-radius:15px;background:${col};color:${fg};font-size:${fs}px;display:flex;align-items:center;justify-content:center;flex-direction:${dir};gap:10px;line-height:1">${txt}</div><div class="rp" style="position:absolute;left:50%;top:45%;width:20px;height:20px;margin:-10px;border-radius:50%;background:rgba(255,255,255,.75);opacity:0"></div></div>`;
   const R=opt.p||'p';
   root.innerHTML=`
   <div style="position:absolute;left:-60px;top:760px;width:430px;height:190px;border-radius:50%;background:#a8e6b8"></div>
@@ -16,21 +17,25 @@ function createPhone(root,opt={}){
   <div id="${R}-label" style="position:absolute;left:73px;width:244px;top:176px;text-align:center;font-size:17px;color:#1fa34f;white-space:nowrap">ADD</div>
   <div id="${R}-num" style="position:absolute;left:73px;width:244px;top:196px;text-align:center;font-size:84px;line-height:100px;color:#1fa34f">+9</div>
   <div id="${R}-blocks" style="position:absolute;left:0;width:390px;top:436px;height:50px"></div>
-  <div id="${R}-summy" style="position:absolute;left:150px;top:500px;width:90px"></div>
-  ${B('k1000',20,620,109,83,'+1000','#e3eaf2','#a9c1d3','#a9bccd',34)}
-  ${B('k100',140,620,109,83,'+100','#e3eaf2','#a9c1d3','#a9bccd',34)}
-  ${B('k10',265,620,105,83,'+10','#1e90e8','#1470bd','#fff',34)}
-  ${B('m1',20,707,70,109,'-1','#ff6b6b','#d94a4a','#fff',38)}
-  ${B('k1',108,707,146,109,'+1','#ffc531','#e0a000','#14304a',44)}
-  ${B('done',272,707,98,109,'<svg width="46" height="34" viewBox="0 0 46 34"><path d="M5 18 L18 29 L41 5" stroke="#14304a" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:24px;margin-top:6px">DONE</span>','#46d16d','#2aa04f','#14304a',24)}
+  <div id="${R}-summy" style="position:absolute;left:150px;top:493px;width:90px"></div>
+  ${B('m1000',20,601,79,59,'-1000','#e3eaf2','#a9c1d3','#a9bccd',24)}
+  ${B('m100',110,601,79,59,'-100','#e3eaf2','#a9c1d3','#a9bccd',27)}
+  ${B('m10',200,601,79,59,'-10','#ff6b6b','#d64a3d','#fff',30)}
+  ${B('m1',290,601,79,59,'-1','#ff6b6b','#d64a3d','#fff',32)}
+  ${B('k1000',20,670,79,59,'+1000','#e3eaf2','#a9c1d3','#a9bccd',24)}
+  ${B('k100',110,670,79,59,'+100','#e3eaf2','#a9c1d3','#a9bccd',27)}
+  ${B('k10',200,670,79,59,'+10','#1e90e8','#146db5','#fff',30)}
+  ${B('k1',290,670,79,59,'+1','#ffc531','#e0a000','#14304a',32)}
+  ${B('done',20,739,350,71,'<svg width="36" height="27" viewBox="0 0 46 34"><path d="M5 18 L18 29 L41 5" stroke="#14304a" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:29px">DONE</span>','#46d16d','#2aa04f','#14304a',29,'row')}
   <div id="${R}-flash" style="position:absolute;inset:0;background:#46d16d;opacity:0"></div>`;
   const $=id=>root.querySelector('#'+R+'-'+id);
   const el={round:$('round'),hearts:$('hearts'),score:$('score'),ring:$('ring'),label:$('label'),num:$('num'),blocks:$('blocks'),summy:$('summy'),flash:$('flash')};
-  const btn={};['k1000','k100','k10','m1','k1','done'].forEach(k=>btn[k]=$(k));
+  const btn={};['k1000','k100','k10','k1','m1000','m100','m10','m1','done'].forEach(k=>btn[k]=$(k));
   let lastMood='';
   if(opt.big){ // Brain-trainer style: enable +100 / +1000 colours
     const f=(k,c,s,fg)=>{btn[k].querySelector('.bf').style.background=c;btn[k].querySelector('.bf').style.color=fg;btn[k].querySelector('.bs').style.background=s};
     f('k100','#ff8a2b','#d96a10','#14304a');f('k1000','#8b5cf6','#6b3fd6','#fff');
+    f('m100','#f0504f','#c23a36','#fff');f('m1000','#d93a46','#a8262f','#fff');
   }
   return function update(s){
     el.round.textContent='ROUND '+(s.round||1);

@@ -30,14 +30,14 @@ The text below is also in `android/metadata` and `ios/metadata` (fastlane format
 |---|---|---|
 | **App name** | 30 | `TapSum: Memory Math` (19) |
 | **Short description** | 80 | `Remember the numbers, tap the total! A fun mental math game for ages 5 and up.` (78) |
-| **Full description** | 4000 | `android/metadata/en-US/full_description.txt` (1,542) |
-| **What's new** | 500 | `android/metadata/en-US/changelogs/13.txt` |
+| **Full description** | 4000 | `android/metadata/en-US/full_description.txt` (1,812) |
+| **What's new** | 500 | `android/metadata/en-US/changelogs/13.txt` (168) |
 
 ### Graphics
 - **Icon:** `android/app-icon_512.png`
 - **Feature graphic:** `android/feature-graphic_1024x500.png`
 - **Phone screenshots, in this order:** `android/screenshots/phone_1080x1920/01…07`
-  1. Play
+  1. Play (game screens 1, 3 and 5 show the new 4-column button grid with red -1000 to -1 take-away row)
   2. Menu
   3. Take away
   4. Profiles
@@ -101,8 +101,8 @@ What the app already does to comply (see the ads work in `src/services/Ads.ts`):
 | **Name** | 30 | `TapSum: Memory Math` (19) |
 | **Subtitle** | 30 | `Add, take away & tap the total` (30) |
 | **Keywords** | 100 | `addition,subtraction,arithmetic,brain,training,learn,numbers,count,place,value,school,educational` (97) |
-| **Promotional text** | 170 | see `ios/metadata/en-US/promotional_text.txt` (134) |
-| **Description** | 4000 | `ios/metadata/en-US/description.txt` (1,426) |
+| **Promotional text** | 170 | see `ios/metadata/en-US/promotional_text.txt` (161) |
+| **Description** | 4000 | `ios/metadata/en-US/description.txt` (1,696) |
 
 > **Apple guideline 1.3:** apps **outside** the Kids category must not use phrases like "for kids" or "for children" in their metadata. The iOS text deliberately says "all ages" and never "kids". Don't put the app in Apple's **Kids category**: that category doesn't allow third-party ads like LevelPlay/AdMob without a human-review exception. The Play text is separate and can say "kids".
 

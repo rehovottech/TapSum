@@ -6,11 +6,12 @@ TapSum is a bright, friendly mental math game. Numbers appear one at a time: add
 • A number appears: green means add, red means take away
 • Keep the running total in your head
 • Tap +1, +10, +100 and +1000 to build the answer, then press DONE
+• Tapped too much? The red -1, -10, -100 and -1000 buttons fix it fast
 • Beat the timer before it runs out. You have three hearts
 
 ★ LEARNING THROUGH PLAY
 • Colour-coded buttons for ones, tens and hundreds make place value easy to see
-• Numbers grow as you go, from single digits to three-digit sums
+• Bigger buttons unlock as the numbers grow, from single digits to three-digit sums
 • Missed one? The game shows the right total so you can carry on from it
 • A guided first game teaches the rules step by step
 
@@ -22,6 +23,7 @@ Change who's playing any time. Each level keeps its own best score.
 
 ★ FUN TO COME BACK TO
 • Streaks with confetti every five in a row
+• Hot streak! Keep a streak going and numbers start to flash one after another: +7, then -3, then +5. Add them up in your head, then tap the total. A new challenge for every level
 • Summy the mascot cheers you on
 • Personal bests and a leaderboard for each level
 • Short rounds, perfect for a few minutes of practice

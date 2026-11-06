@@ -23,9 +23,10 @@ interface GameData {
 export type EndReason = 'wrong' | 'timeout' | 'quit';
 type FailReason = 'wrong' | 'timeout';
 
-type IncrementAmount = 1 | 10 | 100 | 1000 | -1;
+type IncrementAmount = 1 | 10 | 100 | 1000 | -1 | -10 | -100 | -1000;
 
-const INCREMENT_AMOUNTS: IncrementAmount[] = [1, 10, 100, 1000, -1];
+// Layout: -1000 · -100 · -10 row, +1000 · +100 · +10 row, then -1 · +1 · DONE under the thumb.
+const INCREMENT_AMOUNTS: IncrementAmount[] = [1, 10, 100, 1000, -1, -10, -100, -1000];
 
 interface IncrementButton {
     amount:    IncrementAmount;
@@ -64,6 +65,8 @@ export default class Game extends BaseScene {
     private lives         = GAME_CONFIG.LIVES;
     private roundsCleared = 0;
     private streak        = 0;
+    private roundParts    = 1;       // numbers flashed this round (1 = normal round)
+    private hotRounds     = 0;       // rounds started since the streak reached the sequence threshold
     private worriedShown  = false;
     private roundNote     = '';      // pill shown when the round after a lost heart starts
     private premium       = false;   // premium owned: continues skip the rewarded ad
@@ -81,6 +84,7 @@ export default class Game extends BaseScene {
     private ring!:        Phaser.GameObjects.Graphics;
     private tape!:        Phaser.GameObjects.Container;
     private tray!:        Phaser.GameObjects.Container;
+    private seqDots!:     Phaser.GameObjects.Graphics;   // one dot per part of a sequence round
     private hintPill?:    Phaser.GameObjects.Container;
     private mascot!:      Mascot;
     private doneBtn?:     { container: Phaser.GameObjects.Container; glow: Phaser.GameObjects.Graphics };
@@ -125,6 +129,8 @@ export default class Game extends BaseScene {
         this.lives         = GAME_CONFIG.LIVES;
         this.roundsCleared = 0;
         this.streak        = 0;
+        this.hotRounds     = 0;
+        this.roundParts    = 1;
         this.worriedShown  = false;
         this.roundNote     = '';
         this.premium       = false;
@@ -151,7 +157,7 @@ export default class Game extends BaseScene {
         this.createTape();
         this.createTray();
         this.createIncrementButtons();
-        this.mascot = new Mascot(this, this.CX, this.H * 0.655, Math.floor(this.H * 0.038));
+        this.mascot = new Mascot(this, this.CX, this.H * 0.645, Math.floor(this.H * 0.038));
         this.fpsView = new FPS(this);
 
         this.cameras.main.fadeIn(300);
@@ -271,6 +277,7 @@ export default class Game extends BaseScene {
         this.targetLabel = this.label(this.ringCX, this.ringCY - this.ringR * 0.52, 'ADD', this.H * 0.02, THEME.ADD);
         this.targetText  = this.label(this.ringCX, this.ringCY + this.ringR * 0.04, '', this.numberFs, THEME.ADD);
         this.secondsText = this.label(this.ringCX, this.ringCY + this.ringR * 0.6, '', this.H * 0.018, THEME.INK);
+        this.seqDots     = this.add.graphics();
 
         this.redrawRing();
     }
@@ -326,7 +333,7 @@ export default class Game extends BaseScene {
         this.tape = this.add.container(this.CX, this.H * 0.462).setAlpha(0);
     }
 
-    private showTape(): void {
+    private showTape(persist = false): void {
         this.tweens.killTweensOf(this.tape);
         this.tape.removeAll(true);
 
@@ -371,7 +378,7 @@ export default class Game extends BaseScene {
         }
 
         this.tape.setAlpha(1);
-        this.tweens.add({ targets: this.tape, alpha: 0, delay: 1200, duration: 400, ease: 'Sine.easeIn' });
+        if (!persist) this.tweens.add({ targets: this.tape, alpha: 0, delay: 1200, duration: 400, ease: 'Sine.easeIn' });
     }
 
     // ── Bead tray: what you have built this round, in place-value pieces ──
@@ -513,27 +520,32 @@ export default class Game extends BaseScene {
         });
     }
 
-    // ── Increment buttons: +1000 · +100 · +10 on top, wide +1 under the thumb ──
+    // ── Increment buttons: a 4-column place-value grid (- row, + row) with a wide DONE bar ──
 
     private createIncrementButtons(): void {
+        // Grid: one column per place value (1000 · 100 · 10 · 1). Take-aways on top, adds under them,
+        // then a wide DONE bar, so every button sits where its place value says.
         const contentW = this.W * 0.897;
         const gap      = Math.floor(this.W * 0.03);
-        const topW     = Math.floor((contentW - gap * 2) / 3);
-        const topH     = Math.floor(this.H * 0.09);
-        const bigH     = Math.floor(this.H * 0.123);
-        const minusW   = Math.floor(contentW * 0.2);
-        const doneW    = Math.floor(contentW * 0.28);
-        const plusW    = Math.floor(contentW - minusW - doneW - gap * 2);
-        const bigCY    = this.H - this.H * 0.04 - bigH / 2;
-        const topCY    = bigCY - bigH / 2 - gap - topH / 2;
+        const colW     = Math.floor((contentW - gap * 3) / 4);
+        const vgap     = Math.floor(this.H * 0.012);
+        const rowH     = Math.floor(this.H * 0.07);
+        const doneH    = Math.floor(this.H * 0.085);
+        const doneCY   = this.H - this.H * 0.04 - doneH / 2;
+        const plusCY   = doneCY - doneH / 2 - vgap - rowH / 2;
+        const minusCY  = plusCY - rowH - vgap;
         const left     = this.CX - contentW / 2;
+        const colX     = (i: number) => left + colW * (i + 0.5) + gap * i;
 
         const spec: Record<IncrementAmount, { x: number; y: number; w: number; h: number; fs: number }> = {
-            1000: { x: left + topW / 2,                  y: topCY, w: topW, h: topH, fs: this.H * 0.031 },
-            100:  { x: left + topW * 1.5 + gap,          y: topCY, w: topW, h: topH, fs: this.H * 0.033 },
-            10:   { x: left + topW * 2.5 + gap * 2,      y: topCY, w: topW, h: topH, fs: this.H * 0.036 },
-            1:    { x: left + minusW + gap + plusW / 2,  y: bigCY, w: plusW, h: bigH, fs: this.H * 0.057 },
-            [-1]: { x: left + minusW / 2,                y: bigCY, w: minusW, h: bigH, fs: this.H * 0.045 },
+            [-1000]: { x: colX(0), y: minusCY, w: colW, h: rowH, fs: this.H * 0.032 },
+            [-100]:  { x: colX(1), y: minusCY, w: colW, h: rowH, fs: this.H * 0.034 },
+            [-10]:   { x: colX(2), y: minusCY, w: colW, h: rowH, fs: this.H * 0.036 },
+            [-1]:    { x: colX(3), y: minusCY, w: colW, h: rowH, fs: this.H * 0.038 },
+            1000:    { x: colX(0), y: plusCY,  w: colW, h: rowH, fs: this.H * 0.032 },
+            100:     { x: colX(1), y: plusCY,  w: colW, h: rowH, fs: this.H * 0.034 },
+            10:      { x: colX(2), y: plusCY,  w: colW, h: rowH, fs: this.H * 0.036 },
+            1:       { x: colX(3), y: plusCY,  w: colW, h: rowH, fs: this.H * 0.038 },
         };
 
         for (const amount of INCREMENT_AMOUNTS) {
@@ -575,7 +587,7 @@ export default class Game extends BaseScene {
             });
         }
 
-        this.createDoneButton(left + contentW - doneW / 2, bigCY, doneW, bigH);
+        this.createDoneButton(this.CX, doneCY, Math.floor(contentW), doneH);
     }
 
     // ── DONE: the player locks in the total they remember ────────────────────
@@ -593,16 +605,18 @@ export default class Game extends BaseScene {
         g.fillRoundedRect(-w / 2, -h / 2 + sideH, w, h - sideH, radius);
         g.fillStyle(THEME.GO, 1);
         g.fillRoundedRect(-w / 2, -h / 2, w, h - sideH, radius);
-        // Tick mark drawn above the label
-        const tick = this.add.graphics();
-        tick.lineStyle(Math.max(4, h * 0.06), THEME.INK, 1);
-        tick.beginPath();
-        tick.moveTo(-h * 0.13, -h * 0.2);
-        tick.lineTo(-h * 0.03, -h * 0.1);
-        tick.lineTo(h * 0.15, -h * 0.3);
-        tick.strokePath();
-        const text = this.add.bitmapText(0, h * 0.12, 'coiny-bmp', 'DONE', Math.floor(this.H * 0.026), 0)
+        const text = this.add.bitmapText(h * 0.3, -sideH / 2, 'coiny-bmp', 'DONE', Math.floor(this.H * 0.034), 0)
             .setOrigin(0.5).setTint(THEME.INK);
+        // Tick mark to the left of the label
+        const tx   = text.x - text.width / 2 - h * 0.4;
+        const ty   = -sideH / 2;
+        const tick = this.add.graphics();
+        tick.lineStyle(Math.max(4, h * 0.09), THEME.INK, 1);
+        tick.beginPath();
+        tick.moveTo(tx - h * 0.2, ty);
+        tick.lineTo(tx - h * 0.05, ty + h * 0.16);
+        tick.lineTo(tx + h * 0.22, ty - h * 0.16);
+        tick.strokePath();
 
         container.add([glow, g, tick, text]);
         container.setSize(w, h).setInteractive({ useHandCursor: true });
@@ -679,6 +693,9 @@ export default class Game extends BaseScene {
             100:  'snd_tap',
             1000: 'snd_click',
             [-1]: 'snd_tap',
+            [-10]:   'snd_click',
+            [-100]:  'snd_tap',
+            [-1000]: 'snd_click',
         };
         // Pitch climbs a little with every tap in the round; -1 drops it
         AudioManager.play(sndMap[amount], amount < 0 ? 0.8 : 1 + Math.min(this.tapsThisRound, 15) * 0.035);
@@ -708,8 +725,8 @@ export default class Game extends BaseScene {
         });
 
         // Screen shake is reserved for failure; taps get particles only.
-        const counts    = [5, 8, 12, 20, 5];
-        const minSpeeds = [50, 90, 140, 220, 50];
+        const counts    = [5, 8, 12, 20, 5, 8, 12, 20];
+        const minSpeeds = [50, 90, 140, 220, 50, 90, 140, 220];
         this.spawnBurst(
             container.x, container.y,
             [INCREMENT_SCHEME[INCREMENT_AMOUNTS[btnIndex]].face],
@@ -723,10 +740,11 @@ export default class Game extends BaseScene {
     private unlockButtons(): boolean {
         let opened = false;
         this.buttons.forEach((btn, i) => {
-            if (!btn.locked || this.targetTotal < btn.amount) return;
+            if (!btn.locked || this.targetTotal < Math.abs(btn.amount)) return;
             btn.locked = false;
-            opened = true;
             this.drawButtonFace(btn, INCREMENT_SCHEME[btn.amount].face);
+            if (btn.amount < 0) return;   // a minus twin opens quietly with its + button
+            opened = true;
             this.celebrateUnlock(i);
             this.track('button_unlocked', { amount: btn.amount, round: this.round });
         });
@@ -787,7 +805,15 @@ export default class Game extends BaseScene {
             }
         }
 
-        if (remaining < 0 && this.hintsOn()) hintIdx = INCREMENT_AMOUNTS.indexOf(-1);
+        // Overshot: point at the biggest unlocked take-away that fits
+        if (remaining < 0 && this.hintsOn()) {
+            for (const abs of [1000, 100, 10, 1]) {
+                const i = INCREMENT_AMOUNTS.indexOf(-abs as IncrementAmount);
+                if (abs > -remaining || this.buttons[i]?.locked) continue;
+                hintIdx = i;
+                break;
+            }
+        }
 
         // In the guided rounds, point at DONE once the total is right
         if (this.doneBtn) {
@@ -826,12 +852,140 @@ export default class Game extends BaseScene {
         return value;
     }
 
-    private calculateTaskTime(): number {
+    /**
+     * Hot streak cycle: once the streak reaches the profile's threshold, `burst` sequence rounds are
+     * followed by `rest` normal rounds, repeating. A broken streak resets the cycle. Call once per round.
+     */
+    private nextRoundKind(): { sequence: boolean; burstStart: boolean } {
+        const cfg = this.profile.sequence;
+        if (this.inTutorial() || this.streak < cfg.streak) {
+            this.hotRounds = 0;
+            return { sequence: false, burstStart: false };
+        }
+        const pos = this.hotRounds % (cfg.burst + cfg.rest);
+        this.hotRounds++;
+        return { sequence: pos < cfg.burst, burstStart: pos === 0 };
+    }
+
+    /** True when no prefix of the sequence takes the running total below 0. */
+    private sequenceStaysAboveZero(parts: number[]): boolean {
+        let total = this.targetTotal;
+        for (const v of parts) {
+            total += v;
+            if (total < 0) return false;
+        }
+        return true;
+    }
+
+    /** Numbers for a hot-streak round: a mix of adds and take-aways whose sum is the round's delta. */
+    private generateSequence(): number[] {
+        const cfg   = this.profile.sequence;
+        const band  = this.profile.ranges.find((r) => this.round <= r.upTo) ?? this.profile.ranges[this.profile.ranges.length - 1];
+        const range = this.profile.parts.find((p) => this.round <= p.upTo) ?? this.profile.parts[this.profile.parts.length - 1];
+        const count = Phaser.Math.Between(range.min, range.max);
+        // More parts means smaller parts, so the sum stays playable
+        const f     = Math.min(GAME_CONFIG.SEQUENCE_PART_FACTOR, 1.2 / count);
+        const max   = Math.max(1, Math.ceil(band.max * f));
+        const min   = Math.min(max, Math.max(1, Math.ceil(band.min * f)));
+
+        const parts: number[] = [];
+        let preview = this.targetTotal;
+        for (let i = 0; i < count; i++) {
+            let v = Phaser.Math.Between(min, max);
+            if (Phaser.Math.Between(1, 100) <= cfg.negChance && preview > v) v = -v;
+            parts.push(v);
+            preview += v;
+        }
+
+        // Always a mix: if nothing came out negative, turn one part into a take-away where the total allows
+        if (parts.every((v) => v > 0)) {
+            const order = Phaser.Utils.Array.Shuffle(parts.map((_, i) => i).slice(1));   // never the first part
+            for (const i of order) {
+                const flipped = parts.slice();
+                flipped[i] = -flipped[i];
+                if (this.sequenceStaysAboveZero(flipped)) { parts[i] = flipped[i]; break; }
+            }
+        }
+
+        // A sequence that cancels out would leave the total unchanged: make the last part an add
+        if (parts.reduce((t, v) => t + v, 0) === 0) parts[count - 1] = Math.abs(parts[count - 1]);
+        return parts;
+    }
+
+    private calculateTaskTime(parts = 1): number {
         const { thinkSec, tapSec, minSec, maxSec } = this.profile.timer;
         const ramp = Math.floor(this.round / GAME_CONFIG.TIMER_STEP_ROUNDS) * GAME_CONFIG.TIMER_TAP_RAMP;
         const perTap = tapSec * Math.max(GAME_CONFIG.TIMER_TAP_FLOOR, 1 - ramp);
         const sec = thinkSec + perTap * (this.tapsToBuild(this.targetTotal) + 1);   // +1 for DONE
-        return Phaser.Math.Clamp(sec, minSec, maxSec) * 1000;
+        const extra = Math.max(0, parts - 1) * this.profile.sequence.extraSec;       // adding the parts in your head
+        return (Phaser.Math.Clamp(sec, minSec, maxSec) + extra) * 1000;
+    }
+
+    /** One dot per part under the number; the part on screen is gold, parts already shown are filled. */
+    private drawSeqDots(total: number, current: number): void {
+        this.seqDots.clear();
+        if (total <= 0) return;
+        const r   = Math.max(4, Math.floor(this.H * 0.007));
+        const gap = r * 3.2;
+        const x0  = this.ringCX - ((total - 1) * gap) / 2;
+        const y   = this.ringCY + this.ringR * 0.6;
+        for (let i = 0; i < total; i++) {
+            const color = i === current ? THEME.GOLD : i < current ? THEME.INK : THEME.MUTED;
+            this.seqDots.fillStyle(color, i <= current ? 1 : 0.5);
+            this.seqDots.fillCircle(x0 + i * gap, y, i === current ? r * 1.25 : r);
+        }
+    }
+
+    /** Pops a signed number into the big number slot (green ADD / red TAKE AWAY). */
+    private popNumber(delta: number): void {
+        const isSub = delta < 0;
+        const color = isSub ? THEME.SUB : THEME.ADD;
+        this.targetLabel.setText(isSub ? 'TAKE AWAY' : 'ADD').setTint(color);
+        this.targetText.setText(this.formatDelta(delta)).setTint(color).setScale(1);
+        const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
+
+        this.tweens.killTweensOf(this.targetText);
+        if (SaveManager.isReducedMotion()) {
+            this.targetText.setScale(fit);
+            return;
+        }
+        this.targetText.setScale(fit * 2.2);
+        this.tweens.add({
+            targets: this.targetText,
+            scaleX: fit, scaleY: fit,
+            duration: 300, ease: 'Back.Out',
+        });
+    }
+
+    /**
+     * Flashes the parts one after another, then asks for the total. Buttons stay locked
+     * (roundActive is false) and the timer only starts once the last part has gone.
+     */
+    private playSequence(parts: number[]): void {
+        const gap = this.profile.sequence.gapMs;
+        this.secondsText.setText('');
+
+        parts.forEach((v, i) => {
+            this.time.delayedCall(i * gap, () => {
+                if (this.gameOver) return;
+                this.popNumber(v);
+                this.drawSeqDots(parts.length, i);
+                if (i > 0) AudioManager.play('snd_click');
+            });
+        });
+
+        this.time.delayedCall(parts.length * gap, () => {
+            if (this.gameOver) return;
+            this.targetLabel.setText("WHAT'S THE TOTAL?").setTint(THEME.INK);
+            this.targetText.setText('?').setTint(THEME.INK).setScale(1);
+            const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
+            this.targetText.setScale(fit);
+            this.seqDots.clear();
+            this.timeLeft          = this.timerDuration;
+            this.lastHintRemaining = -1;
+            this.roundActive       = true;
+            this.redrawRing();
+        });
     }
 
     /** Taps to build a total the plain way: one tap per unit of each digit (+1s, +10s, ...). */
@@ -851,12 +1005,16 @@ export default class Game extends BaseScene {
         // Previous round's number joins the tape before the new one appears
         if (this.currentDelta !== 0) this.history.push(this.currentDelta);
 
+        this.seqDots.clear();
         this.currentTotal      = 0;
         this.tapsThisRound     = 0;
         this.worriedShown      = false;
-        this.currentDelta      = this.generateBalancedTarget();
+        const kind             = this.nextRoundKind();
+        const seq              = kind.sequence ? this.generateSequence() : null;
+        this.roundParts        = seq?.length ?? 1;
+        this.currentDelta      = seq ? seq.reduce((s, v) => s + v, 0) : this.generateBalancedTarget();
         this.targetTotal      += this.currentDelta;
-        this.timeLeft          = this.calculateTaskTime();
+        this.timeLeft          = this.calculateTaskTime(seq?.length ?? 1);
         this.timerDuration     = this.timeLeft;
         this.lastHintRemaining = -1;
 
@@ -870,22 +1028,26 @@ export default class Game extends BaseScene {
         this.scoreText.setText(`${this.score}`);
         this.placeScoreStar();
 
-        // Signed number: green "+7" ADD / red "-7" TAKE AWAY
-        const isSub = this.currentDelta < 0;
-        const color = isSub ? THEME.SUB : THEME.ADD;
-        this.targetLabel.setText(isSub ? 'TAKE AWAY' : 'ADD').setTint(color);
-        this.targetText.setText(this.formatDelta(this.currentDelta)).setTint(color).setScale(1);
-        const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
-
-        this.targetText.setScale(fit * 2.2);
-        this.tweens.add({
-            targets: this.targetText,
-            scaleX: fit, scaleY: fit,
-            duration: 300, ease: 'Back.Out',
-        });
+        // Signed number: green "+7" ADD / red "-7" TAKE AWAY (hot streak: several in turn)
+        if (!seq) this.popNumber(this.currentDelta);
 
         if (this.inTutorial()) {
             this.showHint(this.tutorialHint());
+        } else if (seq) {
+            // The banner shares the tape's spot: banner first, then the tape stays up as a memory aid
+            if (kind.burstStart) {
+                this.tape.setAlpha(0);
+                this.showHint('HOT STREAK! Add them up');
+                this.time.delayedCall(1400, () => {
+                    if (this.gameOver) return;
+                    this.hideHint();
+                    this.showTape(true);
+                });
+            } else {
+                this.hideHint();
+                this.showTape(true);
+            }
+            this.track('sequence_round', { parts: seq.length, round: this.round, streak: this.streak, burst_start: kind.burstStart });
         } else {
             this.hideHint();
             // The note sits where the tape does, and it already says where the chain stands
@@ -905,7 +1067,11 @@ export default class Game extends BaseScene {
         this.time.delayedCall(420, () => this.mascot.look(0, 0));
 
         AudioManager.play('snd_click');
-        this.roundActive = true;
+        if (seq) {
+            this.playSequence(seq);   // starts the timer after the last part
+        } else {
+            this.roundActive = true;
+        }
         this.redrawRing();
     }
 
@@ -914,8 +1080,10 @@ export default class Game extends BaseScene {
     private onRoundSuccess(): void {
         this.roundActive = false;
         this.roundsCleared++;
-        this.streak++;
-        this.score += GAME_CONFIG.SCORE_PER_ROUND;
+        if (!this.inTutorial()) this.streak++;   // practice rounds do not build the hot streak
+        const points = GAME_CONFIG.SCORE_PER_ROUND * this.roundParts;   // sequence rounds pay per part
+        this.score += points;
+        this.tape.setAlpha(0);
         AudioManager.play('snd_success');
         Feel.success();
         this.mascot.setMood('happy', 640).hop();
@@ -935,7 +1103,7 @@ export default class Game extends BaseScene {
         this.spawnScoreLabel(
             this.CX, this.H * 0.55,
             this.scoreText.x - this.scoreText.width / 2, this.scoreText.y,
-            `+${GAME_CONFIG.SCORE_PER_ROUND}`,
+            `+${points}`,
             '#b36b00',
         );
 
@@ -977,6 +1145,7 @@ export default class Game extends BaseScene {
     private onFail(reason: FailReason): void {
         if (!this.roundActive || this.gameOver) return;
         this.roundActive = false;
+        this.tape.setAlpha(0);
         this.streak = 0;
         this.lives = Math.max(0, this.lives - 1);
         this.redrawHearts(true);

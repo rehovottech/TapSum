@@ -43,7 +43,10 @@ async function startGame(p, numbers, data = {}) {
     await p.evaluate(([numbers, data]) => {
         const g = window.game.scene.getScene('Game');
         window.__nums = numbers.slice();
-        g.events.once('create', () => { g.generateBalancedTarget = () => window.__nums.shift() ?? 7; });
+        g.events.once('create', () => {
+            g.generateBalancedTarget = () => window.__nums.shift() ?? 7;
+            g.nextRoundKind = () => ({ sequence: false, burstStart: false });   // keep hot-streak sequences out of the shots
+        });
         window.game.scene.getScene('Menu').scene.start('Game', data);
     }, [numbers, data]);
     await p.waitForFunction(() => window.game.scene.isActive('Game'));
@@ -64,7 +67,7 @@ async function solve(p) {
 async function tap(p, amount) {
     await p.evaluate((amount) => {
         const g = window.game.scene.getScene('Game');
-        const i = [1, 10, 100, 1000, -1].indexOf(amount);
+        const i = [1, 10, 100, 1000, -1, -10, -100, -1000].indexOf(amount);
         g.handleIncrementTap(amount, i);
     }, amount);
 }
