@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Coiny;src:url(Coiny-Regular.ttf)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);overflow:hidden;font-family:Coiny,sans-serif;position:relative}
+.abs{position:absolute}
+.tile{position:absolute;z-index:4;display:flex;align-items:center;justify-content:center;font-family:Coiny;border-radius:22%;box-shadow:0 calc(var(--u)*10) 0 rgba(0,0,0,.16)}
+.dev{position:absolute;z-index:2;background:#14304a;box-shadow:0 calc(var(--u)*30) calc(var(--u)*70) rgba(10,20,50,.35)}
+.scr{overflow:hidden;width:100%;height:100%}
+.dev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.brand{display:flex;align-items:center;gap:calc(var(--u)*22)}
+.brand img{width:calc(var(--u)*110);height:calc(var(--u)*110);border-radius:24%;box-shadow:0 calc(var(--u)*8) calc(var(--u)*20) rgba(10,20,50,.25);border:calc(var(--u)*3) solid rgba(255,255,255,.7)}
+.brand .name{font-size:calc(var(--u)*64);line-height:1}
+h1{font-weight:400;font-size:calc(var(--u)*var(--h1));line-height:1.06;margin-top:calc(var(--u)*30)}
+p{font-size:calc(var(--u)*var(--p));line-height:1.25;margin-top:calc(var(--u)*20);font-family:"Liberation Sans",Arial,sans-serif;font-weight:700}
+.pills{display:flex;flex-wrap:wrap;gap:calc(var(--u)*14);margin-top:calc(var(--u)*28)}
+.pill{font-size:calc(var(--u)*34);line-height:1.15;padding:calc(var(--u)*5) calc(var(--u)*26) calc(var(--u)*15);border-radius:999px;white-space:nowrap}
+</style></head><body>
+<div id="decos"></div><div class="abs" id="txt" style="z-index:3"></div>
+<div class="dev" id="dev"><div class="scr" id="scr"><img id="img"></div></div><div id="summy" class="abs" style="z-index:5"></div>
+<script src="common.js"></script>
+<script>
+const P=JSON.parse(decodeURIComponent(location.search.slice(3)));
+const TH={A:{bg:'linear-gradient(180deg,#cdeeff 0%,#e9f7ee 60%)',txt:'#14304a',sub:'#3f6584',hi:'#1fa34f',hs:'none',pill:'#1fa34f',pillTxt:'#fff',hills:true},
+          B:{bg:'radial-gradient(120% 90% at 25% 5%,#9a97e0 0%,#6b63d0 45%,#4a3dbd 100%)',txt:'#fff',sub:'#e3e0ff',hi:'#ffc531',hs:'0 calc(var(--u)*6) 0 #2a1f8f',pill:'#ffc531',pillTxt:'#14304a',hills:false}}[P.theme];
+const W=P.W,H=P.H,r=document.documentElement.style;
+const u=(P.layout==='side'?Math.min(W,H*1.3):P.layout==='strip'?H/90*0.8:W)/1080;
+r.setProperty('--W',W+'px');r.setProperty('--H',H+'px');r.setProperty('--u',u+'px');r.setProperty('--h1',P.h1||100);r.setProperty('--p',P.p||38);
+document.body.style.background=TH.bg;
+const txt=document.getElementById('txt'),dev=document.getElementById('dev');
+const brand=P.brand===false?'':`<div class="brand" ${P.layout==='stack'?'style="justify-content:center"':''}><img src="icon.png"><div class="name" style="${P.theme==='B'?'-webkit-text-stroke:calc(var(--u)*12) #fff;paint-order:stroke fill;':''}">${wordmark()}</div></div>`;
+const pills=(P.pills||[]).map((t,i)=>`<span class="pill" style="font-family:Coiny;background:${i?'#fff':TH.pill};color:${i?'#14304a':TH.pillTxt};box-shadow:0 calc(var(--u)*5) 0 rgba(20,48,74,.15)">${t}</span>`).join('');
+const dec=document.getElementById('decos');
+const add=(css,html='',cls='abs')=>{const d=document.createElement('div');d.className=cls;Object.assign(d.style,css);d.innerHTML=html;dec.appendChild(d)};
+if(TH.hills){add({left:-0.3*W+'px',top:H*.82+'px',width:W*1.1+'px',height:H*.45+'px',background:'#a8e6b8',borderRadius:'50%'});add({left:.3*W+'px',top:H*.87+'px',width:W*1.1+'px',height:H*.45+'px',background:'#7fd396',borderRadius:'50%'})}
+else{const g=rng(P.seed||4);for(let i=0;i<(P.stars??14);i++){const z=(14+g()*26)*u*1.4;add({left:g()*W+'px',top:g()*H+'px',opacity:.35+g()*.4},`<svg width="${z}" height="${z}" viewBox="0 0 20 20"><path d="M10 0 L12 8 L20 10 L12 12 L10 20 L8 12 L0 10 L8 8Z" fill="#fff"/></svg>`)}}
+const aspect=1170/2532,bez=18*u,rad=90*u;
+const hl=P.h.replace(/<em>/g,`<em style="font-style:normal;color:${TH.hi}">`);
+if(P.layout==='strip'){
+  txt.style.cssText+=`;left:0;top:0;width:${W}px;height:${H}px;display:flex;align-items:center;gap:${H*.18}px;padding:0 ${H*.2}px`;
+  txt.innerHTML=`<img src="icon.png" style="height:${H*.74}px;border-radius:22%;box-shadow:0 3px 8px rgba(10,20,50,.25)"><div style="font-size:${H*.36}px;line-height:1.05;color:${TH.txt};flex:1;text-shadow:${TH.hs.replace(/var\(--u\)/g,u+'px')}">${hl}</div><div style="font-family:Coiny;font-size:${H*.3}px;line-height:1.15;padding:${H*.06}px ${H*.28}px ${H*.18}px;border-radius:999px;background:${TH.pill};color:${TH.pillTxt};white-space:nowrap">${P.cta||'Free to play'}</div>`;
+  dev.style.display='none';
+}else{
+  txt.innerHTML=`${brand}<h1 style="color:${TH.txt};text-shadow:${TH.hs}">${hl}</h1>${P.s?`<p style="color:${TH.sub}">${P.s}</p>`:''}<div class="pills" ${P.layout==='stack'?'style="justify-content:center"':''}>${pills}</div>`;
+  let pw,ph,px,py;
+  if(P.layout==='side'){ph=H*(P.phoneH||1.05);pw=ph*aspect;px=W*(P.phoneX||.6);py=H*(P.phoneY||.08);
+    Object.assign(txt.style,{left:0,top:'50%',transform:'translateY(-50%)',width:px+'px',textAlign:'center',padding:`0 ${36*u}px`});
+    const bq=txt.querySelector('.brand');if(bq)bq.style.justifyContent='center';txt.querySelector('.pills').style.justifyContent='center'}
+  else{Object.assign(txt.style,{left:0,right:0,top:H*(P.textTop||.06)+'px',textAlign:'center',padding:`0 ${60*u}px`});
+    pw=W*(P.phoneW||.62);ph=pw/aspect;px=(W-pw)/2;py=H*(P.phoneY||.45)}
+  Object.assign(dev.style,{left:px+'px',top:py+'px',width:pw+'px',height:ph+'px',padding:bez+'px',borderRadius:rad+bez+'px'});
+  document.getElementById('scr').style.borderRadius=rad+'px';document.getElementById('img').src=P.img;
+  const tl={'+1':['#ffc531','#14304a'],'+10':['#1e90e8','#fff'],'+9':['#46d16d','#14304a'],'-4':['#ff6b6b','#fff'],'+24':['#46d16d','#14304a'],'-18':['#ff6b6b','#fff'],'+12':['#46d16d','#14304a'],'+37':['#46d16d','#14304a']};
+  (P.tiles||[]).forEach(([l,x,y,s,rot])=>{const [bg,fg]=tl[l];const d=document.createElement('div');d.className='tile';d.textContent=l;Object.assign(d.style,{left:x*W+'px',top:y*H+'px',width:s*1.5*u+'px',height:s*u+'px',background:bg,color:fg,fontSize:s*.46*u+'px',transform:`rotate(${rot}deg)`});document.body.appendChild(d)});
+  if(P.summy){const [x,y,s,mood]=P.summy;const d=document.getElementById('summy');d.style.left=x*W+'px';d.style.top=y*H+'px';d.innerHTML=summy(mood||'smile',s*u)}
+}
+Promise.all([document.fonts.ready,...[...document.images].map(i=>i.decode().catch(()=>{}))]).then(()=>setTimeout(()=>document.body.dataset.ready=1,50));
+</script></body></html>

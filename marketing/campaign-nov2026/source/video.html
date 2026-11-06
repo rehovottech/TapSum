@@ -1,0 +1,147 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Coiny;src:url(Coiny-Regular.ttf)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;font-family:Coiny,sans-serif}
+#stage{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.cap{position:absolute;left:0;width:1080px;text-align:center;text-wrap:balance;font-size:76px;line-height:1.05;padding:0 50px;opacity:0}
+.cap em{font-style:normal}
+.tile{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:22%;font-family:Coiny;box-shadow:0 12px 0 rgba(0,0,0,.16)}
+#dev{position:absolute;background:#14304a;border-radius:84px;padding:14px;box-shadow:0 40px 80px rgba(10,20,50,.35)}
+#scr{position:relative;width:470px;height:1017px;border-radius:70px;overflow:hidden;background:#efefef}
+#scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0}
+.pill{display:block;font-family:Coiny;font-size:46px;line-height:52px;padding:5px 34px 19px;min-width:300px;text-align:center;border-radius:999px;white-space:nowrap}
+</style></head><body>
+<div id="stage">
+ <div id="bg" class="abs" style="inset:0"></div>
+ <div id="deco" class="abs" style="inset:0"></div>
+ <div id="hook" class="abs" style="left:0;width:1080px;top:560px;text-align:center;opacity:0"></div>
+ <div id="caps"></div>
+ <div id="dev"><div id="scr"><div id="ph"></div><img id="im1"><img id="im2"></div></div>
+ <canvas id="cv" class="abs" width="1080" height="1920" style="left:0;top:0;z-index:20"></canvas>
+ <div id="end" class="abs" style="inset:0;opacity:0;z-index:10"></div>
+</div></body>
+<script src="icons.js"></script><script src="common.js"></script><script src="phone.js"></script>
+<script>
+const V=+new URLSearchParams(location.search).get('v')||1;
+const $=id=>document.getElementById(id);
+const THEME=V===1?{
+  bg:'linear-gradient(180deg,#cdeeff 0%,#e9f7ee 55%,#e9f7ee 100%)',txt:'#14304a',hi:'#1fa34f',shadow:'none',endTxt:'#14304a',sub:'#3f6584'
+}:{
+  bg:'radial-gradient(120% 80% at 30% 10%,#9a97e0 0%,#6b63d0 45%,#4a3dbd 100%)',txt:'#ffffff',hi:'#ffc531',shadow:'0 7px 0 #2a1f8f',endTxt:'#ffffff',sub:'#e3e0ff'
+};
+$('bg').style.background=THEME.bg;
+// decor
+const deco=$('deco');
+if(V===1){
+  deco.innerHTML=`<div class="abs" style="left:-300px;top:1500px;width:1200px;height:700px;border-radius:50%;background:#a8e6b8"></div><div class="abs" style="left:300px;top:1580px;width:1200px;height:700px;border-radius:50%;background:#7fd396"></div>`;
+}else{
+  let s='';const r=rng(7);for(let i=0;i<26;i++){const x=r()*1080,y=r()*1920,z=14+r()*26;s+=`<svg class="abs" id="sp${i}" style="left:${x}px;top:${y}px" width="${z}" height="${z}" viewBox="0 0 20 20"><path d="M10 0 L12 8 L20 10 L12 12 L10 20 L8 12 L0 10 L8 8Z" fill="#fff" opacity=".55"/></svg>`}
+  deco.innerHTML=s;
+}
+// caption elements
+const CAPS=V===1?[
+ {a:2.9,b:6.6,h:'Remember<br>the <em style="color:#1fa34f">numbers</em>'},
+ {a:6.7,b:10.3,h:'Now tap<br>the <em style="color:#1e90e8">total</em>'},
+ {a:10.4,b:11.9,h:'Nailed it!'},
+ {a:12.0,b:14.3,h:'Streaks &amp;<br><em style="color:#e5392d">confetti</em>'},
+ {a:14.4,b:16.7,h:'Ages 5 to<br><em style="color:#8b5cf6">grown-ups</em>'}]:[
+ {a:2.5,b:6.0,h:'Add. Take away.<br><em>Keep up!</em>'},
+ {a:6.1,b:9.0,h:'Tap the <em>total</em><br>before time runs out'},
+ {a:9.1,b:10.0,h:'Boom!'},
+ {a:10.1,b:12.4,h:'Beat your best.<br><em>Climb the board.</em>'}];
+const capEls=CAPS.map(c=>{const d=document.createElement('div');d.className='cap';d.style.top="268px";d.style.color=THEME.txt;d.style.textShadow=THEME.shadow;d.innerHTML=c.h.replace(/<em>/g,'<em style="color:'+THEME.hi+'">');$('caps').appendChild(d);return d});
+// phone
+const DEV={w:470,x:540-249,top:490}; const dev=$('dev');
+dev.style.left=DEV.x+'px';dev.style.top=DEV.top+'px';
+const upd=createPhone($('ph'),{big:V===2});$('ph').style.transform='scale('+(470/390)+')';
+const IMG1=V===1?'streak.png':'best.png', IMG2='profiles.png';
+$('im1').src=IMG1; $('im2').src=IMG2;
+// hook content
+const hook=$('hook');
+hook.innerHTML=V===1
+ ?`<div style="font-size:112px;line-height:1.05;color:${THEME.txt}">Can you keep<br>the <span style="color:#1fa34f">total</span><br>in your head?</div>`
+ :`<div style="font-size:120px;line-height:1.05;color:#fff;text-shadow:${THEME.shadow}">Numbers flash.<br><span style="color:#ffc531">Don't lose<br>count!</span></div>`;
+const HOOKTILES=V===1?[['+9','#46d16d','#14304a',150,120,-12],['-4','#ff6b6b','#fff',700,330,10],['+12','#46d16d','#14304a',770,1310,8],['+10','#1e90e8','#fff',90,1330,-9]]
+                    :[['+24','#46d16d','#14304a',110,300,-10],['-18','#ff6b6b','#fff',740,380,9],['+37','#46d16d','#14304a',730,1330,8],['+10','#1e90e8','#fff',90,1380,-9]];
+const hookTiles=HOOKTILES.map(([t,bg,fg,x,y,rot])=>{const d=document.createElement('div');d.className='tile';d.textContent=t;
+  Object.assign(d.style,{background:bg,color:fg,left:x+'px',top:y+'px',width:'230px',height:'160px',fontSize:'78px',opacity:0});d.dataset.rot=rot;$('stage').insertBefore(d,$('dev'));return d});
+const hookSummy=document.createElement('div');hookSummy.className='abs';hookSummy.style.cssText='left:390px;top:1200px;width:300px';hookSummy.innerHTML=summy('think',300);$('stage').insertBefore(hookSummy,$('dev'));
+// end card
+const end=$('end');
+end.innerHTML=`<div id="eic" class="abs" style="left:380px;top:330px;width:320px;height:320px"><img src="icon.png" style="width:320px;height:320px;border-radius:72px;box-shadow:0 24px 50px rgba(10,20,50,.35)"></div>
+ <div id="enm" class="abs" style="left:0;width:1080px;top:690px;text-align:center;font-size:170px;line-height:1;${V===2?'-webkit-text-stroke:14px #fff;paint-order:stroke fill;text-shadow:0 8px 0 rgba(42,31,143,.6);':''}">${wordmark()}</div>
+ <div id="etg" class="abs" style="left:0;width:1080px;top:880px;text-align:center;font-size:62px;color:${THEME.endTxt};${V===2?'text-shadow:'+THEME.shadow:''}">Remember. Count. <span style="color:${THEME.hi}">Tap!</span></div>
+ <div id="epl" class="abs" style="left:0;width:1080px;top:990px;display:flex;justify-content:center;gap:16px"><span class="pill" style="background:${V===1?'#1fa34f':'#ffc531'};color:${V===1?'#fff':'#14304a'}">Free to play</span><span class="pill" style="background:#fff;color:#14304a;box-shadow:0 6px 0 rgba(20,48,74,.14)">Ages 5+</span></div>
+ <div id="eb1" class="abs" style="left:190px;top:1110px;width:700px;height:210px">${badge('play',700)}</div>
+ <div id="eb2" class="abs" style="left:190px;top:1350px;width:700px;height:210px">${badge('app',700)}</div>`;
+const endSummy=document.createElement('div');endSummy.className='abs';endSummy.style.cssText='left:30px;top:420px;width:200px;opacity:1';endSummy.innerHTML=summy('happy',210);end.appendChild(endSummy);
+// ---- timeline
+const T=V===1?{hook:[0,2.7],game:2.7,gameEnd:11.9,imgA:[11.9,14.3],imgB:[14.3,16.7],end:16.7,dur:21.4}
+             :{hook:[0,2.4],game:2.4,gameEnd:10.0,imgA:[10.0,12.6],imgB:[0,0],end:12.6,dur:17.4};
+const G=V===1?{round:7,score0:60,t0:.5,step:1.25,show:1.05,nums:[[9,'ADD','#1fa34f'],[-4,'TAKE AWAY','#e5392d'],[12,'ADD','#1fa34f']],tapT0:4.4,tapDur:3.6,
+   taps:[[4.8,'k10'],[5.2,'k1'],[5.5,'k1'],[5.8,'k1'],[6.1,'k1'],[6.4,'k1'],[6.7,'k1'],[7.0,'k1']],doneT:7.55}
+ :{round:23,score0:220,t0:.45,step:1.0,show:.85,nums:[[24,'ADD','#1fa34f'],[-18,'TAKE AWAY','#e5392d'],[37,'ADD','#1fa34f']],tapT0:3.5,tapDur:3.0,
+   taps:[[3.8,'k10'],[4.05,'k10'],[4.3,'k10'],[4.55,'k10'],[4.9,'k1'],[5.15,'k1'],[5.4,'k1']],doneT:5.95};
+G.total=G.nums.reduce((a,n)=>a+n[0],0);
+function gameState(lt){
+  const s={round:G.round,hearts:3,score:G.score0,ring:0,showBlocks:false,val:0,press:{},ripple:{},mood:'smile',numOp:0,bob:Math.sin(lt*5)*3};
+  G.nums.forEach(([n,lab,col],i)=>{const a=G.t0+i*G.step;
+    if(lt>=a&&lt<a+G.show){s.numOp=1;s.label=lab;s.col=col;s.num=(n>0?'+':'-')+Math.abs(n);s.numScale=lerp(.5,1,E.back(seg(lt,a,a+.25)));s.ring=1-seg(lt,a,a+G.show);s.ringColor=col;s.mood=i%2?'open':'smile'}});
+  if(lt>=G.tapT0&&lt<G.doneT+.1){s.numOp=1;s.label='WHAT\'S THE TOTAL?';s.col='#14304a';s.num='?';s.numScale=1;s.ring=1-seg(lt,G.tapT0,G.tapT0+G.tapDur);s.ringColor='#ff8a2b';s.mood='think';s.showBlocks=true;
+    s.numSize=90;
+    if(lt<G.tapT0+.3){s.numScale=lerp(.5,1,E.back(seg(lt,G.tapT0,G.tapT0+.3)))}}
+  let val=0;
+  for(const [tt,k] of G.taps){ if(lt>=tt){val+=k==='k10'?10:1}
+    const d=lt-tt; if(d>=0&&d<.3){s.press[k]=Math.max(s.press[k]||0,d<.1?1:1-(d-.1)/.2);s.ripple[k]=d/.3}}
+  s.val=val;
+  if(lt>=G.doneT){const d=lt-G.doneT;s.press.done=d<.12?1:Math.max(0,1-(d-.12)/.2);s.ripple.done=clamp(d/.3);
+    if(d>=.1){s.label='CORRECT!';s.col='#1fa34f';s.num=''+G.total;s.numOp=1;s.numScale=lerp(.6,1,E.back(seg(d,.1,.45)));s.ring=1;s.ringColor='#1fa34f';s.mood='happy';s.numSize=84;s.flash=.22*(1-seg(d,.1,.4));s.score=G.score0+10;s.bob=-Math.abs(Math.sin(d*9))*10*(1-seg(d,0,1.3));}}
+  return s;
+}
+const sfx=[];
+G.taps.forEach(([tt])=>sfx.push([T.game+tt,'tap.mp3',.9]));
+sfx.push([T.game+G.doneT,'success.mp3',.8]); sfx.push([T.end+.05,'reward.mp3',.7]);
+window.META={dur:T.dur,sfx};
+const bursts=[{t0:T.game+G.doneT+.1,x:540,y:960,n:90,seed:3,speed:1100,spread:2.6},{t0:T.imgA[0]+.15,x:540,y:1100,n:70,seed:11,speed:1000,spread:2.8},{t0:T.end+.1,x:540,y:560,n:110,seed:5,speed:1300,spread:3.2}];
+const ctx=$('cv').getContext('2d');
+const devPos=(t)=>{ // slide in at game start, slide out after last phone scene
+  const inP=E.out(seg(t,T.game-.25,T.game+.45)), outStart=(V===1?T.imgB[1]:T.imgA[1])-.2, outP=E.inOut(seg(t,outStart,outStart+.5));
+  return {y:lerp(2100,DEV.top,inP)+outP*2100, vis:t>T.game-.3&&t<outStart+.6};
+};
+window.render=function(t){
+  // decor motion
+  if(V===2)for(let i=0;i<26;i++){const e=$('sp'+i);if(e)e.style.opacity=.35+.55*Math.abs(Math.sin(t*2+i))}
+  // hook
+  const hOut=1-seg(t,T.hook[1]-.35,T.hook[1]);
+  const hIn=E.out(seg(t,0,.45));
+  hook.style.opacity=hIn*hOut;hook.style.transform=`translateY(${(1-hIn)*60+(1-hOut)*-80}px) scale(${lerp(.92,1,hIn)})`;
+  hookTiles.forEach((d,i)=>{const p=E.back(seg(t,.15+i*.12,.6+i*.12))*hOut;d.style.opacity=p>0?hOut:0;d.style.transform=`scale(${Math.max(0,p)}) rotate(${+d.dataset.rot+Math.sin(t*3+i)*4}deg) translateY(${Math.sin(t*2+i)*10}px)`});
+  hookSummy.style.opacity=hOut;hookSummy.style.transform=`translateY(${(1-E.out(seg(t,.2,.7)))*300+Math.sin(t*4)*8}px)`;
+  hookSummy.style.display=hOut>0?'block':'none';
+  // phone
+  const dp=devPos(t);dev.style.display=dp.vis?'block':'none';dev.style.top=dp.y+'px';
+  const lt=t-T.game;
+  if(dp.vis){
+    upd(gameState(clamp(lt,0,99)));
+    const a1=seg(t,T.imgA[0],T.imgA[0]+.3)*(V===1?1-seg(t,T.imgA[1]-.25,T.imgA[1]):1);
+    $('im1').style.opacity=a1; $('im1').style.transform=`scale(${lerp(1.05,1,E.out(seg(t,T.imgA[0],T.imgA[0]+.5)))})`;
+    $('im2').style.opacity=V===1?seg(t,T.imgB[0],T.imgB[0]+.3):0;
+    $('ph').style.opacity=1-seg(t,T.gameEnd-.05,T.gameEnd+.25);
+  }
+  // captions
+  CAPS.forEach((c,i)=>{const p=E.out(seg(t,c.a,c.a+.3))*(1-seg(t,c.b-.2,c.b));capEls[i].style.opacity=p;capEls[i].style.transform=`translateY(${(1-p)*30}px) scale(${lerp(.9,1,p)})`});
+  // end card
+  const eIn=seg(t,T.end,T.end+.4);end.style.opacity=eIn;
+  $('bg').style.background=THEME.bg;
+  const el=t-T.end;
+  $('eic').style.transform=`scale(${lerp(.2,1,E.elastic(seg(el,0,.9)))}) rotate(${(1-E.out(seg(el,0,.8)))*-12}deg)`;
+  $('enm').style.transform=`translateY(${(1-E.out(seg(el,.15,.65)))*80}px)`;$('enm').style.opacity=seg(el,.15,.45);
+  $('etg').style.opacity=seg(el,.45,.8);$('etg').style.transform=`translateY(${(1-E.out(seg(el,.45,.9)))*50}px)`;
+  $('epl').style.opacity=seg(el,.6,.95);$('epl').style.transform=`scale(${lerp(.8,1,E.back(seg(el,.6,1.0)))})`;
+  [['eb1',.85],['eb2',1.05]].forEach(([id,a])=>{const e=$(id);const p=E.back(seg(el,a,a+.5));e.style.opacity=seg(el,a,a+.2);e.style.transform=`translateY(${(1-p)*120}px) scale(${lerp(.9,1,p)})`});
+  endSummy.style.transform=`translateY(${Math.sin(el*5)*-10}px) rotate(${Math.sin(el*3)*6}deg) scale(${E.back(seg(el,.5,1))})`;
+  drawConfetti(ctx,t,bursts,1080,1920);
+};
+document.fonts.ready.then(()=>Promise.all([...document.images].map(i=>i.decode().catch(()=>{}))).then(()=>{document.body.dataset.ready=1}));
+</script></html>
