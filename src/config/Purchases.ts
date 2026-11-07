@@ -2,7 +2,8 @@ import type { PurchasesConfig } from '@rehovottech/capacitor-purchases';
 import { AUDIENCE } from './Ads';
 
 const RAZORPAY_KEY = String(import.meta.env.VITE_RAZORPAY_KEY ?? "");
-const PREMIUM_STORE_KEY = "com.rehovot.game.tapsum.premium"
+const PREMIUM_ANDROID_KEY = "com.rehovot.game.tapsum.premium"
+const PREMIUM_IOS_KEY = "com.rehovot.game.tapsum.premium_1"
 
 // One purchase only: "Remove Ads + Buy us a Coffee" is the premium product (non-consumable,
 // restorable). It removes ads and counts as a coffee. No separate coffee tips.
@@ -11,12 +12,12 @@ export const PurchasesConfigData: PurchasesConfig = {
     platform: {
         android: {
             products: {
-                premium: PREMIUM_STORE_KEY,
+                premium: PREMIUM_ANDROID_KEY,
             },
         },
         ios: {
             products: {
-                premium: PREMIUM_STORE_KEY,
+                premium: PREMIUM_IOS_KEY,
             },
         },
         web: {
