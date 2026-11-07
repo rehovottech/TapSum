@@ -93,7 +93,7 @@ export default abstract class BaseScene extends Phaser.Scene {
         if (deco === 'none') return;
         const calm = SaveManager.isReducedMotion();
         const rnd = new Phaser.Math.RandomDataGenerator(['tapsum-scenery']);   // same layout every visit
-        const count = deco === 'clouds' ? 4 : 14;
+        const count = deco === 'clouds' ? 4 : deco === 'snow' ? 26 : 14;
         for (let i = 0; i < count; i++) {
             const g = this.add.graphics();
             const x = rnd.between(0, this.W);
@@ -120,6 +120,28 @@ export default abstract class BaseScene extends Phaser.Scene {
                     g.fillCircle(r * 0.5, -r * 0.3, r * 0.6);
                     g.fillTriangle(-r * 1.05, -r * 0.05, r * 1.05, -r * 0.05, 0, r * 1.2);
                     break;
+                case 'leaves':
+                    g.fillStyle(rnd.pick([0x7bc47f, 0xa5d86e, 0xf0b35a]), 0.7);
+                    g.fillEllipse(0, 0, r * 2.2, r * 1.1);
+                    g.setAngle(rnd.between(0, 360));
+                    break;
+                case 'snow':
+                    g.fillStyle(0xffffff, 0.95);
+                    g.fillCircle(0, 0, r * 0.55);
+                    break;
+                case 'petals':
+                    g.fillStyle(rnd.pick([0xff9ec7, 0xffc2d9, 0xffffff]), 0.75);
+                    g.fillEllipse(0, 0, r * 1.6, r * 0.9);
+                    g.setAngle(rnd.between(0, 360));
+                    break;
+                case 'sparkles': {
+                    g.fillStyle(rnd.pick([0xffffff, 0xffe27a, 0xffb3d9]), 0.95);
+                    g.fillTriangle(-r * 0.25, 0, r * 0.25, 0, 0, -r);
+                    g.fillTriangle(-r * 0.25, 0, r * 0.25, 0, 0, r);
+                    g.fillTriangle(0, -r * 0.25, 0, r * 0.25, -r, 0);
+                    g.fillTriangle(0, -r * 0.25, 0, r * 0.25, r, 0);
+                    break;
+                }
                 case 'stars': {
                     g.fillStyle(0xffffff, 0.9);
                     const pts: Phaser.Math.Vector2[] = [];
@@ -136,6 +158,10 @@ export default abstract class BaseScene extends Phaser.Scene {
             if (calm) continue;
             if (deco === 'clouds') {
                 this.tweens.add({ targets: g, x: x + this.W * 0.08, duration: rnd.between(9000, 15000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            } else if (deco === 'snow' || deco === 'leaves' || deco === 'petals') {
+                // Slowly falling, then loops back to the top
+                const fall = this.H * 0.9;
+                this.tweens.add({ targets: g, y: y + fall * 0.5, x: x + rnd.between(-30, 30), duration: rnd.between(7000, 12000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
             } else if (deco === 'bubbles') {
                 this.tweens.add({ targets: g, y: y - this.H * 0.04, duration: rnd.between(2500, 4500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
             } else {

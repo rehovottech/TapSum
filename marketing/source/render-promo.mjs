@@ -52,6 +52,14 @@ JOBS.push({ out: 'android/feature-graphic_1024x500.png', P: {
     tiles: [['+10', 0.50, 0.64, 76, -12], ['+1', 0.88, 0.06, 70, 10]],
 } });
 
+// App Store promoted In-App Purchase image (1024×1024, opaque). Must differ from the app icon (Guideline 2.3.2).
+JOBS.push({ out: 'ios/iap-premium_1024x1024.png', P: {
+    W: 1024, H: 1024, layout: 'stack', h1: 104, p: 38, textTop: 0.06, phoneW: 0.5, phoneY: 0.60, brand: false,
+    h: 'No ads.<br>Just <em>play!</em>', s: 'Remove Ads + Buy us a Coffee', pills: ['One-time purchase', 'Yours for good'],
+    img: raw('play'), bg: '#fff4dc', accent: '#d97a1f',
+    tiles: [['+10', 0.06, 0.62, 120, -12], ['+1', 0.80, 0.66, 110, 10]],
+} });
+
 const browser = await chromium.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
 for (const j of JOBS) {
     if (only && !j.out.includes(only)) continue;

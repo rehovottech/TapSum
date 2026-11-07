@@ -32,6 +32,9 @@ project(':rehovottech-capacitor-ads').projectDir = new File('../../../plugins/re
 include ':rehovottech-capacitor-app-update'
 project(':rehovottech-capacitor-app-update').projectDir = new File('../node_modules/@rehovottech/capacitor-app-update/android')
 
+include ':rehovottech-capacitor-share'
+project(':rehovottech-capacitor-share').projectDir = new File('../node_modules/@rehovottech/capacitor-share/android')
+
 include ':rehovottech-capacitor-purchases'
 project(':rehovottech-capacitor-purchases').projectDir = new File('../node_modules/@rehovottech/capacitor-purchases/android')
 

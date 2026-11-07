@@ -2,6 +2,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
 const PLAY_REMINDER_ID = 1002;
+const STREAK_REMINDER_ID = 1003;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 //const FRIDAY_NOTIF_ID = 1001;
 
@@ -47,6 +48,35 @@ export class NotificationManager {
             });
         } catch (e) {
             console.error('Play reminder scheduling error:', e);
+        }
+    }
+
+    // Call when a run ends: tomorrow at 6:30 PM, a nudge to keep the daily streak alive.
+    // Rescheduled after every run, so it only fires if the player has not played that day.
+    static async scheduleStreakReminder(streakDays: number): Promise<void> {
+        if (!Capacitor.isNativePlatform() || streakDays < 1) return;
+        try {
+            const status = await LocalNotifications.checkPermissions();
+            if (status.display !== 'granted') return;
+            await LocalNotifications.cancel({ notifications: [{ id: STREAK_REMINDER_ID }] });
+
+            const at = new Date();
+            at.setDate(at.getDate() + 1);
+            at.setHours(18, 30, 0, 0);
+
+            await LocalNotifications.schedule({
+                notifications: [{
+                    id: STREAK_REMINDER_ID,
+                    title: 'Tap Sum',
+                    body: streakDays === 1
+                        ? 'Play today to start a streak! 🔥'
+                        : `Keep your ${streakDays}-day streak alive! 🔥`,
+                    schedule: { at, allowWhileIdle: true },
+                    autoCancel: true,
+                }],
+            });
+        } catch (e) {
+            console.error('Streak reminder scheduling error:', e);
         }
     }
 

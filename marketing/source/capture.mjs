@@ -25,6 +25,9 @@ async function open(profile = 'explorer', best = '240') {
         localStorage.setItem('tapsum_best_score_little', '180');
         localStorage.setItem('tapsum_best_score_adult', '410');
         localStorage.setItem('tapsum_sound', 'true');
+        // a 3-day streak (yesterday and the two days before), so the menu's streak strip is lit
+        const key = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+        localStorage.setItem('tapsum_play_days', [3, 2, 1].map(key).join(','));
     }, [profile, best]);
     const p = await ctx.newPage();
     p.on('pageerror', (e) => console.log('pageerror', e.message));
@@ -169,6 +172,20 @@ const shots = {
         });
         await p.waitForTimeout(6000);
         await shot(p, 'leaderboard');
+        await ctx.close();
+    },
+
+    // 8. Wardrobe (stars unlock outfits and scenes)
+    async wardrobe() {
+        const { ctx, p } = await open();
+        await p.evaluate(() => {
+            localStorage.setItem('tapsum_stars', '45');
+            const m = window.game.scene.getScene('Menu');
+            const btn = m.children.list.find((o) => o.type === 'Container' && o.list?.some((c) => c.text === 'WARDROBE'));
+            btn?.emit('pointerdown');
+        });
+        await p.waitForTimeout(1500);
+        await shot(p, 'wardrobe');
         await ctx.close();
     },
 };

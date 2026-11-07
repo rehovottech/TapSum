@@ -65,6 +65,8 @@ export default class Game extends BaseScene {
     private lives         = GAME_CONFIG.LIVES;
     private roundsCleared = 0;
     private streak        = 0;
+    private recoveryRounds = 0;       // easy rounds left after losing a heart
+    private pendingBonusMs = 0;       // time earned by a good sequence round, added to the next round's timer
     private roundParts    = 1;       // numbers flashed this round (1 = normal round)
     private hotRounds     = 0;       // rounds started since the streak reached the sequence threshold
     private worriedShown  = false;
@@ -130,6 +132,8 @@ export default class Game extends BaseScene {
         this.roundsCleared = 0;
         this.streak        = 0;
         this.hotRounds     = 0;
+        this.pendingBonusMs = 0;
+        this.recoveryRounds = 0;
         this.roundParts    = 1;
         this.worriedShown  = false;
         this.roundNote     = '';
@@ -838,10 +842,35 @@ export default class Game extends BaseScene {
 
     // ── Round logic ──────────────────────────────────────────────────────────
 
+    /** Current phase of the difficulty wave (the easy phase while recovering from a lost heart). */
+    private wave(): (typeof GAME_CONFIG.WAVE_PHASES)[number] {
+        const phases = GAME_CONFIG.WAVE_PHASES;
+        if (this.inTutorial()) return phases[1];
+        if (this.recoveryRounds > 0) return phases[0];
+        const pos = (this.round - 1) % GAME_CONFIG.WAVE_LEN;
+        let cur = phases[0];
+        for (const ph of phases) if (pos >= ph.from) cur = ph;
+        return cur;
+    }
+
+    /** True on the first round of a wave phase. */
+    private waveStarts(): boolean {
+        if (this.inTutorial()) return false;
+        const pos = (this.round - 1) % GAME_CONFIG.WAVE_LEN;
+        return GAME_CONFIG.WAVE_PHASES.some((ph) => ph.from === pos);
+    }
+
+    /** A band's min/max scaled for the current wave phase (never below 1). */
+    private scaledBand(band: { min: number; max: number }): { min: number; max: number } {
+        const k = this.wave().rangeScale;
+        const max = Math.max(1, Math.round(band.max * k));
+        return { min: Math.min(max, Math.max(1, Math.round(band.min * k))), max };
+    }
+
     private generateBalancedTarget(): number {
         if (this.inTutorial()) return TUTORIAL_NUMBERS[this.round - 1];
 
-        const band = this.profile.ranges.find((r) => this.round <= r.upTo) ?? this.profile.ranges[this.profile.ranges.length - 1];
+        const band = this.scaledBand(this.profile.ranges.find((r) => this.round <= r.upTo) ?? this.profile.ranges[this.profile.ranges.length - 1]);
         let value  = Phaser.Math.Between(band.min, band.max);
 
         const neg = this.profile.negatives.find((n) => this.round <= n.upTo)?.chance ?? 0;
@@ -858,10 +887,12 @@ export default class Game extends BaseScene {
      */
     private nextRoundKind(): { sequence: boolean; burstStart: boolean } {
         const cfg = this.profile.sequence;
+        const phase = this.wave().id;
         if (this.inTutorial() || this.streak < cfg.streak) {
             this.hotRounds = 0;
             return { sequence: false, burstStart: false };
         }
+        if (phase === 'warmup' || phase === 'breather') return { sequence: false, burstStart: false };   // easy phases stay calm
         const pos = this.hotRounds % (cfg.burst + cfg.rest);
         this.hotRounds++;
         return { sequence: pos < cfg.burst, burstStart: pos === 0 };
@@ -880,7 +911,7 @@ export default class Game extends BaseScene {
     /** Numbers for a hot-streak round: a mix of adds and take-aways whose sum is the round's delta. */
     private generateSequence(): number[] {
         const cfg   = this.profile.sequence;
-        const band  = this.profile.ranges.find((r) => this.round <= r.upTo) ?? this.profile.ranges[this.profile.ranges.length - 1];
+        const band  = this.scaledBand(this.profile.ranges.find((r) => this.round <= r.upTo) ?? this.profile.ranges[this.profile.ranges.length - 1]);
         const range = this.profile.parts.find((p) => this.round <= p.upTo) ?? this.profile.parts[this.profile.parts.length - 1];
         const count = Phaser.Math.Between(range.min, range.max);
         // More parts means smaller parts, so the sum stays playable
@@ -918,7 +949,7 @@ export default class Game extends BaseScene {
         const perTap = tapSec * Math.max(GAME_CONFIG.TIMER_TAP_FLOOR, 1 - ramp);
         const sec = thinkSec + perTap * (this.tapsToBuild(this.targetTotal) + 1);   // +1 for DONE
         const extra = Math.max(0, parts - 1) * this.profile.sequence.extraSec;       // adding the parts in your head
-        return (Phaser.Math.Clamp(sec, minSec, maxSec) + extra) * 1000;
+        return (Phaser.Math.Clamp(sec * this.wave().timerScale, minSec, maxSec * 1.3) + extra) * 1000;
     }
 
     /** One dot per part under the number; the part on screen is gold, parts already shown are filled. */
@@ -941,7 +972,7 @@ export default class Game extends BaseScene {
         const isSub = delta < 0;
         const color = isSub ? THEME.SUB : THEME.ADD;
         this.targetLabel.setText(isSub ? 'TAKE AWAY' : 'ADD').setTint(color);
-        this.targetText.setText(this.formatDelta(delta)).setTint(color).setScale(1);
+        this.targetText.setText(this.formatDelta(delta)).setTint(color).setScale(1).setAlpha(1);
         const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
 
         this.tweens.killTweensOf(this.targetText);
@@ -961,23 +992,33 @@ export default class Game extends BaseScene {
      * Flashes the parts one after another, then asks for the total. Buttons stay locked
      * (roundActive is false) and the timer only starts once the last part has gone.
      */
-    private playSequence(parts: number[]): void {
-        const gap = this.profile.sequence.gapMs;
+    private playSequence(parts: number[], burstStart = false): void {
+        const gap  = this.profile.sequence.gapMs;
+        const lead = burstStart ? GAME_CONFIG.SEQ_LEAD_BANNER_MS : GAME_CONFIG.SEQ_LEAD_MS;
         this.secondsText.setText('');
+        this.targetLabel.setText('GET READY').setTint(THEME.MUTED);
+        this.targetText.setText('').setAlpha(1);
 
         parts.forEach((v, i) => {
-            this.time.delayedCall(i * gap, () => {
+            this.time.delayedCall(lead + i * gap, () => {
                 if (this.gameOver) return;
                 this.popNumber(v);
                 this.drawSeqDots(parts.length, i);
                 if (i > 0) AudioManager.play('snd_click');
             });
+            if (i < parts.length - 1) {
+                // Blank beat just before the next part
+                this.time.delayedCall(lead + (i + 1) * gap - GAME_CONFIG.SEQ_BLANK_MS, () => {
+                    if (this.gameOver) return;
+                    this.targetText.setAlpha(0);
+                });
+            }
         });
 
-        this.time.delayedCall(parts.length * gap, () => {
+        this.time.delayedCall(lead + parts.length * gap, () => {
             if (this.gameOver) return;
             this.targetLabel.setText("WHAT'S THE TOTAL?").setTint(THEME.INK);
-            this.targetText.setText('?').setTint(THEME.INK).setScale(1);
+            this.targetText.setText('?').setTint(THEME.INK).setScale(1).setAlpha(1);
             const fit = Math.min(1, this.numberMaxW / Math.max(1, this.targetText.width));
             this.targetText.setScale(fit);
             this.seqDots.clear();
@@ -1009,6 +1050,11 @@ export default class Game extends BaseScene {
         this.currentTotal      = 0;
         this.tapsThisRound     = 0;
         this.worriedShown      = false;
+        // Phase label (WARM UP / GETTING TOUGH / BREATHER) on the first round of each phase
+        const phaseLabel = this.recoveryRounds > 0 ? '' : (this.waveStarts() ? this.wave().label : '');
+        if (phaseLabel && !this.roundNote) this.roundNote = phaseLabel;
+        if (this.recoveryRounds === GAME_CONFIG.RECOVERY_ROUNDS && !this.roundNote) this.roundNote = 'Easy does it';
+        if (this.waveStarts()) this.track('wave_phase', { phase: this.wave().id, round: this.round });
         const kind             = this.nextRoundKind();
         const seq              = kind.sequence ? this.generateSequence() : null;
         this.roundParts        = seq?.length ?? 1;
@@ -1022,6 +1068,13 @@ export default class Game extends BaseScene {
         if (this.unlockButtons()) {
             this.timeLeft     += GAME_CONFIG.UNLOCK_BONUS_MS;
             this.timerDuration = this.timeLeft;
+        }
+
+        // Time earned by a good sequence round last time
+        if (this.pendingBonusMs > 0) {
+            this.timeLeft     += this.pendingBonusMs;
+            this.timerDuration = this.timeLeft;
+            this.pendingBonusMs = 0;
         }
 
         this.roundText.setText(this.inTutorial() ? 'PRACTICE' : `ROUND ${this.round}`);
@@ -1060,6 +1113,7 @@ export default class Game extends BaseScene {
                 this.showTape();
             }
         }
+        if (this.recoveryRounds > 0) this.recoveryRounds--;
         this.resetTray();
         this.restoreButtonColors();
         this.applyButtonHints(Number.NaN);   // NaN = clear all hints
@@ -1068,7 +1122,7 @@ export default class Game extends BaseScene {
 
         AudioManager.play('snd_click');
         if (seq) {
-            this.playSequence(seq);   // starts the timer after the last part
+            this.playSequence(seq, kind.burstStart);   // starts the timer after the last part
         } else {
             this.roundActive = true;
         }
@@ -1082,6 +1136,7 @@ export default class Game extends BaseScene {
         this.roundsCleared++;
         if (!this.inTutorial()) this.streak++;   // practice rounds do not build the hot streak
         const points = GAME_CONFIG.SCORE_PER_ROUND * this.roundParts;   // sequence rounds pay per part
+        if (this.roundParts > 1) this.awardSequenceBonus();
         this.score += points;
         this.tape.setAlpha(0);
         AudioManager.play('snd_success');
@@ -1124,6 +1179,19 @@ export default class Game extends BaseScene {
         this.time.delayedCall(wait, () => this.startRound());
     }
 
+    /** Sequence round solved: banks extra seconds for the next round (more if answered with time to spare). */
+    private awardSequenceBonus(): void {
+        const left = this.timerDuration > 0 ? this.timeLeft / this.timerDuration : 0;
+        const sec  = Math.min(
+            GAME_CONFIG.SEQ_BONUS_MAX_SEC,
+            left > GAME_CONFIG.SEQ_BONUS_FAST_RATIO ? GAME_CONFIG.SEQ_BONUS_FAST_SEC : GAME_CONFIG.SEQ_BONUS_SEC,
+        );
+        this.pendingBonusMs = sec * 1000;
+        this.spawnScoreLabel(this.CX, this.H * 0.5, this.ringCX, this.ringCY, `+${sec}s`, '#1f9e4c');
+        this.time.delayedCall(260, () => AudioManager.play('snd_reward'));
+        this.track('sequence_bonus', { sec, round: this.round });
+    }
+
     private celebrateStreak(): void {
         this.spawnConfetti(36);
         AudioManager.play('snd_reward');
@@ -1145,6 +1213,8 @@ export default class Game extends BaseScene {
     private onFail(reason: FailReason): void {
         if (!this.roundActive || this.gameOver) return;
         this.roundActive = false;
+        this.pendingBonusMs = 0;
+        this.recoveryRounds = GAME_CONFIG.RECOVERY_ROUNDS;
         this.tape.setAlpha(0);
         this.streak = 0;
         this.lives = Math.max(0, this.lives - 1);

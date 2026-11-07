@@ -14,7 +14,7 @@ The text below is also in `android/metadata` and `ios/metadata` (fastlane format
 |---|---|
 | App name | **TapSum: Memory Math** (19/30) |
 | Developer | Rehovot Games **[CONFIRM legal name]** |
-| Version | Android: the live build is versionCode 12, so the next upload must use **13** (set in `android/app/build.gradle`) |
+| Version | Android: the next upload uses versionCode **24**, versionName 2.0 (set in `android/app/build.gradle`) |
 | Orientation | Portrait only |
 | Price | Free. Ads, plus an optional "buy us a coffee" donation |
 | Privacy policy | https://policy.rehovottech.com/general/privacy (shared by every Rehovot game; its § 8 covers games made for children) |
@@ -31,12 +31,12 @@ The text below is also in `android/metadata` and `ios/metadata` (fastlane format
 | **App name** | 30 | `TapSum: Memory Math` (19) |
 | **Short description** | 80 | `Remember the numbers, tap the total! A fun mental math game for ages 5 and up.` (78) |
 | **Full description** | 4000 | `android/metadata/en-US/full_description.txt` (1,812) |
-| **What's new** | 500 | `android/metadata/en-US/changelogs/13.txt` (168) |
+| **What's new** | 500 | `android/metadata/en-US/changelogs/24.txt` (168) |
 
 ### Graphics
 - **Icon:** `android/app-icon_512.png`
 - **Feature graphic:** `android/feature-graphic_1024x500.png`
-- **Phone screenshots, in this order:** `android/screenshots/phone_1080x1920/01…07`
+- **Phone screenshots, in this order:** `android/screenshots/phone_1080x1920/01…08`
   1. Play (game screens 1, 3 and 5 show the new 4-column button grid with red -1000 to -1 take-away row)
   2. Menu
   3. Take away
@@ -44,6 +44,7 @@ The text below is also in `android/metadata` and `ios/metadata` (fastlane format
   5. Streak
   6. New best
   7. Leaderboard
+  8. Wardrobe
 
 ### Category and tags
 - **Category:** Game › **Educational**. Puzzle is the alternative, but Educational fits the Families listing better.
@@ -123,19 +124,15 @@ What the app already does to comply (see the ads work in `src/services/Ads.ts`):
 - Purchases: a **parental gate** before the donation popup. Apple requires one for purchases in apps that children use.
 - Ads: the LevelPlay iOS SKAdNetwork list in `Info.plist`, plus `GADApplicationIdentifier` for AdMob.
 
-### ⚠️ iOS Game Center: leaderboards and achievements are NOT set up yet
-- **Leaderboards (missing in App Store Connect):** the app already submits scores to Game Center, but the boards don't exist yet. Create 3 **Classic** leaderboards under App Store Connect ▸ Tap Sum ▸ Services ▸ Game Center ▸ Leaderboards (score format Integer, "High score", higher is better), using **exactly** these IDs from `src/config/GameServices.ts`:
-  - `com.rehovot.game.tapsum.little` (Little Learner)
-  - `com.rehovot.game.tapsum.explorer` (Explorer)
-  - `com.rehovot.game.tapsum.adult` (Brain Trainer)
-- **Achievements (not built):** the game has no achievements in code or in App Store Connect. Decide whether to add them. If so: create them in App Store Connect, add their IDs to `GameServices.ts`, and submit them from the game. Until then, don't mention achievements in the store text.
-- **Release:** turn Game Center on for the app version you submit, and add the new leaderboards to that version. Without this the **Leaderboard ▸ OPEN** button shows nothing, and the Leaderboard screenshot's claim won't hold on iOS.
+### iOS Game Center
+- **Leaderboards:** created in App Store Connect as Classic leaderboards (Integer, high to low) with the IDs from `src/config/GameServices.ts`: `com.rehovot.game.tapsum.little` (Little Learner), `.explorer` (Explorer) and `.adult` (Brain Trainer). **Attach all three to the app version** you submit (version page ▸ Game Center), or the Leaderboard ▸ OPEN button shows nothing.
+- **Achievements: none.** The game has no achievements in code or in App Store Connect, so leave that section empty and don't mention achievements in store text. To add them later, create them in App Store Connect, add their IDs to `GameServices.ts` and submit them from the game.
 
 ---
 
 ## 4. Checklist
-- [ ] iOS: create the 3 Game Center leaderboards in App Store Connect (and decide on achievements). See the warning in section 3
-- [ ] Bump Android `versionCode` to 13 and build the release bundle
+- [ ] iOS: attach the 3 Game Center leaderboards to the submitted version (see section 3)
+- [ ] Confirm Android `versionCode` 24 (versionName 2.0) and build the release bundle
 - [ ] `src/config/Ads.ts`: set `TEST_MODE: false` for the store build
 - [ ] Unity Ads COPPA setting and AdMob content rating G
 - [ ] Publish `app-ads.txt` at rehovottech.com, using the lines from LevelPlay › Settings

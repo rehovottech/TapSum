@@ -26,6 +26,8 @@ export const SHOTS = [
       tiles: [['+100', -0.03, 0.39, 140, -10], ['+10', 0.86, 0.33, 130, 12]] },
     { id: 'leaderboard', k: 'Leaderboards',    h: 'Climb the<br><em>rankings</em>',       s: 'A board for each age group', bg: '#e9f7ee', accent: '#1fa34f',
       tiles: [['+1', -0.03, 0.36, 140, -12], ['+10', 0.86, 0.42, 140, 10]] },
+    { id: 'wardrobe',    k: 'Dress up Summy',  h: 'Unlock <em>outfits</em><br>&amp; scenes',  s: 'Earn stars for every round you clear', bg: '#f1ecff', accent: '#8b5cf6',
+      tiles: [['+10', -0.03, 0.39, 140, -10], ['+1', 0.86, 0.33, 140, 12]] },
 ];
 
 // Raw capture sets (capture.mjs). iOS sets are captured with NATIVE=1 so they show the app's native layout

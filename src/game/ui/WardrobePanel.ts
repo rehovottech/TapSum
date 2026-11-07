@@ -13,6 +13,8 @@ export class WardrobePanel {
     private cells: { id: string; g: Phaser.GameObjects.Graphics; x: number; y: number; name: Phaser.GameObjects.BitmapText; sub: Phaser.GameObjects.BitmapText }[] = [];
     private gridItems: Phaser.GameObjects.GameObject[] = [];
     private tab: 'outfits' | 'scenes' = 'outfits';
+    private page = 0;
+    private static readonly PER_PAGE = 6;
     private tabGfx: Phaser.GameObjects.Graphics;
     private cw = 0;
     private ch = 0;
@@ -45,7 +47,13 @@ export class WardrobePanel {
         this.root.add(card);
 
         this.root.add(this.text(px, top + panelH * 0.07, 'WARDROBE', H * 0.03));
-        this.root.add(this.text(px, top + panelH * 0.125, `${SaveManager.getStars()} stars earned (1 per round cleared)`, H * 0.016, THEME.MUTED));
+        const stars = SaveManager.getStars();
+        const next = [...OUTFITS, ...SCENERIES].filter((o) => o.stars > stars).sort((a, b) => a.stars - b.stars)[0];
+        const info = this.text(px, top + panelH * 0.125,
+            next ? `${stars} stars. Next: ${next.name} in ${next.stars - stars}` : `${stars} stars. Everything unlocked!`,
+            H * 0.016, THEME.MUTED);
+        if (info.width > panelW * 0.86) info.setScale(panelW * 0.86 / info.width);
+        this.root.add(info);
 
         this.mascot = new Mascot(scene, px, top + panelH * 0.315, Math.floor(H * 0.045));
         this.root.add(this.mascot);
@@ -58,7 +66,7 @@ export class WardrobePanel {
             const cx = px + (i === 0 ? -1 : 1) * (tw / 2 + panelW * 0.02);
             const label = this.text(cx, top + panelH * 0.455, t === 'outfits' ? 'OUTFITS' : 'SCENES', H * 0.015);
             const hit = scene.add.zone(cx, top + panelH * 0.455, tw, panelH * 0.06).setInteractive({ useHandCursor: true });
-            hit.on('pointerdown', () => { if (this.tab !== t) { AudioManager.play('snd_click'); this.tab = t; this.build(); } });
+            hit.on('pointerdown', () => { if (this.tab !== t) { AudioManager.play('snd_click'); this.tab = t; this.page = 0; this.build(); } });
             this.root.add([label, hit]);
         });
         this.build();
@@ -100,7 +108,11 @@ export class WardrobePanel {
         this.tabGfx.fillStyle(THEME.ADD, 1);
         this.tabGfx.fillRoundedRect(ux - tw / 2, top + h * 0.49, tw, 5, 3);
 
-        const items: { id: string; name: string; stars: number }[] = isOutfits ? OUTFITS : SCENERIES;
+        const all: { id: string; name: string; stars: number }[] = isOutfits ? OUTFITS : SCENERIES;
+        const per = WardrobePanel.PER_PAGE;
+        const pages = Math.max(1, Math.ceil(all.length / per));
+        this.page = Math.min(this.page, pages - 1);
+        const items = all.slice(this.page * per, this.page * per + per);
         const cols = 2;
         const gap = w * 0.04;
         this.cw = (w - gap * 3) / cols;
@@ -123,7 +135,36 @@ export class WardrobePanel {
             this.gridItems.push(g, name, sub, hit);
             this.root.add([g, name, sub, hit]);
         });
+        if (pages > 1) this.buildPager(pages);
         this.redraw();
+    }
+
+    /** ◀ 1/2 ▶ under the grid. */
+    private buildPager(pages: number): void {
+        const { top, h } = this.panel;
+        const { H, scene } = this;
+        const y = top + h * 0.955;
+        const cx = this.W / 2;
+        const label = this.text(cx, y, `${this.page + 1} / ${pages}`, H * 0.016, THEME.MUTED);
+        this.gridItems.push(label);
+        this.root.add(label);
+        ([-1, 1] as const).forEach((dir) => {
+            const x = cx + dir * this.W * 0.16;
+            const enabled = dir < 0 ? this.page > 0 : this.page < pages - 1;
+            const g = scene.add.graphics();
+            g.fillStyle(enabled ? THEME.INK : THEME.PIP_OFF, 1);
+            const s = H * 0.014;
+            g.fillTriangle(x + dir * s, y, x - dir * s, y - s, x - dir * s, y + s);
+            const hit = scene.add.zone(x, y, this.W * 0.14, h * 0.06).setInteractive({ useHandCursor: true });
+            hit.on('pointerdown', () => {
+                if (!enabled) return;
+                AudioManager.play('snd_click');
+                this.page += dir;
+                this.build();
+            });
+            this.gridItems.push(g, hit);
+            this.root.add([g, hit]);
+        });
     }
 
     private isUnlocked(id: string): boolean {

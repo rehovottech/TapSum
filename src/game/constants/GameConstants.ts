@@ -20,12 +20,45 @@ export const GAME_CONFIG = {
     // (+1 is always open). The round that unlocks one gets extra time.
     UNLOCK_BONUS_MS: 1200,
 
+    // Difficulty wave: every WAVE_LEN rounds the game eases, builds, peaks and breathes again, while
+    // the round bands keep rising underneath (each wave is a little harder than the last).
+    // `from` is the 0-based position in the wave where the phase starts; rangeScale scales the number
+    // range, timerScale the round timer. `label` is shown when the phase begins.
+    WAVE_LEN: 12,
+    WAVE_PHASES: [
+        { id: 'warmup',   from: 0,  rangeScale: 0.6,  timerScale: 1.25, label: 'WARM UP' },
+        { id: 'build',    from: 3,  rangeScale: 1.0,  timerScale: 1.0,  label: '' },
+        { id: 'peak',     from: 8,  rangeScale: 1.15, timerScale: 0.9,  label: 'GETTING TOUGH' },
+        { id: 'breather', from: 11, rangeScale: 0.6,  timerScale: 1.3,  label: 'BREATHER' },
+    ] as { id: string; from: number; rangeScale: number; timerScale: number; label: string }[],
+    // Memory mode (no timer): sequence length by profile, +1 every MEMORY_STEP_ROUNDS rounds, up to the cap
+    MEMORY_START: { little: 2, explorer: 3, adult: 4 } as Record<string, number>,
+    MEMORY_CAP:   { little: 5, explorer: 7, adult: 7 } as Record<string, number>,
+    MEMORY_STEP_ROUNDS: 4,
+
+    // Daily goal: clear this many rounds in a day for bonus stars (resets at local midnight)
+    DAILY_GOAL_ROUNDS: 15,
+    DAILY_GOAL_STARS:  10,
+    // After losing a heart, this many rounds play at the easy (warm-up) setting
+    RECOVERY_ROUNDS: 2,
+
     // Hot-streak sequence rounds (per-profile settings live in PROFILES[..].sequence): once the
     // streak reaches the profile's threshold, rounds flash several numbers one after another
     // (e.g. +2 ... -1 ... +3) in bursts, with normal rounds between bursts. The player taps the
     // combined total. A mistake breaks the streak and rounds go back to a single number.
     // A part is at most this fraction of the band's min/max (shrinks further with more parts)
     SEQUENCE_PART_FACTOR: 0.6,
+    // Pause before the first part: long enough to read the HOT STREAK banner (burst start) or just breathe
+    SEQ_LEAD_BANNER_MS: 1500,
+    SEQ_LEAD_MS:        500,
+    // Number goes blank this long before the next part, so equal values (+3, +3) read as two numbers
+    SEQ_BLANK_MS:       220,
+    // Time bonus for the NEXT round after a correct sequence round: base, or the fast value when more
+    // than SEQ_BONUS_FAST_RATIO of the timer was left (capped at SEQ_BONUS_MAX_SEC)
+    SEQ_BONUS_SEC:        1,
+    SEQ_BONUS_FAST_SEC:   2,
+    SEQ_BONUS_FAST_RATIO: 0.5,
+    SEQ_BONUS_MAX_SEC:    3,
 };
 
 // ── Who's playing ───────────────────────────────────────────────────────────
@@ -78,7 +111,7 @@ export const PROFILES: Record<ProfileId, ProfileRules> = {
         timer: { thinkSec: 4, tapSec: 1.0, minSec: 8, maxSec: 25 },
         // 5-8 year olds hold about 3 things in mind: never more than 3 parts
         parts: [{ upTo: INF, min: 2, max: 3 }],
-        sequence: { streak: 11, gapMs: 1500, extraSec: 1.2, negChance: 30, burst: 2, rest: 3 },
+        sequence: { streak: 11, gapMs: 2400, extraSec: 1.2, negChance: 30, burst: 2, rest: 3 },
     },
     explorer: {
         id: 'explorer', name: 'Explorer', ages: 'Ages 9-12', blurb: 'Adding and taking away',
@@ -88,7 +121,7 @@ export const PROFILES: Record<ProfileId, ProfileRules> = {
         // rounds 1–9: 7s, +2s every 10 rounds, 15s from round 40
         timer: { thinkSec: 3, tapSec: 0.7, minSec: 6, maxSec: 18 },
         parts: [{ upTo: 20, min: 2, max: 4 }, { upTo: 50, min: 2, max: 5 }, { upTo: INF, min: 3, max: 6 }],
-        sequence: { streak: 7, gapMs: 1100, extraSec: 0.8, negChance: 40, burst: 3, rest: 2 },
+        sequence: { streak: 7, gapMs: 1800, extraSec: 0.8, negChance: 40, burst: 3, rest: 2 },
     },
     adult: {
         id: 'adult', name: 'Brain Trainer', ages: 'Teens & adults', blurb: 'Bigger numbers, faster',
@@ -98,7 +131,7 @@ export const PROFILES: Record<ProfileId, ProfileRules> = {
         // rounds 1–9: 6s, +1s every 10 rounds, 12s from round 60
         timer: { thinkSec: 2.5, tapSec: 0.5, minSec: 5, maxSec: 14 },
         parts: [{ upTo: 15, min: 2, max: 4 }, { upTo: 40, min: 3, max: 5 }, { upTo: INF, min: 4, max: 6 }],
-        sequence: { streak: 3, gapMs: 800, extraSec: 0.5, negChance: 50, burst: 4, rest: 1 },
+        sequence: { streak: 3, gapMs: 1300, extraSec: 0.5, negChance: 50, burst: 4, rest: 1 },
     },
 };
 

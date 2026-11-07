@@ -3,14 +3,14 @@
 | Path | What |
 |---|---|
 | `STORE_LISTING.md` | **Start here.** All store text, categories, age rating, Families and ads declarations, and a checklist for both stores |
-| `android/screenshots/phone_1080x1920/` | 7 Google Play phone screenshots |
+| `android/screenshots/phone_1080x1920/` | 8 Google Play phone screenshots |
 | `android/feature-graphic_1024x500.png` | Play feature graphic |
 | `android/app-icon_512.png` | Play hi-res icon |
 | `android/metadata/en-US/` | Play text in fastlane `supply` format (title, short and full description, changelog) |
-| `ios/screenshots/iphone-6.9in_1320x2868/` | 6 iPhone screenshots, 6.9" |
-| `ios/screenshots/iphone-6.5in_1284x2778/` | 6 iPhone screenshots, 6.5" |
-| `ios/screenshots/iphone-6.3in_1206x2622/` | 6 iPhone screenshots, 6.1"/6.3" slot |
-| `ios/screenshots/ipad-13in_2064x2752/` | 6 iPad screenshots, 13" slot |
+| `ios/screenshots/iphone-6.9in_1320x2868/` | 7 iPhone screenshots, 6.9" |
+| `ios/screenshots/iphone-6.5in_1284x2778/` | 7 iPhone screenshots, 6.5" |
+| `ios/screenshots/iphone-6.3in_1206x2622/` | 7 iPhone screenshots, 6.1"/6.3" slot |
+| `ios/screenshots/ipad-13in_2064x2752/` | 7 iPad screenshots, 13" slot |
 | `ios/app-icon_1024.png` | App Store icon (no transparency) |
 | `ios/metadata/` | App Store text in fastlane `deliver` format |
 | `meta-ads/` | Facebook and Instagram ad images: 3 concepts × 4 sizes, plus `AD_COPY.md` |

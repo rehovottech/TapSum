@@ -4,12 +4,15 @@ import type { EndReason } from './Game';
 import { SaveManager } from '../managers/SaveManager';
 import { SCENES } from '../utils/Scenes';
 import { GlobVar } from '../../utils/Global';
+import { GAME_CONFIG } from '../constants/GameConstants';
 import { THEME } from '../constants/Colors';
 import { AudioManager } from '../managers/AudioManager';
 import { LeaderboardManager } from '../managers/LeaderboardManager';
 import { Mascot } from '../ui/Mascot';
 import { Feel } from '../utils/Feel';
+import { NotificationManager } from '../../services/Notification';
 import { Ads } from '../../services/Ads';
+import { ShareManager } from '../../services/Share';
 import FPS from '../model/FPS';
 
 interface EndData {
@@ -59,7 +62,12 @@ export default class End extends BaseScene {
         AudioManager.init();
         Ads.noteGameEnded();
         SaveManager.recordPlayDay();
+        NotificationManager.scheduleStreakReminder(SaveManager.getDayStreak()).catch(() => {});
         const unlocked = SaveManager.addStars(this.cleared);
+        const avgBefore = SaveManager.getRecentAverage();
+        SaveManager.recordRun(this.cleared);
+        const daily = SaveManager.addDailyRounds(this.cleared);
+        if (daily.completed) SaveManager.addStars(GAME_CONFIG.DAILY_GOAL_STARS);
 
         this.createSkyBg(0.93);
         const content = this.add.container(0, 0);
@@ -77,9 +85,14 @@ export default class End extends BaseScene {
         this.celebrationBurst();
 
         this.fetchAndShowRank();
-        if (unlocked.length) {
-            this.time.delayedCall(900, () => this.toast(`New outfit: ${unlocked[unlocked.length - 1].name}!`));
-        }
+        // Milestone messages, one after another (each toast stays ~2.7 s)
+        const msgs: string[] = [];
+        if (unlocked.length) msgs.push(`New outfit: ${unlocked[unlocked.length - 1].name}!`);
+        if (daily.completed) msgs.push(`Daily goal done! +${GAME_CONFIG.DAILY_GOAL_STARS} stars`);
+        else if (this.cleared > 0 && daily.rounds < daily.goal) msgs.push(`Daily goal: ${daily.rounds}/${daily.goal} rounds`);
+        if (avgBefore !== null && this.cleared > avgBefore + 0.5) msgs.push(`Better than your average (${Math.round(avgBefore)} rounds)!`);
+        else if (this.isNewBest) msgs.push('New best score!');
+        msgs.slice(0, 3).forEach((m, i) => this.time.delayedCall(900 + i * 2800, () => this.toast(m)));
     }
 
     update(): void {
@@ -275,13 +288,35 @@ export default class End extends BaseScene {
         const bigH = Math.floor(this.H * 0.085);
         const smH  = Math.floor(this.H * 0.066);
         const smY  = this.H - this.H * 0.04 - smH / 2;
-        const bigY = smY - smH / 2 - this.H * 0.018 - bigH / 2;
+        const gap  = this.H * 0.018;
+        const canShare = ShareManager.available;
+        const shareY = smY - smH / 2 - gap - smH / 2;
+        const bigY = (canShare ? shareY - smH / 2 : smY - smH / 2) - gap - bigH / 2;
 
         this.createButton(this.CX, bigY, innerW, bigH, 'PLAY AGAIN', this.H * 0.036,
             THEME.GO, THEME.GO_DARK, () => this.leaveTo(SCENES.Game));
 
+        if (canShare) {
+            this.createButton(this.CX, shareY, innerW, smH, 'SHARE', this.H * 0.024,
+                THEME.CARD, THEME.CARD_SHADOW, () => this.shareScore(), THEME.INK);
+        }
+
         this.createButton(this.CX, smY, innerW, smH, 'MENU', this.H * 0.024,
             THEME.CARD, THEME.CARD_SHADOW, () => this.leaveTo(SCENES.Menu), THEME.INK);
+    }
+
+    private sharing = false;
+
+    /** Grown-up check, then the OS share sheet with a score card (Instagram / Facebook / anything installed). */
+    private async shareScore(): Promise<void> {
+        if (this.sharing || this.leaving) return;
+        this.sharing = true;
+        AudioManager.play('snd_click');
+        try {
+            await ShareManager.shareScore(this.finalScore, this.bestScore, 'sheet');
+        } finally {
+            this.sharing = false;
+        }
     }
 
     /** A paced interstitial may play first; extra taps are ignored meanwhile. */

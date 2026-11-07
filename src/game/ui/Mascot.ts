@@ -212,6 +212,54 @@ export class Mascot extends Phaser.GameObjects.Container {
                 g.fillCircle(-r * 0.2, top - r * 0.45, r * 0.06);
                 break;
             }
+            case 'chef': {
+                g.fillStyle(0xffffff, 1);
+                g.fillRect(-r * 0.5, top - r * 0.12, r * 1.0, r * 0.3);
+                g.fillCircle(-r * 0.32, top - r * 0.3, r * 0.34);
+                g.fillCircle(r * 0.32, top - r * 0.3, r * 0.34);
+                g.fillCircle(0, top - r * 0.5, r * 0.4);
+                g.fillStyle(0xdfe6ee, 1);
+                g.fillRect(-r * 0.5, top + r * 0.04, r * 1.0, r * 0.1);
+                break;
+            }
+            case 'graduate': {
+                g.fillStyle(0x24324a, 1);
+                g.fillRect(-r * 0.4, top - r * 0.02, r * 0.8, r * 0.28);
+                g.fillTriangle(-r * 0.95, top - r * 0.05, r * 0.95, top - r * 0.05, 0, top - r * 0.5);
+                g.fillTriangle(-r * 0.95, top - r * 0.05, r * 0.95, top - r * 0.05, 0, top + r * 0.4);
+                g.lineStyle(Math.max(2, r * 0.06), 0xf5b800, 1);
+                g.lineBetween(r * 0.7, top - r * 0.05, r * 0.7, top + r * 0.4);
+                g.fillStyle(0xf5b800, 1);
+                g.fillCircle(r * 0.7, top + r * 0.45, r * 0.08);
+                break;
+            }
+            case 'flower': {
+                const cols = [0xff6b9a, 0xffd23f, 0xffffff, 0x8be28b, 0xa78bfa];
+                for (let i = 0; i < 7; i++) {
+                    const a = Math.PI * (1.08 + (i / 6) * 0.84);
+                    g.fillStyle(cols[i % cols.length], 1);
+                    g.fillCircle(Math.cos(a) * r * 0.95, -r * 0.05 + Math.sin(a) * r * 0.95, r * 0.15);
+                }
+                g.fillStyle(0x4aa564, 1);
+                g.fillCircle(0, top + r * 0.02, r * 0.08);
+                break;
+            }
+            case 'astronaut': {
+                g.fillStyle(0xbfe6ff, 0.28);
+                g.fillCircle(0, -r * 0.05, r * 1.22);
+                g.lineStyle(Math.max(3, r * 0.1), 0xe9f4ff, 0.95);
+                g.strokeCircle(0, -r * 0.05, r * 1.22);
+                g.fillStyle(0xffffff, 0.55);
+                g.fillEllipse(-r * 0.62, -r * 0.62, r * 0.32, r * 0.18);
+                break;
+            }
+            case 'halo': {
+                g.lineStyle(Math.max(4, r * 0.13), 0xf5b800, 1);
+                g.strokeEllipse(0, top - r * 0.28, r * 1.0, r * 0.28);
+                g.lineStyle(Math.max(2, r * 0.05), 0xfff1a8, 0.9);
+                g.strokeEllipse(0, top - r * 0.3, r * 1.0, r * 0.24);
+                break;
+            }
         }
     }
 

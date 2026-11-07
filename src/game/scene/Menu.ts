@@ -42,6 +42,7 @@ export default class Menu extends BaseScene {
         this.createTitle();
         this.createHowItWorks();
         this.createStreakStrip();
+        this.createDailyGoal();
         this.createMascotAndBest();
         this.createButtons();
         this.createSettingsButton();
@@ -137,7 +138,7 @@ export default class Menu extends BaseScene {
             flame.fillStyle(0xffd23f, 1);
             flame.fillCircle(fx, y + h * 0.15, h * 0.1);
         }
-        this.add.bitmapText(fx + h * 0.4, y, 'coiny-bmp', lit ? `${streak} DAY${streak === 1 ? '' : 'S'}` : 'START A STREAK',
+        this.add.bitmapText(fx + h * 0.4, y, 'coiny-bmp', lit ? `${streak} DAY${streak === 1 ? '' : 'S'}` : 'DAY 0',
             Math.floor(this.H * 0.016), 0).setOrigin(0, 0.5).setTint(lit ? THEME.INK : THEME.MUTED);
         if (lit && !SaveManager.getWeek()[6].played) {
             this.tweens.add({ targets: flame, alpha: 0.55, duration: 700, yoyo: true, repeat: -1 });
@@ -159,6 +160,27 @@ export default class Menu extends BaseScene {
             this.add.bitmapText(x, y + h * 0.3, 'coiny-bmp', d.label, Math.floor(this.H * 0.009), 0)
                 .setOrigin(0.5).setTint(THEME.MUTED);
         });
+    }
+
+    // Daily goal: progress bar for today's rounds
+    private createDailyGoal(): void {
+        const d = SaveManager.getDaily();
+        const y = this.H * 0.552;
+        const pad = Math.floor(this.W * 0.075);
+        const w = this.W - pad * 2;
+        const h = Math.floor(this.H * 0.04);
+        this.drawCard(this.add.graphics(), pad, y - h / 2, w, h, h / 2);
+        const done = d.rounds >= d.goal;
+        this.add.bitmapText(pad + h * 0.5, y, 'coiny-bmp', done ? 'DAILY GOAL DONE!' : 'DAILY GOAL',
+            Math.floor(this.H * 0.014), 0).setOrigin(0, 0.5).setTint(done ? THEME.ADD : THEME.INK);
+        const barW = w * 0.34, barH = h * 0.36;
+        const bx = pad + w - h * 0.5 - barW;
+        const g = this.add.graphics();
+        g.fillStyle(THEME.SURFACE, 1).fillRoundedRect(bx, y - barH / 2, barW, barH, barH / 2);
+        const frac = Math.min(1, d.rounds / d.goal);
+        if (frac > 0) g.fillStyle(done ? THEME.ADD : THEME.GOLD, 1).fillRoundedRect(bx, y - barH / 2, Math.max(barH, barW * frac), barH, barH / 2);
+        this.add.bitmapText(bx - h * 0.3, y, 'coiny-bmp', `${Math.min(d.rounds, d.goal)}/${d.goal}`,
+            Math.floor(this.H * 0.014), 0).setOrigin(1, 0.5).setTint(THEME.MUTED);
     }
 
     // Summy stands next to the personal best and reacts when tapped
