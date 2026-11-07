@@ -290,19 +290,23 @@ export default class End extends BaseScene {
         const smY  = this.H - this.H * 0.04 - smH / 2;
         const gap  = this.H * 0.018;
         const canShare = ShareManager.available;
-        const shareY = smY - smH / 2 - gap - smH / 2;
-        const bigY = (canShare ? shareY - smH / 2 : smY - smH / 2) - gap - bigH / 2;
+        // SHARE and MENU share one row, so the mascot keeps its spot above PLAY AGAIN
+        const bigY = smY - smH / 2 - gap - bigH / 2;
 
         this.createButton(this.CX, bigY, innerW, bigH, 'PLAY AGAIN', this.H * 0.036,
             THEME.GO, THEME.GO_DARK, () => this.leaveTo(SCENES.Game));
 
         if (canShare) {
-            this.createButton(this.CX, shareY, innerW, smH, 'SHARE', this.H * 0.024,
+            const halfW = Math.floor((innerW - gap) / 2);
+            const dx = (halfW + gap) / 2;
+            this.createButton(this.CX - dx, smY, halfW, smH, 'SHARE', this.H * 0.024,
                 THEME.CARD, THEME.CARD_SHADOW, () => this.shareScore(), THEME.INK);
+            this.createButton(this.CX + dx, smY, halfW, smH, 'MENU', this.H * 0.024,
+                THEME.CARD, THEME.CARD_SHADOW, () => this.leaveTo(SCENES.Menu), THEME.INK);
+        } else {
+            this.createButton(this.CX, smY, innerW, smH, 'MENU', this.H * 0.024,
+                THEME.CARD, THEME.CARD_SHADOW, () => this.leaveTo(SCENES.Menu), THEME.INK);
         }
-
-        this.createButton(this.CX, smY, innerW, smH, 'MENU', this.H * 0.024,
-            THEME.CARD, THEME.CARD_SHADOW, () => this.leaveTo(SCENES.Menu), THEME.INK);
     }
 
     private sharing = false;
